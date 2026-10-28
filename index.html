@@ -442,7 +442,10 @@ footer details summary{cursor:pointer;color:var(--ink-2);font-weight:500}
 .ckcg.c7{--cgbg:#E9F1E4;--cgfg:#3F6B2A;--cgb:#C9DDBE}
 .ckcg.c8{--cgbg:#E3F2FD;--cgfg:#1565C0;--cgb:#BBDEFB}.ckcg.c9{--cgbg:#EDE7F6;--cgfg:#5E35B1;--cgb:#D1C4E9}.ckcg.c10{--cgbg:#E0F2F1;--cgfg:#00796B;--cgb:#B2DFDB}.ckcg.c11{--cgbg:#ECEFF1;--cgfg:#455A64;--cgb:#CFD8DC}.ckcg.c12{--cgbg:#F1F8E9;--cgfg:#558B2F;--cgb:#DCEDC8}.ckcg.c13{--cgbg:#FDECEA;--cgfg:#C62828;--cgb:#F8C9C4}.ckcg.c14{--cgbg:#FFF3E0;--cgfg:#B45309;--cgb:#FFE0B2}
 /* 달력 거르기: 분야 단추는 분야 색, 끈 분야는 흐리게 */
-.ckcalgrp{margin-bottom:6px}.ckcalgrp .n{font-size:11px;color:var(--muted)}
+.ckcalgrp{margin-bottom:6px}
+.ckcalcat{position:relative;margin:0 0 8px;padding-left:3.4em}
+.ckcalrowh{position:absolute;left:0;top:5px;font-size:12px;font-weight:700;color:var(--muted)}
+.ckcaltop{margin-top:14px}.ckcalgrp .n{font-size:11px;color:var(--muted)}
 .ckcalgrp .pill[aria-pressed="true"],:root .ckcalgrp .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
 .ckcalcat .pill.ckcg,:root .ckcalcat .pill.ckcg[aria-pressed="true"]{font-size:12.5px;padding:3px 10px;line-height:1.5;cursor:pointer;background:var(--cgbg);border-color:var(--cgb);color:var(--cgfg);font-weight:700}
 :root .ckcalcat .pill.offc{--cgbg:transparent;--cgfg:var(--muted);--cgb:var(--line);text-decoration:line-through}
@@ -1325,14 +1328,19 @@ function ckCal(){
     var b=el("button","pill",g[1]); b.type="button"; b.appendChild(el("span","n"," "+n)); b.setAttribute("aria-pressed",g[0]===gsel?"true":"false");
     b.onclick=function(){ CK.cgrp=g[0]; ckSave(); ckCal(); }; gr.appendChild(b); });
   d.appendChild(gr);
-  var chips=el("div","ckpick ckcalcat");
-  gcats.forEach(function(c){
-    var n=CKCAL.filter(function(x){ return x.cat===c; }).length; if(!n) return;
-    var on=off.indexOf(c)<0, b=el("button","pill ckcg c"+CKCATS.indexOf(c)+(on?"":" offc"),(on?"✓ ":"")+c+" "+n); b.type="button"; b.setAttribute("aria-pressed",on?"true":"false");
-    b.title=on?"누르면 이 분야 일정을 숨겨요":"누르면 이 분야 일정을 다시 보여요";
-    b.onclick=function(){ var o=(CK.coff||[]).slice(), i=o.indexOf(c); if(i<0) o.push(c); else o.splice(i,1); CK.coff=o; ckSave(); ckCal(); }; chips.appendChild(b); });
-  if(off.some(function(c){ return gcats.indexOf(c)>=0; })){ var all=el("button","pill","모두 켜기"); all.type="button"; all.onclick=function(){ CK.coff=(CK.coff||[]).filter(function(c){ return gcats.indexOf(c)<0; }); ckSave(); ckCal(); }; chips.appendChild(all); }
-  d.appendChild(chips);
+  /* 분야 단추는 행정 줄·교무 줄로 나눈다(고른 쪽 줄만, 전체면 두 줄) */
+  CKGROUPS.forEach(function(g){
+    if(gsel&&g[0]!==gsel) return;
+    var cs=g[1].filter(function(c){ return CKCAL.some(function(x){ return x.cat===c; }); }); if(!cs.length) return;
+    var chips=el("div","ckpick ckcalcat"); chips.appendChild(el("span","ckcalrowh",g[0]));
+    cs.forEach(function(c){
+      var n=CKCAL.filter(function(x){ return x.cat===c; }).length;
+      var on=off.indexOf(c)<0, b=el("button","pill ckcg c"+CKCATS.indexOf(c)+(on?"":" offc"),(on?"✓ ":"")+c+" "+n); b.type="button"; b.setAttribute("aria-pressed",on?"true":"false");
+      b.title=on?"누르면 이 분야 일정을 숨겨요":"누르면 이 분야 일정을 다시 보여요";
+      b.onclick=function(){ var o=(CK.coff||[]).slice(), i=o.indexOf(c); if(i<0) o.push(c); else o.splice(i,1); CK.coff=o; ckSave(); ckCal(); }; chips.appendChild(b); });
+    if(off.some(function(c){ return cs.indexOf(c)>=0; })){ var all=el("button","pill","모두 켜기"); all.type="button"; all.onclick=function(){ CK.coff=(CK.coff||[]).filter(function(c){ return cs.indexOf(c)<0; }); ckSave(); ckCal(); }; chips.appendChild(all); }
+    d.appendChild(chips);
+  });
   /* 30일 안에 오는 마감(날짜가 정해진 일정) */
   var up=[];
   L.forEach(function(x){

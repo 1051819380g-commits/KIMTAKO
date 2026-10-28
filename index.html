@@ -1338,6 +1338,8 @@ function ckCal(){
       var on=off.indexOf(c)<0, b=el("button","pill ckcg c"+CKCATS.indexOf(c)+(on?"":" offc"),(on?"✓ ":"")+c+" "+n); b.type="button"; b.setAttribute("aria-pressed",on?"true":"false");
       b.title=on?"누르면 이 분야 일정을 숨겨요":"누르면 이 분야 일정을 다시 보여요";
       b.onclick=function(){ var o=(CK.coff||[]).slice(), i=o.indexOf(c); if(i<0) o.push(c); else o.splice(i,1); CK.coff=o; ckSave(); ckCal(); }; chips.appendChild(b); });
+    if(cs.some(function(c){ return off.indexOf(c)<0; })){ var none=el("button","pill","모두 끄기"); none.type="button"; none.title="이 줄 분야를 모두 끄고, 보고 싶은 분야만 다시 켜세요";
+      none.onclick=function(){ CK.coff=(CK.coff||[]).filter(function(c){ return cs.indexOf(c)<0; }).concat(cs); ckSave(); ckCal(); }; chips.appendChild(none); }
     if(off.some(function(c){ return cs.indexOf(c)>=0; })){ var all=el("button","pill","모두 켜기"); all.type="button"; all.onclick=function(){ CK.coff=(CK.coff||[]).filter(function(c){ return cs.indexOf(c)<0; }); ckSave(); ckCal(); }; chips.appendChild(all); }
     d.appendChild(chips);
   });

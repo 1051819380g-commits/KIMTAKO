@@ -1169,7 +1169,7 @@ function ckSide(){
   if(!open.length) box.appendChild(el("div","empty","아직 시작한 건이 없습니다."));
   open.forEach(caseBtn);
   if(shut.length){ box.appendChild(el("h3",null,"끝난 건 ("+shut.length+")"));
-    var ex=el("div","ckexp"); [["x","끝난 건 엑셀로 받기"],["d","끝난 건 문서로 받기"]].forEach(function(k){ var b=el("button","pill",k[1]); b.type="button"; b.onclick=function(){ ckExport(shut,k[0],"끝난 업무 기록"); }; ex.appendChild(b); });
+    var ex=el("div","ckexp"), xb=el("button","pill","끝난 건 엑셀로 받기"); xb.type="button"; xb.onclick=function(){ ckExport(shut,"끝난 업무 기록"); }; ex.appendChild(xb);
     box.appendChild(ex); shut.forEach(caseBtn); }
 }
 /* 담당별 흐름도: 칸 = 담당(위 이름표), 아래로 갈수록 나중. 같은 줄 = 동시에 진행하는 일. 상자를 누르면 그 단계 설명으로 */
@@ -1238,8 +1238,7 @@ function ckMain(){
   if(document.getElementById("gq")) tb("관련 자료 검색",function(){ var q=document.getElementById("gq"); q.value=t.title.replace(/\s*\(.*?\)\s*/g," ").trim(); q.oninput(); });
   if(cs){
     tb(cs.end?"다시 열기":"끝난 건으로",function(){ cs.end=cs.end?"":ckToday(); ckSave(); ckRender(); });
-    tb("엑셀로 받기",function(){ ckExport([cs],"x",cs.name); });
-    tb("문서로 받기",function(){ ckExport([cs],"d",cs.name); });
+    tb("엑셀로 받기",function(){ ckExport([cs],cs.name); });
     tb("삭제",function(){ if(!confirm("'"+cs.name+"' 건을 지울까요? 체크와 메모가 모두 지워집니다.")) return;
       CK.cases=CK.cases.filter(function(c){return c!==cs}); CK.cur=""; ckSave(); ckRender(); });
   }
@@ -1464,7 +1463,7 @@ function ckFor(box,x){
   var h=box.querySelector("h2"); if(h&&h.nextSibling) box.insertBefore(w,h.nextSibling); else box.appendChild(w);
 }
 ckRender();
-/* ---------- 건 내려받기: 엑셀(.xlsx)·워드(.docx) — 라이브러리 없이 압축하지 않은(저장 방식) zip을 직접 만든다 ----------
+/* ---------- 건 내려받기: 엑셀(.xlsx) — 라이브러리 없이 압축하지 않은(저장 방식) zip을 직접 만든다 ----------
    claude.ai 웹판은 build_web.py가 넣는 window.CKSAVE(downloads 기능)로, 그 밖에는 브라우저 다운로드로 저장 */
 var CKCRC=(function(){ var t=[]; for(var n=0;n<256;n++){ var c=n; for(var k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
 function ckZip(files){
@@ -1491,16 +1490,16 @@ function ckX(s){
 }
 /* 건 → 단계 한 줄씩 */
 function ckRows(cases){
-  var rows=[["건 이름","업무","분야","시작일","끝난 날","단계","할 일","시기","완료일","메모"]];
+  var rows=[["단계","건 이름","업무","분야","시작일","할 일","시기","완료일","메모"]];   /* 언제 끝났는지는 마지막 단계 완료일로 본다 */
   cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t) return;
-    t.steps.forEach(function(s,k){ rows.push([cs.name,t.title,t.cat||"",cs.at||"",cs.end||"",k+1,s.n,s.w||"",(cs.d||{})[k]||"",(cs.m||{})[k]||""]); }); });
+    t.steps.forEach(function(s,k){ rows.push([k+1,cs.name,t.title,t.cat||"",cs.at||"",s.n,s.w||"",(cs.d||{})[k]||"",(cs.m||{})[k]||""]); }); });
   return rows;
 }
 var CKX_HEAD='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 var CKX_REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 var CKX_PKG='http://schemas.openxmlformats.org/package/2006/';
 function ckXlsx(rows){
-  var W=[22,30,10,11,11,6,40,26,11,36], col=function(i){ return String.fromCharCode(65+i); }, last=col(W.length-1)+rows.length;
+  var W=[6,22,30,10,11,40,26,11,36], col=function(i){ return String.fromCharCode(65+i); }, last=col(W.length-1)+rows.length;
   var sheet=CKX_HEAD+'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
     '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>'+
     W.map(function(w,i){ return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'; }).join("")+'</cols><sheetData>'+
@@ -1516,27 +1515,6 @@ function ckXlsx(rows){
     ["xl/styles.xml",CKX_HEAD+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="맑은 고딕"/></font><font><b/><sz val="10"/><name val="맑은 고딕"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEAF1FF"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="2"><xf fontId="0" xfId="0"/><xf fontId="1" fillId="2" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
     ["xl/worksheets/sheet1.xml",sheet]]);
 }
-function ckDocx(cases,title){
-  var F='<w:rFonts w:ascii="맑은 고딕" w:eastAsia="맑은 고딕" w:hAnsi="맑은 고딕"/>';
-  function p(txt,o){ o=o||{};
-    return '<w:p>'+(o.h?'<w:pPr><w:spacing w:before="240" w:after="80"/></w:pPr>':'')+'<w:r><w:rPr>'+F+(o.b?'<w:b/>':'')+'<w:sz w:val="'+(o.sz||20)+'"/>'+(o.c?'<w:color w:val="'+o.c+'"/>':'')+'</w:rPr><w:t xml:space="preserve">'+ckX(txt)+'</w:t></w:r></w:p>'; }
-  function cell(txt,w,hd){ return '<w:tc><w:tcPr><w:tcW w:w="'+w+'" w:type="dxa"/>'+(hd?'<w:shd w:val="clear" w:color="auto" w:fill="EAF1FF"/>':'')+'</w:tcPr>'+p(txt,{b:hd,sz:18})+'</w:tc>'; }
-  var WS=[700,4200,1500,1400,2600];
-  var BD=["top","left","bottom","right","insideH","insideV"].map(function(b){ return '<w:'+b+' w:val="single" w:sz="4" w:color="BFC7D5"/>'; }).join("");
-  var body=p(title,{b:1,sz:32})+p("만든 날 "+ckToday()+" · 업무 체크리스트",{sz:18,c:"6B7280"});
-  cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t) return; var n=ckCount(cs);
-    body+=p(cs.name,{b:1,sz:26,h:1})+p(t.title+" · "+(t.cat||"")+" · 시작 "+(cs.at||"")+(cs.end?" · 끝남 "+cs.end:"")+" · 진행 "+n.d+"/"+n.n,{sz:18,c:"374151"});
-    body+='<w:tbl><w:tblPr><w:tblW w:w="10400" w:type="dxa"/><w:tblBorders>'+BD+'</w:tblBorders></w:tblPr><w:tblGrid>'+WS.map(function(w){ return '<w:gridCol w:w="'+w+'"/>'; }).join("")+'</w:tblGrid>';
-    body+='<w:tr>'+["단계","할 일","시기","완료일","메모"].map(function(h,i){ return cell(h,WS[i],1); }).join("")+'</w:tr>';
-    t.steps.forEach(function(s,k){ body+='<w:tr>'+[k+1,s.n,s.w||"",(cs.d||{})[k]||"",(cs.m||{})[k]||""].map(function(v,i){ return cell(v,WS[i]); }).join("")+'</w:tr>'; });
-    body+='</w:tbl>'; });
-  var doc=CKX_HEAD+'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+
-    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="851" w:bottom="1134" w:left="851" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>';
-  return ckZip([
-    ["[Content_Types].xml",CKX_HEAD+'<Types xmlns="'+CKX_PKG+'content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'],
-    ["_rels/.rels",CKX_HEAD+'<Relationships xmlns="'+CKX_PKG+'relationships"><Relationship Id="rId1" Type="'+CKX_REL+'/officeDocument" Target="word/document.xml"/></Relationships>'],
-    ["word/document.xml",doc]]);
-}
 function ckSaveFile(name,bytes){
   if(window.CKSAVE) return window.CKSAVE(name,bytes);   /* claude.ai 웹판 */
   var a=document.createElement("a"), u=URL.createObjectURL(new Blob([bytes],{type:"application/octet-stream"}));
@@ -1544,11 +1522,8 @@ function ckSaveFile(name,bytes){
   setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); },1500);
 }
 function ckFname(s){ return String(s).replace(/[\\\/:*?"<>|]+/g," ").replace(/\s+/g," ").trim().slice(0,80); }
-function ckExport(cases,kind,label){
-  if(!cases.length) return;
-  var base=ckFname(label+" "+ckToday());
-  if(kind==="x") ckSaveFile(base+".xlsx",ckXlsx(ckRows(cases)));
-  else ckSaveFile(base+".docx",ckDocx(cases,label));
+function ckExport(cases,label){
+  if(cases.length) ckSaveFile(ckFname(label+" "+ckToday())+".xlsx",ckXlsx(ckRows(cases)));
 }
 
 })();

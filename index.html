@@ -471,6 +471,21 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 .split.ckcalmode{display:block!important}
 .split.ckcalmode>.ckside{display:none}
 .ckexp{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+/* 계약방법 찾기 */
+details.ckmth{margin:6px 0 4px;border:1px solid var(--accent-line);border-radius:10px;background:var(--accent-soft)}
+details.ckmth>summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(--accent-ink);font-size:13.5px}
+.ckmbox{padding:4px 12px 12px;background:var(--surface);border-radius:0 0 10px 10px}
+.ckml{font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px}
+.ckmrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ckmrow .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
+.ckmamt{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line-strong);border-radius:8px;width:200px;background:var(--surface);color:var(--ink)}
+.ckmah{font-size:13px;color:var(--accent-ink);font-weight:700}
+.ckmst{display:grid;gap:4px}
+.ckmchk{font-size:13px;cursor:pointer}.ckmchk small{color:var(--muted)}
+.ckmres{margin-top:12px;display:grid;gap:8px}
+.ckmcard{border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:8px;padding:8px 12px;background:var(--surface-2)}
+.ckmcard.ok{border-left-color:#16a34a}.ckmcard.mid{border-left-color:#d97706}.ckmcard.bid{border-left-color:#6366f1}
+.ckmcard b{display:block;font-size:14px;margin-bottom:4px}.ckmcard p{margin:2px 0;font-size:13px}.ckmcard small{color:var(--muted);font-size:11.5px}
 
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
@@ -1267,6 +1282,7 @@ function ckMain(){
       if(done) row.appendChild(el("span","ckdt",done));
     } else { var lb2=el("label",null,s.n); if(s.w) lb2.appendChild(el("span","ckw",s.w)); row.appendChild(lb2); }
     li.appendChild(row);
+    if(/계약방법 결정|수의계약 대상 판단|공고문 작성/.test(s.n)) li.appendChild(ckMethodTool());   /* 신규 담당자용 계약방법 찾기 */
     if(cs){
       var mm=el("input","ckmemo"); mm.placeholder="메모 (문서번호·날짜·업체 등)"; mm.value=(cs.m&&cs.m[k])||""; mm.setAttribute("aria-label",s.n+" 메모");
       mm.onchange=function(){ cs.m=cs.m||{}; if(mm.value.trim()) cs.m[k]=mm.value.trim(); else delete cs.m[k]; ckSave(); };
@@ -1524,6 +1540,80 @@ function ckSaveFile(name,bytes){
 function ckFname(s){ return String(s).replace(/[\\\/:*?"<>|]+/g," ").replace(/\s+/g," ").trim().slice(0,80); }
 function ckExport(cases,label){
   if(cases.length) ckSaveFile(ckFname(label+" "+ckToday())+".xlsx",ckXlsx(ckRows(cases)));
+}
+/* ---------- 계약방법 찾기: 계약 종류·추정가격·계약상대 → 1인 견적 수의 / 2인 이상 견적 수의 / 입찰 ----------
+   근거: 지방계약법 시행령 제25조①5호·7의2호·제30조(2026. 6. 3. 시행, 법제처), 2026 계약실무편람(경남) 공사·물품·용역 수의계약 표,
+   경남 업무흐름도(2026. 3.) 수의계약 낙찰하한율 표. 사립은 사학기관 재무·회계 규칙 → 국가계약법 시행령 제26조·제30조 준용(금액 기준 같음) */
+var CKM_KIND=[["g","물품·용역"],["c1","공사 — 종합공사"],["c2","공사 — 전문공사"],["c3","공사 — 전기·정보통신·소방·그 밖"]];
+var CKM_ST=[
+  ["y","청년창업기업","대표자 39세 이하 창업기업(중소기업창업 지원법)"],
+  ["w","여성기업",""],["d","장애인기업",""],
+  ["s","사회적기업·사회적협동조합·자활기업·마을기업","취약계층 고용비율 30% 이상일 때만"],
+  ["k","소기업·소상공인","중소기업 확인서로 확인"],
+  ["x","학술연구·원가계산 등 특수 지식·기술 계약","물품·용역"],
+  ["p","중증장애인생산품 생산시설·장애인 표준사업장·국가유공자 상이단체","직접 생산하는 물품·직접 수행하는 용역"]];
+var CKM_LIM={c1:4e8,c2:2e8,c3:1.6e8}, CKM_LN={c1:"4억 원",c2:"2억 원",c3:"1억 6천만 원"};
+function ckWon(n){ if(n>=1e8){ var e=Math.floor(n/1e8), m=Math.round((n%1e8)/1e4); return e+"억"+(m?" "+m.toLocaleString()+"만":"")+" 원"; } return n>=1e4?Math.round(n/1e4).toLocaleString()+"만 원":n.toLocaleString()+" 원"; }
+/* 판정: [{h: 결론, t: 'ok'|'mid'|'bid', p: [설명], law: 근거}] — 위에서부터 쓸 수 있는 방법 */
+function ckMethod(kind,amt,st,priv){
+  var has=function(k){ return st.indexOf(k)>=0; }, sp=has("y")||has("w")||has("d")||has("s"), out=[];
+  var A30=priv?"국가계약법 시행령 제30조①":"지방계약법 시행령 제30조①", A25=priv?"국가계약법 시행령 제26조①5호가목":"지방계약법 시행령 제25조①5호";
+  var N=priv?{na:"2)",k:"3)",x:"4)",w:"5)",y:"7)"}:{na:"나",k:"라",x:"마",w:"바",y:"다"};   /* 금액 기준 조문 번호(공립 지방계약법 / 사립 국가계약법) */
+  if(kind==="g"){
+    if(has("p")) out.push({t:"ok",h:priv?"수의계약 가능 (금액 제한 없음)":"수의계약 · 1인 견적 가능 (금액 제한 없음)",p:["중증장애인생산품 생산시설·장애인 표준사업장·국가유공자 상이단체가 직접 생산하는 물품, 직접 수행하는 용역이면 금액과 관계없이 수의계약할 수 있어요."+(priv?" 사립(국가계약법 시행령 제30조①1호)은 이 경우를 1인 견적 사유로 따로 적지 않았으니 견적 방법은 법인 규정·교육청에 확인하세요.":"")],law:priv?"국가계약법 시행령 제26조①4호 · 제30조①1호":"지방계약법 시행령 제25조①7의2호 · 제30조①1호"});
+    if(amt<=2e7){
+      out.push({t:"ok",h:"수의계약 · 1인 견적 가능",p:["추정가격 2천만 원 이하 물품·용역은 어느 업체와도 1인 견적으로 수의계약할 수 있어요."+(amt<2e6?" 200만 원 미만이면 견적서도 생략할 수 있어요(신용카드 구매 포함).":""),"여러 곳 견적을 받으려면 2인 이상 견적 수의계약으로 해요(낙찰하한율 90%)."],law:A25+N.na+" · "+A30+"2호"});
+    } else if(amt<=5e7&&sp){
+      out.push({t:"ok",h:"수의계약 · 1인 견적 가능 (5천만 원 이하 특례)",p:["청년창업기업·여성기업·장애인기업·사회적기업 등과는 추정가격 5천만 원 이하까지 1인 견적으로 수의계약할 수 있어요."+(has("s")?" 사회적기업 등은 취약계층 고용비율 30% 이상일 때만이에요.":"")],law:A30+"2호 단서"});
+    }
+    if(amt>2e7&&amt<=1e8){
+      var ok2=has("w")||has("d")||has("s")||has("k")||has("x")||(has("y")&&amt<=5e7);
+      if(ok2) out.push({t:"mid",h:"수의계약 · 2인 이상 견적 ("+((has("w")||has("d")||has("s")||has("k")||has("x"))?"1억":"5천만")+" 원 이하)",p:["지정정보처리장치(나라장터·학교장터)에 견적 안내공고를 3일 이상(공휴일·토요일 제외) 내고 2인 이상 견적을 받아요. 낙찰하한율은 예정가격의 88%예요.",has("k")?"소기업·소상공인이면 중소기업 확인서를 계약체결일까지 받아 확인해요.":""].filter(Boolean),law:A25+(has("k")?N.k:has("x")?N.x:(has("w")||has("d")||has("s"))?N.w:N.y)+" · "+A30.replace("①","②")});
+      else out.push({t:"mid",h:"수의계약 · 2인 이상 견적 — 견적 대상을 소기업·소상공인으로 제한",p:["2천만 원 초과 1억 원 이하 물품·용역의 2인 이상 견적 수의계약은 소기업·소상공인과 하는 계약이에요. 선택한 업체가 중기업·대기업이면 수의계약 대상이 아니에요.","지정정보처리장치에 소기업·소상공인 대상 견적 안내공고(3일 이상)를 내고, 낙찰하한율은 88%예요."+(has("y")?" 청년창업기업 특례는 5천만 원 이하까지예요.":"")],law:A25+N.k+" · 2026 계약실무편람(소기업·소상공인 확인)"});
+    }
+    if(amt>2e7){
+      if(amt<1e8) out.push({t:"bid",h:"입찰 · 소기업·소상공인 제한경쟁",p:["1억 원 미만 물품·용역은 소기업·소상공인 간 제한경쟁입찰로 할 수 있어요(중소기업자 우선조달). 입찰공고는 7~40일이에요."],law:"판로지원법 시행령 제2조의2①1호 · 2026 계약실무편람"});
+      else out.push({t:"bid",h:"입찰 · 중소기업자간 제한경쟁 또는 일반경쟁",p:["1억 원 이상 재정경제부 고시금액 미만이면 중소기업자간 제한경쟁입찰(소기업·소상공인·중기업), 고시금액 이상이면 일반경쟁입찰이에요. 고시금액은 그해 고시로 확인해요.","중소기업자간 경쟁제품은 직접생산 확인을 받은 중소기업만 참여할 수 있어요."],law:"판로지원법 제4조·시행령 제2조의2 · 지방계약법 제9조 · 2026 계약실무편람"});
+    }
+  } else {
+    var L=CKM_LIM[kind];
+    if(amt<=2e7||(amt<=5e7&&sp)) out.push({t:"ok",h:"수의계약 · 1인 견적 가능",p:[amt<=2e7?"추정가격 2천만 원 이하 공사는 1인 견적으로 수의계약할 수 있어요.":"청년창업기업·여성기업·장애인기업·사회적기업 등과는 공사도 추정가격 5천만 원 이하까지 1인 견적이 가능해요."+(has("s")?" 사회적기업 등은 취약계층 고용비율 30% 이상일 때만이에요.":"")].concat(priv&&amt>2e7?["사립: 국가계약법 시행령 제30조①2호 단서가 공사에도 그대로 적용되는지 법인 규정·교육청에 확인하세요."]:[]),law:(priv?"국가계약법 시행령 제30조①2호":"지방계약법 시행령 제30조①2호")+" · 2026 계약실무편람(공사)"});
+    if(amt<=L&&amt>2e7) out.push({t:"mid",h:"수의계약 · 2인 이상 견적 ("+CKM_LN[kind]+" 이하)",p:["지정정보처리장치에 수의계약 안내공고를 3일 이상(공휴일·토요일 제외) 내고, 물량내역서를 함께 올려요. 낙찰하한율은 예정가격의 89.745%예요."],law:(priv?"국가계약법 시행령 제26조①5호가1)":"지방계약법 시행령 제25조①5호가")+" · "+A30.replace("①","②")});
+    if(amt>L) out.push({t:"bid",h:"입찰",p:[(kind==="c1"?"종합공사는 추정가격 150억 원 미만":"추정가격 10억 원 미만")+"이면 지역제한(경상남도) 제한경쟁입찰, 그 이상은 일반경쟁입찰이에요. 공고는 7~40일이고 적격심사로 낙찰자를 정해요."],law:"2026 계약실무편람(공사 계약방법)"});
+  }
+  return out;
+}
+function ckMethodTool(){
+  var de=el("details","ckmth"), su=el("summary",null,"계약방법 찾기 — 금액과 업체를 고르면 맞는 계약방법을 보여줘요"); de.appendChild(su);
+  var box=el("div","ckmbox"), st=[], kind="g", priv=false;
+  function radio(name,opts,cur,fn){ var w=el("div","ckmrow"); opts.forEach(function(o){ var b=el("button","pill",o[1]); b.type="button"; b.setAttribute("aria-pressed",o[0]===cur()?"true":"false"); b.onclick=function(){ fn(o[0]); w.querySelectorAll(".pill").forEach(function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); }); draw(); }; w.appendChild(b); }); return w; }
+  box.appendChild(el("div","ckml","학교"));
+  box.appendChild(radio("sch",[["pub","공립 (지방계약법)"],["priv","사립 (국가계약법 준용)"]],function(){ return priv?"priv":"pub"; },function(v){ priv=v==="priv"; }));
+  box.appendChild(el("div","ckml","계약 종류"));
+  box.appendChild(radio("kind",CKM_KIND,function(){ return kind; },function(v){ kind=v; }));
+  box.appendChild(el("div","ckml","추정가격 (부가가치세 뺀 금액)"));
+  var aw=el("div","ckmrow"), ai=el("input","ckmamt"); ai.type="text"; ai.inputMode="numeric"; ai.placeholder="예: 3500만, 15000000"; ai.setAttribute("aria-label","추정가격");
+  var ah=el("span","ckmah",""); aw.appendChild(ai); aw.appendChild(ah); box.appendChild(aw);
+  ai.oninput=draw;
+  box.appendChild(el("div","ckml","계약상대 (해당하는 것 모두, 없으면 비워 두세요)"));
+  var sw=el("div","ckmst");
+  CKM_ST.forEach(function(s){ var lb=el("label","ckmchk"), cb=el("input"); cb.type="checkbox";
+    cb.onchange=function(){ var i=st.indexOf(s[0]); if(cb.checked&&i<0) st.push(s[0]); if(!cb.checked&&i>=0) st.splice(i,1); draw(); };
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(" "+s[1])); if(s[2]) lb.appendChild(el("small",null," "+s[2])); sw.appendChild(lb); });
+  box.appendChild(sw);
+  var res=el("div","ckmres"); box.appendChild(res);
+  function amount(){ var v=ai.value.replace(/[,\s원]/g,""), m=v.match(/^(\d+(?:\.\d+)?)(억|천만|백만|만)?(?:(\d+)(천만|백만|만))?$/);
+    if(!m) return NaN; var u={억:1e8,천만:1e7,백만:1e6,만:1e4}, n=parseFloat(m[1])*(m[2]?u[m[2]]:1); if(m[3]) n+=parseFloat(m[3])*u[m[4]]; return Math.round(n); }
+  function draw(){
+    res.textContent=""; var a=amount();
+    ah.textContent=isNaN(a)?(ai.value?"금액을 숫자로 적어 주세요":""):"= "+ckWon(a);
+    if(isNaN(a)){ res.appendChild(el("p","note","추정가격을 넣으면 결과가 나와요.")); return; }
+    var r=ckMethod(kind,a,st,priv);
+    r.forEach(function(x,i){ var c=el("div","ckmcard "+x.t); c.appendChild(el("b",null,(i===0?"① ":i===1?"② ":"③ ")+x.h));
+      x.p.forEach(function(p){ c.appendChild(el("p",null,p)); }); c.appendChild(el("small",null,"근거: "+x.law)); res.appendChild(c); });
+    res.appendChild(el("p","note","같은 목적의 물품·공사를 나눠 금액 기준을 피하면 안 돼요. 금액 기준은 2026년 현행 시행령·경남 2026 계약실무편람 기준이니, 그해 개정과 공고문 기준을 꼭 확인하세요."+(priv?" 사립은 낙찰하한율·견적공고 방식이 국가 계약예규(나라장터)를 따라 다를 수 있어요.":"")));
+  }
+  draw(); de.appendChild(box); return de;
 }
 
 })();

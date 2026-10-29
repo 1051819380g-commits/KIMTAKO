@@ -525,8 +525,14 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 .ckmout{border:1.5px dashed var(--line,#ccd);border-radius:10px;padding:8px 10px}
 .ckmout.over{border-color:var(--accent);background:var(--accent-soft)}
 /* 월간 달력 내 일정 */
-.ckmadd{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
-.ckmadd input:not([type=date]){flex:1 1 220px;min-width:0}
+.ckmadd{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:flex-end;margin:0 0 12px;padding:12px 14px;border:1px solid var(--accent-line,var(--line));border-radius:10px;background:var(--accent-soft)}
+.ckmadd[hidden]{display:none}
+.ckmaddh{flex:1 0 100%;font-size:13.5px;color:var(--accent-ink)}
+.ckmadd label{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+.ckmadd label.grow{flex:1 1 240px;min-width:0}
+.ckmadd input{width:100%;min-width:0;box-sizing:border-box;font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);color:var(--ink)}
+.ckmadd input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.ckmadd .btn,.ckmadd .pill{height:34px}
 .ckme.my{border-color:#d9b44a;background:#fdf6e0}.ckme.my .tag{color:#8a6500}
 @media (prefers-color-scheme:dark){ .ckme.my{background:#3a3220;border-color:#8a6d22}.ckme.my .tag{color:#e8c56a} }
 
@@ -1742,8 +1748,11 @@ function ckMon(){
   var af=el("form","ckmadd"); af.hidden=true;
   var ai=el("input"); ai.type="date"; ai.required=true; ai.value=today.slice(0,7)===ym?today:ym+"-01"; ai.setAttribute("aria-label","일정 날짜");
   var at=el("input"); at.required=true; at.placeholder="일정 내용 (예: 교육지원청 회의)"; at.setAttribute("aria-label","일정 내용");
-  var ok=el("button","pill","추가"); ok.type="submit";
-  af.appendChild(ai); af.appendChild(at); af.appendChild(ok);
+  var ok=el("button","btn","추가"); ok.type="submit";
+  var no=el("button","pill","취소"); no.type="button"; no.onclick=function(){ af.hidden=true; };
+  af.appendChild(el("b","ckmaddh","내 일정 추가"));
+  var l1=el("label",null,"날짜"), l2=el("label","grow","내용"); l1.appendChild(ai); l2.appendChild(at);
+  af.appendChild(l1); af.appendChild(l2); af.appendChild(ok); af.appendChild(no);
   af.onsubmit=function(e){ e.preventDefault(); if(!at.value.trim()) return; (CK.ev=CK.ev||[]).push({d:ai.value,t:at.value.trim()}); CK.mon=ai.value.slice(0,7); ckSave(); ckMon(); };
   ad.onclick=function(){ af.hidden=!af.hidden; if(!af.hidden) at.focus(); };
   d.appendChild(af);

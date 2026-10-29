@@ -524,6 +524,11 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 .ckmd.over{outline:2px dashed var(--accent);outline-offset:-2px;background:var(--accent-soft)}
 .ckmout{border:1.5px dashed var(--line,#ccd);border-radius:10px;padding:8px 10px}
 .ckmout.over{border-color:var(--accent);background:var(--accent-soft)}
+/* 월간 달력 내 일정 */
+.ckmadd{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}
+.ckmadd input:not([type=date]){flex:1 1 220px;min-width:0}
+.ckme.my{border-color:#d9b44a;background:#fdf6e0}.ckme.my .tag{color:#8a6500}
+@media (prefers-color-scheme:dark){ .ckme.my{background:#3a3220;border-color:#8a6d22}.ckme.my .tag{color:#e8c56a} }
 
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
@@ -1704,17 +1709,17 @@ function ckGoStep(cs,k){ CK.cur=cs.id; CK.mode="flow"; ckSave(); ckRender(); win
 /* 월간 달력 끌어서 놓기: 놓은 날을 그 단계 예정일(★ 기준일이면 cs.ab)로 저장 → 앞뒤 기한은 ckPlan이 다시 계산 */
 var CKDRAG=null;
 /* out=1: 달력에 든 칩 — 날짜 칸이 아닌 곳(달력 밖)에 놓으면 달력에서 뺀다. 놓기가 처리되면 CKDRAG가 비워지므로 dragend에 남아 있으면 밖에 놓은 것 */
-function ckDragable(b,o,out){ if(!o.cs||o.k==="done") return; b.draggable=true; b.classList.add("drag");
+function ckDragable(b,o,out){ if(!(o.cs||o.e)||o.k==="done") return; b.draggable=true; b.classList.add("drag");
   b.ondragstart=function(e){ CKDRAG=o; e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",o.t); };
   b.ondragend=function(){ var o2=CKDRAG; CKDRAG=null; if(o2&&out){ ckUnplan(o2); ckSave(); ckMon(); } }; }
-function ckUnplan(o){ var cs=o.cs;   /* 직접 정한 날짜는 지우고, 그래도 자동 예정이 남으면 '뺌'(cs.n) */
+function ckUnplan(o){ if(o.e){ if(confirm("'"+o.e.t+"' 일정을 지울까요?")) CK.ev=CK.ev.filter(function(x){ return x!==o.e; }); return; } var cs=o.cs;   /* 직접 정한 날짜는 지우고, 그래도 자동 예정이 남으면 '뺌'(cs.n) */
   if(o.star){ delete cs.ab; return; }
   if(cs.p) delete cs.p[o.i]; if(ckPlan(cs,o.i)){ cs.n=cs.n||{}; cs.n[o.i]=1; } }
 function ckDropDay(c,ds){
   c.ondragover=function(e){ if(!CKDRAG) return; e.preventDefault(); c.classList.add("over"); };
   c.ondragleave=function(){ c.classList.remove("over"); };
   c.ondrop=function(e){ e.preventDefault(); var o=CKDRAG; CKDRAG=null; if(!o) return;
-    if(o.star) o.cs.ab=ds; else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; }
+    if(o.e) o.e.d=ds; else if(o.star) o.cs.ab=ds; else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; }
     ckSave(); ckMon(); }; }
 function ckMon(){
   var d=$("#ckdetail"); d.textContent="";
@@ -1730,8 +1735,18 @@ function ckMon(){
   [["◀ 지난달",-1],["이번 달",0],["다음 달 ▶",1]].forEach(function(b){ var x=el("button","pill",b[0]); x.type="button"; x.onclick=function(){ if(b[1]) mv(b[1]); else { CK.mon=""; ckSave(); ckMon(); } }; nav.appendChild(x); });
   nav.insertBefore(el("b","ckmonym",Y+"년 "+M+"월"),nav.children[1]);
   var lb=el("label","ckmonopt"), cb=el("input"); cb.type="checkbox"; cb.checked=withCal; cb.onchange=function(){ CK.monCal=cb.checked; ckSave(); ckMon(); };
-  lb.appendChild(cb); lb.appendChild(document.createTextNode(" 연간 업무달력 일정도 보기")); nav.appendChild(lb);
+  lb.appendChild(cb); lb.appendChild(document.createTextNode(" 연간 업무달력 일정도 보기"));
+  var ad=el("button","pill","+ 일정 추가"); ad.type="button"; nav.appendChild(ad); nav.appendChild(lb);
   d.appendChild(nav);
+  /* 내 일정: 업무 건과 상관없는 일정(CK.ev [{d,t}]) — 끌어서 옮기고, 달력 밖에 놓으면 지우고, 누르면 고친다 */
+  var af=el("form","ckmadd"); af.hidden=true;
+  var ai=el("input"); ai.type="date"; ai.required=true; ai.value=today.slice(0,7)===ym?today:ym+"-01"; ai.setAttribute("aria-label","일정 날짜");
+  var at=el("input"); at.required=true; at.placeholder="일정 내용 (예: 교육지원청 회의)"; at.setAttribute("aria-label","일정 내용");
+  var ok=el("button","pill","추가"); ok.type="submit";
+  af.appendChild(ai); af.appendChild(at); af.appendChild(ok);
+  af.onsubmit=function(e){ e.preventDefault(); if(!at.value.trim()) return; (CK.ev=CK.ev||[]).push({d:ai.value,t:at.value.trim()}); CK.mon=ai.value.slice(0,7); ckSave(); ckMon(); };
+  ad.onclick=function(){ af.hidden=!af.hidden; if(!af.hidden) at.focus(); };
+  d.appendChild(af);
   /* 이 달의 일 모으기 */
   var ev={}, add=function(day,o){ (ev[day]=ev[day]||[]).push(o); }, pre=ym+"-", late=0, nplan=0, ndone=0, inmon=[], used=[];   /* used: 내 건이 자동으로 가져간 연간 일정(같은 달에 두 번 안 보이게) */
   CK.cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t) return;
@@ -1742,6 +1757,7 @@ function ckMon(){
         var lt=(pq.mo?ckDay(+pq.d.slice(0,4),+pq.d.slice(5,7),31):pq.d)<today; if(lt) late++;
         if(pq.d.indexOf(pre)===0){ var o={k:lt?"late":"plan",cs:cs,i:k,t:s.n,auto:pq.auto,rt:pq.rel?ckRelTxt(t,pq.rel):""}; if(pq.x) used.push(pq.x);
           if(pq.mo) inmon.push(o); else add(+pq.d.slice(8),o); nplan++; } } }); });
+  (CK.ev||[]).forEach(function(e){ if(e.d.indexOf(pre)===0) add(+e.d.slice(8),{k:"my",e:e,t:e.t}); });
   if(withCal){
     var gsel=CK.cgrp||"", off=CK.coff||[], gcats=CKGROUPS.filter(function(g){ return !gsel||g[0]===gsel; }).reduce(function(a,g){ return a.concat(g[1]); },[]);
     CKCAL.forEach(function(x){ if(x.d==null||gcats.indexOf(x.cat)<0||off.indexOf(x.cat)>=0||used.indexOf(x)>=0) return;
@@ -1752,10 +1768,13 @@ function ckMon(){
   if(late) sum.appendChild(el("span","s late","예정일 지남(안 끝난 단계) "+late));
   d.appendChild(sum);
   function chip(o){ var b=el("button","ckme "+o.k+(o.auto?" auto":"")); b.type="button";
-    if(o.k!=="cal") b.appendChild(el("span","tag",{late:"지남",plan:o.star?"★":o.auto?"자동":"예정",done:"✓"}[o.k]));   /* 연간 일정은 회색 칩만으로 구분 */
+    if(o.k!=="cal") b.appendChild(el("span","tag",{late:"지남",plan:o.star?"★":o.auto?"자동":"예정",done:"✓",my:"내 일정"}[o.k]));   /* 연간 일정은 회색 칩만으로 구분 */
     b.appendChild(document.createTextNode(o.cs?o.cs.name+" · "+o.t:o.t));
-    b.title=o.cs?(CKBY[o.cs.t].title+" › "+(o.i+1)+"단계 "+o.t+(o.rt?" (자동: "+o.rt+")":o.auto?" (연간 업무달력에서 자동으로 잡은 예정)":"")):(o.x.cat+" · "+(o.x.w||o.x.dl));
-    b.onclick=o.cs?function(){ ckGoStep(o.cs,o.i); }:function(){ ckCalGo(o.x); }; ckDragable(b,o,1); return b; }
+    b.title=o.cs?(CKBY[o.cs.t].title+" › "+(o.i+1)+"단계 "+o.t+(o.rt?" (자동: "+o.rt+")":o.auto?" (연간 업무달력에서 자동으로 잡은 예정)":"")):o.x?(o.x.cat+" · "+(o.x.w||o.x.dl)):"";
+    if(o.e){ b.title="누르면 내용을 고쳐요 · 끌어서 날짜를 옮기고, 달력 밖에 놓으면 지워요";
+      b.onclick=function(){ var v=prompt("일정 내용 (비우면 지워요)",o.e.t); if(v===null) return; if(v.trim()) o.e.t=v.trim(); else CK.ev=CK.ev.filter(function(x){ return x!==o.e; }); ckSave(); ckMon(); }; }
+    else b.onclick=o.cs?function(){ ckGoStep(o.cs,o.i); }:function(){ ckCalGo(o.x); };
+    ckDragable(b,o,1); return b; }
   if(inmon.length){ var mb=el("section","ckmnext"); mb.appendChild(el("h3",null,M+"월 중 할 일 (날짜는 학교가 정함, "+inmon.length+")")); inmon.forEach(function(o){ mb.appendChild(chip(o)); }); d.appendChild(mb); }
   /* 달력 칸 (일요일 시작) */
   var grid=el("div","ckmgrid");
@@ -1766,7 +1785,7 @@ function ckMon(){
     var ds=pre+("0"+day).slice(-2), wd=(first+day-1)%7, its=ev[day]||[];
     var c=el("div","ckmd"+(ds===today?" today":"")+(its.length?"":" empty")+(wd===0?" sun":wd===6?" sat":""));
     var dn=el("div","ckmn",day+"일"); dn.appendChild(el("span","w"," ("+"일월화수목금토"[wd]+")")); c.appendChild(dn);   /* 요일은 휴대폰 목록 보기에서만 */
-    its.sort(function(a,b){ return {late:0,plan:1,done:2,cal:3}[a.k]-{late:0,plan:1,done:2,cal:3}[b.k]; });
+    var od={late:0,my:1,plan:2,done:3,cal:4}; its.sort(function(a,b){ return od[a.k]-od[b.k]; });
     its.forEach(function(o){ c.appendChild(chip(o)); });
     ckDropDay(c,ds); grid.appendChild(c);
   }

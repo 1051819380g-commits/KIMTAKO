@@ -936,7 +936,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 
 /* 개별 앱: 체크리스트 화면만 */
 #v-chk{display:block}
-.cknotice{max-width:1440px;margin:12px auto 0;padding:8px 20px;font-size:13px;color:var(--ink-2);background:var(--warn-bg,#F6EEDA);border-radius:8px;box-sizing:border-box}
+.cknotice[hidden]{display:none}
+.cknotice{display:flex;align-items:center;gap:8px;max-width:1440px;margin:12px auto 0;padding:8px 10px 8px 20px;font-size:13px;color:var(--ink-2);background:var(--warn-bg,#F6EEDA);border-radius:8px;box-sizing:border-box}
 .ckfoot{max-width:1440px;margin:18px auto 30px;padding:0 20px;color:var(--muted);font-size:12.5px;line-height:1.7}
 </style>
 </head>
@@ -951,7 +952,11 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
   <div class="navwrap"><div id="ckcats" class="ckcats"></div></div>
 </header>
 <main>
-  <p class="cknotice">업무 참고용 자료예요. 날짜·기준은 2026학년도 원문 기준이니, 실제로 처리하기 전에 그해 공문과 원문을 꼭 확인하세요.</p>
+  <p class="cknotice" id="cknotice"><span style="flex:1">업무 참고용 자료예요. 날짜·기준은 2026학년도 원문 기준이니, 실제로 처리하기 전에 그해 공문과 원문을 꼭 확인하세요.</span><button type="button" aria-label="안내 닫기" title="닫기" style="border:0;background:none;font-size:18px;line-height:1;cursor:pointer;color:inherit;padding:2px 6px">×</button></p>
+  <script>/* 안내는 하루 한 번만: 그날 처음 열 때 보이고, 같은 날 다시 열면 숨김. × 로 바로 닫기 */
+  (function(){ var n=document.getElementById("cknotice"), d=new Date(), t=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(), k="kbg.notice";
+    try{ if(localStorage.getItem(k)===t) n.hidden=true; else localStorage.setItem(k,t); }catch(e){}
+    n.querySelector("button").onclick=function(){ n.hidden=true; }; })();</script>
   <section class="view on" id="v-chk" role="main"><div class="split"><div class="listpane ckside" id="cklist"></div><div class="detail" id="ckdetail"></div></div></section>
 </main>
 <div class="ckfoot">출처: 경상남도교육청 「학교행정 업무흐름도」(2026.3., 학교혁신과 학교업무 도움자료). 업무 참고용이며 법적 효력이 없습니다. 최종 판단은 원문과 관련 법령을 확인하세요. 체크·메모는 이 PC의 이 브라우저에만 저장됩니다.<br>제작. 창원남고등학교 윤준호 주무관</div>

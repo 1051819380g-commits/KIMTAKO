@@ -553,6 +553,11 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 .ckhitg>summary .ckhit{flex:1;border:0;background:none}
 .ckhitg>summary .cnt{font-size:11px;color:var(--accent-ink);white-space:nowrap}
 .ckhitg .ckhit.st{display:block;width:calc(100% - 16px);margin:0 8px 4px;font-size:12px;color:var(--accent-ink)}
+/* 첫째 줄(연간·월간 달력, 행정·교무) 단추는 크게 */
+.cktop>.ckc{font-size:18px;padding:10px 20px;gap:8px}
+.cktop>.ckc .n{font-size:14px}
+.cktop .cksearch input{font-size:15.5px;padding:10px 12px}
+@media (max-width:600px){.cktop>.ckc{font-size:16px;padding:8px 11px}}
 
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
@@ -1248,7 +1253,7 @@ function ckFlowItem(t){   /* 이 체크리스트의 원문(업무흐름도 탭 �
 /* 검색: 업무 이름·분야·단계 이름·시기·핵심 요약에서 찾는다(띄어 쓴 낱말은 모두 들어 있어야). 누르면 그 흐름도·단계로 */
 var CKQ="";
 function ckSearchBox(box,onUse){
-  var w=el("div","cksearch"), q=el("input"), res=el("div","ckres"); q.type="search"; q.placeholder="업무·단계 검색 (예: 하자, 추경, 정정)"; q.setAttribute("aria-label","업무·단계 검색"); q.value=CKQ;
+  var w=el("div","cksearch"), q=el("input"), res=el("div","ckres"); q.type="search"; q.placeholder="🔍 업무·단계 검색"; q.title="예: 하자, 추경, 정정"; q.setAttribute("aria-label","업무·단계 검색"); q.value=CKQ;
   function norm(x){ return (x||"").toLowerCase().replace(/\s+/g,""); }
   function run(){ CKQ=q.value; res.textContent=""; var ws=q.value.trim().toLowerCase().split(/\s+/).filter(Boolean).map(norm); if(!ws.length) return;
     var hit=function(h){ h=norm(h); return ws.every(function(x){ return h.indexOf(x)>=0; }); }, G=[];

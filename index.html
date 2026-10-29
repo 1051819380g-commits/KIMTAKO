@@ -1326,7 +1326,7 @@ function ckSide(){
   var box=$("#cklist"); box.textContent="";
   box.appendChild(el("h3",null,"업무 고르기 → 흐름도 보기"));
   var f=el("div","cknew"), sel=el("select"), nm=el("input"), go=el("button","btn","시작");
-  sel.setAttribute("aria-label","업무 고르기"); nm.placeholder="건 이름 (예: 2027 졸업앨범)"; nm.setAttribute("aria-label","건 이름"); go.type="button";
+  sel.setAttribute("aria-label","업무 고르기"); nm.placeholder="업무 이름 (예: 2027 졸업앨범)"; nm.setAttribute("aria-label","업무 이름"); go.type="button";
   var gs=Object.keys(CKG); gs.sort(function(a,b){ return (a===grp?-1:0)-(b===grp?-1:0); });   /* 지금 묶음을 맨 위로 */
   gs.forEach(function(g){
     var L=CKL.filter(function(c){return c.g===g}); if(!L.length) return;
@@ -1352,10 +1352,10 @@ function ckSide(){
     box.appendChild(b);
   }
   box.appendChild(el("h3",null,"진행 중 ("+open.length+")"));
-  if(!open.length) box.appendChild(el("div","empty","아직 시작한 건이 없습니다."));
+  if(!open.length) box.appendChild(el("div","empty","아직 시작한 업무가 없습니다."));
   open.forEach(caseBtn);
-  if(shut.length){ box.appendChild(el("h3",null,"끝난 건 ("+shut.length+")"));
-    var ex=el("div","ckexp"), xb=el("button","pill","끝난 건 엑셀로 받기"); xb.type="button"; xb.onclick=function(){ ckExport(shut,"끝난 업무 기록"); }; ex.appendChild(xb);
+  if(shut.length){ box.appendChild(el("h3",null,"끝난 업무 ("+shut.length+")"));
+    var ex=el("div","ckexp"), xb=el("button","pill","끝난 업무 엑셀로 받기"); xb.type="button"; xb.onclick=function(){ ckExport(shut,"끝난 업무 기록"); }; ex.appendChild(xb);
     box.appendChild(ex); shut.forEach(caseBtn); }
 }
 /* 담당별 흐름도: 칸 = 담당(위 이름표), 아래로 갈수록 나중. 같은 줄 = 동시에 진행하는 일. 상자를 누르면 그 단계 설명으로 */
@@ -1411,7 +1411,7 @@ function ckMain(){
   var n=cs?ckCount(cs):null;
   d.appendChild(el("div","eyebrow",(t.cat||CKG[t.g])+(cs?" · "+t.title+" · 시작 "+cs.at+(cs.end?" · 끝남 "+cs.end:""):"")));
   if(cs){
-    var nm=el("input","ckname"); nm.value=cs.name; nm.setAttribute("aria-label","건 이름");
+    var nm=el("input","ckname"); nm.value=cs.name; nm.setAttribute("aria-label","업무 이름");
     nm.onchange=function(){ cs.name=nm.value.trim()||t.title; ckSave(); ckSide(); };
     d.appendChild(nm);
     var bar=el("div","ckbar"), bi=el("i"); bi.style.width=(n.n?Math.round(n.d/n.n*100):0)+"%"; bar.appendChild(bi); d.appendChild(bar);
@@ -1423,9 +1423,9 @@ function ckMain(){
   var fi=ckFlowItem(t);
   if(document.getElementById("gq")) tb("관련 자료 검색",function(){ var q=document.getElementById("gq"); q.value=t.title.replace(/\s*\(.*?\)\s*/g," ").trim(); q.oninput(); });
   if(cs){
-    tb(cs.end?"다시 열기":"끝난 건으로",function(){ cs.end=cs.end?"":ckToday(); ckSave(); ckRender(); });
+    tb(cs.end?"다시 열기":"끝난 업무로",function(){ cs.end=cs.end?"":ckToday(); ckSave(); ckRender(); });
     tb("엑셀로 받기",function(){ ckExport([cs],cs.name); });
-    tb("삭제",function(){ if(!confirm("'"+cs.name+"' 건을 지울까요? 체크와 메모가 모두 지워집니다.")) return;
+    tb("삭제",function(){ if(!confirm("'"+cs.name+"' 업무를 지울까요? 체크와 메모가 모두 지워집니다.")) return;
       CK.cases=CK.cases.filter(function(c){return c!==cs}); CK.cur=""; ckSave(); ckRender(); });
   }
   d.appendChild(tl);
@@ -1709,7 +1709,7 @@ function ckX(s){
 }
 /* 건 → 단계 한 줄씩 */
 function ckRows(cases){
-  var rows=[["단계","건 이름","업무","분야","시작일","할 일","시기","예정일","완료일","메모"]];   /* 언제 끝났는지는 마지막 단계 완료일로 본다 */
+  var rows=[["단계","업무 이름","흐름도","분야","시작일","할 일","시기","예정일","완료일","메모"]];   /* 언제 끝났는지는 마지막 단계 완료일로 본다 */
   cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t) return;
     t.steps.forEach(function(s,k){ var mo=(cs.m||{})[k]||"", c=cs.ct;
       if(c&&c.k===k) mo=(mo?mo+" / ":"")+"[계약방법 확정 "+c.at+"] "+c.h+" · 추정가격 "+ckWon(c.amt)+" · 계약상대 "+ckMSt(c.st)+" · 근거 "+c.law;
@@ -1818,7 +1818,7 @@ function ckMethodTool(cs,k){
     res.textContent=""; var a=amount();
     ah.textContent=isNaN(a)?(ai.value?"금액을 숫자로 적어 주세요":""):"= "+ckWon(a);
     if(cs&&cs.ct){ var ok=el("div","ckmok"), c0=cs.ct;
-      ok.appendChild(el("b",null,"이 건의 확정 계약방법 ("+c0.at+")"));
+      ok.appendChild(el("b",null,"이 업무의 확정 계약방법 ("+c0.at+")"));
       ok.appendChild(el("p",null,c0.h+" · "+(c0.priv?"사립":"공립")+" · "+ckMKind(c0.kind)+" · 추정가격 "+ckWon(c0.amt)+" · 계약상대 "+ckMSt(c0.st)));
       ok.appendChild(el("small",null,"근거: "+c0.law));
       var un=el("button","pill","확정 취소"); un.type="button"; un.onclick=function(){ delete cs.ct; ckSave(); head(); draw(); }; ok.appendChild(un);
@@ -1863,8 +1863,8 @@ function ckMon(){
   var withCal=CK.monCal!==false;
   d.appendChild(el("h2",null,"월간 달력"));
   if(withCal) ckCalFilter(d,ckMon);   /* 연간 업무달력과 같은 자리·같은 분야 단추 — 설명·달 넘기기는 그 아래 */
-  d.appendChild(el("p","note","내가 진행 중인 건의 단계별 예정일·완료일과 연간 업무달력의 날짜 일정을 한 달로 모아 봐요. 연간 업무달력에 날짜가 있는 단계는 건을 시작하면 자동으로 예정이 잡히고(자동), 건의 단계마다 예정일을 직접 고칠 수 있어요."));
-  d.appendChild(el("p","note ckdraghint","내 건의 일정(예정·자동·이 달 중·다음)은 끌어서 원하는 날에 놓으면 그 날짜로 정해지고, 앞뒤로 기한이 있는 단계도 따라 옮겨져요. 달력 밖으로 끌어 놓으면 빠지고, 뺀 일정은 맨 아래에 남아 다시 끌어 넣을 수 있어요."));
+  d.appendChild(el("p","note","내가 진행 중인 업무의 단계별 예정일·완료일과 연간 업무달력의 날짜 일정을 한 달로 모아 봐요. 연간 업무달력에 날짜가 있는 단계는 업무를 시작하면 자동으로 예정이 잡히고(자동), 단계마다 예정일을 직접 고칠 수 있어요."));
+  d.appendChild(el("p","note ckdraghint","내 업무 일정(예정·자동·이 달 중·다음)은 끌어서 원하는 날에 놓으면 그 날짜로 정해지고, 앞뒤로 기한이 있는 단계도 따라 옮겨져요. 달력 밖으로 끌어 놓으면 빠지고, 뺀 일정은 맨 아래에 남아 다시 끌어 넣을 수 있어요."));
   /* 달 넘기기 */
   var nav=el("div","ckmonnav");
   function mv(n){ var t=new Date(Y,M-1+n,1); CK.mon=ckYmd(t).slice(0,7); ckSave(); ckMon(); }

@@ -1620,7 +1620,7 @@ function ckCats(){
   CKGROUPS.forEach(function(g){   /* 2번 행정 · 3번 교무 */
     var n=CKL.filter(function(c){ return g[1].some(function(cat){ return ckIn(c,cat); }); }).length; if(!n) return;
     var b=el("button","ckc ckgbtn"); b.type="button"; b.dataset.grp=g[0]; b.setAttribute("aria-haspopup","true"); b.setAttribute("aria-expanded","false");
-    b.appendChild(document.createTextNode(g[0])); b.appendChild(el("span","n",String(n)));
+    b.appendChild(document.createTextNode(g[0]+"업무")); b.appendChild(el("span","n",String(n)));
     b.onclick=function(){ if(oG!==g[0]||!drop.classList.contains("open")) openGrp(g[0],b); };   /* 누르면 리본이 열려 그대로 남는다(연간 달력을 누를 때만 닫힘) */
     top.appendChild(b);
   });

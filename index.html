@@ -1114,7 +1114,7 @@ CKL.forEach(function(c){ CKBY[c.id]=c; });
 var CKG={acc:"회계",con:"계약",pay:"급여",hr:"인사",hw:"학운위",ad:"행정"};
 var CKGO={hk:"학운위 문서 작성",ct:"수의계약 서류 작성",flow:"계약 흐름도 보기"};
 function ckLoad(){ try{ var o=JSON.parse(localStorage.getItem(CKKEY)||"null"); if(o&&o.cases) return o; }catch(e){} return {cases:[],cur:""}; }
-var CK=ckLoad(); CK.mode="cal";   /* 열면 늘 연간 업무달력부터 */
+var CK=ckLoad(); CK.mode="cal"; CK.cgrp="";   /* 전체·행정·교무 단추는 없앰(줄마다 모두 끄기·켜기로 충분) — 예전에 고른 값은 비운다 */   /* 열면 늘 연간 업무달력부터 */
 function ckSave(){ try{ localStorage.setItem(CKKEY,JSON.stringify(CK)); }catch(e){} }
 function ckToday(){ var d=new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
 function ckCase(id){ for(var k=0;k<CK.cases.length;k++) if(CK.cases[k].id===id) return CK.cases[k]; return null; }
@@ -1500,12 +1500,6 @@ function ckCalFold(cls,key,head,n,fill){
 /* 연간 업무달력 거르기 단추(행정·교무, 분야 켜고 끄기) — 연간·월간 달력이 같이 쓴다(CK.cgrp·CK.coff 공유) */
 function ckCalFilter(d,redraw){
   var gsel=CK.cgrp||"", off=CK.coff||[];
-  var gr=el("div","ckpick ckcalgrp");
-  [["","전체"]].concat(CKGROUPS.map(function(g){ return [g[0],g[0]]; })).forEach(function(g){
-    var n=CKCAL.filter(function(x){ return !g[0]||ckGrpOf(x.cat)===g[0]; }).length; if(!n) return;
-    var b=el("button","pill",g[1]); b.type="button"; b.appendChild(el("span","n"," "+n)); b.setAttribute("aria-pressed",g[0]===gsel?"true":"false");
-    b.onclick=function(){ CK.cgrp=g[0]; ckSave(); redraw(); }; gr.appendChild(b); });
-  d.appendChild(gr);
   /* 분야 단추는 행정 줄·교무 줄로 나눈다(고른 쪽 줄만, 전체면 두 줄) */
   CKGROUPS.forEach(function(g){
     if(gsel&&g[0]!==gsel) return;

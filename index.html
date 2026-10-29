@@ -446,7 +446,7 @@ footer details summary{cursor:pointer;color:var(--ink-2);font-weight:500}
 .ckcalcat{position:relative;margin:0 0 8px;padding-left:3.4em}
 .ckcalrowh{position:absolute;left:0;top:5px;font-size:12px;font-weight:700;color:var(--muted)}
 .ckcaltop{margin-top:14px}.ckcalgrp .n{font-size:11px;color:var(--muted)}
-.ckcalgrp .pill[aria-pressed="true"],:root .ckcalgrp .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
+.ckcalgrp .pill[aria-pressed="true"],:root:root .ckcalgrp .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
 .ckcalcat .pill.ckcg,:root .ckcalcat .pill.ckcg[aria-pressed="true"]{font-size:12.5px;padding:3px 10px;line-height:1.5;cursor:pointer;background:var(--cgbg);border-color:var(--cgb);color:var(--cgfg);font-weight:700}
 :root .ckcalcat .pill.offc{--cgbg:transparent;--cgfg:var(--muted);--cgb:var(--line);text-decoration:line-through}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ckcg{--cgbg:rgba(255,255,255,.06);--cgb:rgba(255,255,255,.14)}
@@ -477,7 +477,7 @@ details.ckmth>summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(
 .ckmbox{padding:4px 12px 12px;background:var(--surface);border-radius:0 0 10px 10px}
 .ckml{font-size:12px;font-weight:700;color:var(--muted);margin:10px 0 4px}
 .ckmrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.ckmrow .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
+:root:root .ckmbox .ckmrow .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}   /* 길잡이 공통 .pill 눌림(흰 글자)보다 앞서게 */
 .ckmamt{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line-strong);border-radius:8px;width:200px;background:var(--surface);color:var(--ink)}
 .ckmah{font-size:13px;color:var(--accent-ink);font-weight:700}
 .ckmst{display:grid;gap:4px}
@@ -486,6 +486,11 @@ details.ckmth>summary{cursor:pointer;padding:8px 12px;font-weight:700;color:var(
 .ckmcard{border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:8px;padding:8px 12px;background:var(--surface-2)}
 .ckmcard.ok{border-left-color:#16a34a}.ckmcard.mid{border-left-color:#d97706}.ckmcard.bid{border-left-color:#6366f1}
 .ckmcard b{display:block;font-size:14px;margin-bottom:4px}.ckmcard p{margin:2px 0;font-size:13px}.ckmcard small{color:var(--muted);font-size:11.5px}
+details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>summary{color:#166534}
+.ckmok{border:1px solid #86efac;background:#ecfdf5;border-radius:8px;padding:8px 12px}.ckmok b{display:block;color:#166534}.ckmok p{margin:4px 0;font-size:13px}.ckmok small{display:block;color:var(--muted);margin-bottom:6px}
+.ckmfix{margin-top:6px;font-size:12.5px;padding:4px 12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) details.ckmth.fixed,:root:not([data-theme="light"]) .ckmok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}:root:not([data-theme="light"]) details.ckmth.fixed>summary,:root:not([data-theme="light"]) .ckmok b{color:#86efac}}
+:root[data-theme="dark"] details.ckmth.fixed,:root[data-theme="dark"] .ckmok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}:root[data-theme="dark"] details.ckmth.fixed>summary,:root[data-theme="dark"] .ckmok b{color:#86efac}
 
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
@@ -1282,7 +1287,7 @@ function ckMain(){
       if(done) row.appendChild(el("span","ckdt",done));
     } else { var lb2=el("label",null,s.n); if(s.w) lb2.appendChild(el("span","ckw",s.w)); row.appendChild(lb2); }
     li.appendChild(row);
-    if(/계약방법 결정|수의계약 대상 판단|공고문 작성/.test(s.n)) li.appendChild(ckMethodTool());   /* 신규 담당자용 계약방법 찾기 */
+    if(/계약방법 결정|수의계약 대상 판단|공고문 작성/.test(s.n)) li.appendChild(ckMethodTool(cs,k));   /* 신규 담당자용 계약방법 찾기 */
     if(cs){
       var mm=el("input","ckmemo"); mm.placeholder="메모 (문서번호·날짜·업체 등)"; mm.value=(cs.m&&cs.m[k])||""; mm.setAttribute("aria-label",s.n+" 메모");
       mm.onchange=function(){ cs.m=cs.m||{}; if(mm.value.trim()) cs.m[k]=mm.value.trim(); else delete cs.m[k]; ckSave(); };
@@ -1508,7 +1513,9 @@ function ckX(s){
 function ckRows(cases){
   var rows=[["단계","건 이름","업무","분야","시작일","할 일","시기","완료일","메모"]];   /* 언제 끝났는지는 마지막 단계 완료일로 본다 */
   cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t) return;
-    t.steps.forEach(function(s,k){ rows.push([k+1,cs.name,t.title,t.cat||"",cs.at||"",s.n,s.w||"",(cs.d||{})[k]||"",(cs.m||{})[k]||""]); }); });
+    t.steps.forEach(function(s,k){ var mo=(cs.m||{})[k]||"", c=cs.ct;
+      if(c&&c.k===k) mo=(mo?mo+" / ":"")+"[계약방법 확정 "+c.at+"] "+c.h+" · 추정가격 "+ckWon(c.amt)+" · 계약상대 "+ckMSt(c.st)+" · 근거 "+c.law;
+      rows.push([k+1,cs.name,t.title,t.cat||"",cs.at||"",s.n,s.w||"",(cs.d||{})[k]||"",mo]); }); });
   return rows;
 }
 var CKX_HEAD='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
@@ -1564,7 +1571,8 @@ function ckMethod(kind,amt,st,priv){
     if(amt<=2e7){
       out.push({t:"ok",h:"수의계약 · 1인 견적 가능",p:["추정가격 2천만 원 이하 물품·용역은 어느 업체와도 1인 견적으로 수의계약할 수 있어요."+(amt<2e6?" 200만 원 미만이면 견적서도 생략할 수 있어요(신용카드 구매 포함).":""),"여러 곳 견적을 받으려면 2인 이상 견적 수의계약으로 해요(낙찰하한율 90%)."],law:A25+N.na+" · "+A30+"2호"});
     } else if(amt<=5e7&&sp){
-      out.push({t:"ok",h:"수의계약 · 1인 견적 가능 (5천만 원 이하 특례)",p:["청년창업기업·여성기업·장애인기업·사회적기업 등과는 추정가격 5천만 원 이하까지 1인 견적으로 수의계약할 수 있어요."+(has("s")?" 사회적기업 등은 취약계층 고용비율 30% 이상일 때만이에요.":"")],law:A30+"2호 단서"});
+      var wds=has("w")||has("d")||has("s");   /* 사립(국가계약법)은 청년창업기업이 ①2호 단서가 아니라 ①1호(제26조①5호가목7)) */
+      out.push({t:"ok",h:"수의계약 · 1인 견적 가능 (5천만 원 이하 특례)",p:["청년창업기업·여성기업·장애인기업·사회적기업 등과는 추정가격 5천만 원 이하까지 1인 견적으로 수의계약할 수 있어요."+(has("s")?" 사회적기업 등은 취약계층 고용비율 30% 이상일 때만이에요.":"")],law:priv?(wds?"국가계약법 시행령 제30조①2호 단서":"국가계약법 시행령 제30조①1호 · 제26조①5호가목7)"):A30+"2호 단서"});
     }
     if(amt>2e7&&amt<=1e8){
       var ok2=has("w")||has("d")||has("s")||has("k")||has("x")||(has("y")&&amt<=5e7);
@@ -1583,9 +1591,12 @@ function ckMethod(kind,amt,st,priv){
   }
   return out;
 }
-function ckMethodTool(){
-  var de=el("details","ckmth"), su=el("summary",null,"계약방법 찾기 — 금액과 업체를 고르면 맞는 계약방법을 보여줘요"); de.appendChild(su);
-  var box=el("div","ckmbox"), st=[], kind="g", priv=false;
+function ckMethodTool(cs,k){
+  var de=el("details","ckmth"), su=el("summary",null,""); de.appendChild(su);
+  var box=el("div","ckmbox"), st=[], kind="g", priv=false, sv=cs&&cs.ct;
+  if(sv){ st=sv.st.slice(); kind=sv.kind; priv=sv.priv; }   /* 확정해 둔 건이면 그때 고른 값으로 */
+  function head(){ var c=cs&&cs.ct; su.textContent=c?"계약방법 확정 ✓ "+c.h+" · "+ckWon(c.amt)+" ("+c.at+")":"계약방법 찾기 — 금액과 업체를 고르면 맞는 계약방법을 보여줘요"; de.classList.toggle("fixed",!!c); }
+  head();
   function radio(name,opts,cur,fn){ var w=el("div","ckmrow"); opts.forEach(function(o){ var b=el("button","pill",o[1]); b.type="button"; b.setAttribute("aria-pressed",o[0]===cur()?"true":"false"); b.onclick=function(){ fn(o[0]); w.querySelectorAll(".pill").forEach(function(x){ x.setAttribute("aria-pressed",x===b?"true":"false"); }); draw(); }; w.appendChild(b); }); return w; }
   box.appendChild(el("div","ckml","학교"));
   box.appendChild(radio("sch",[["pub","공립 (지방계약법)"],["priv","사립 (국가계약법 준용)"]],function(){ return priv?"priv":"pub"; },function(v){ priv=v==="priv"; }));
@@ -1594,10 +1605,11 @@ function ckMethodTool(){
   box.appendChild(el("div","ckml","추정가격 (부가가치세 뺀 금액)"));
   var aw=el("div","ckmrow"), ai=el("input","ckmamt"); ai.type="text"; ai.inputMode="numeric"; ai.placeholder="예: 3500만, 15000000"; ai.setAttribute("aria-label","추정가격");
   var ah=el("span","ckmah",""); aw.appendChild(ai); aw.appendChild(ah); box.appendChild(aw);
+  if(sv) ai.value=String(sv.amt);
   ai.oninput=draw;
   box.appendChild(el("div","ckml","계약상대 (해당하는 것 모두, 없으면 비워 두세요)"));
   var sw=el("div","ckmst");
-  CKM_ST.forEach(function(s){ var lb=el("label","ckmchk"), cb=el("input"); cb.type="checkbox";
+  CKM_ST.forEach(function(s){ var lb=el("label","ckmchk"), cb=el("input"); cb.type="checkbox"; cb.checked=st.indexOf(s[0])>=0;
     cb.onchange=function(){ var i=st.indexOf(s[0]); if(cb.checked&&i<0) st.push(s[0]); if(!cb.checked&&i>=0) st.splice(i,1); draw(); };
     lb.appendChild(cb); lb.appendChild(document.createTextNode(" "+s[1])); if(s[2]) lb.appendChild(el("small",null," "+s[2])); sw.appendChild(lb); });
   box.appendChild(sw);
@@ -1607,14 +1619,27 @@ function ckMethodTool(){
   function draw(){
     res.textContent=""; var a=amount();
     ah.textContent=isNaN(a)?(ai.value?"금액을 숫자로 적어 주세요":""):"= "+ckWon(a);
+    if(cs&&cs.ct){ var ok=el("div","ckmok"), c0=cs.ct;
+      ok.appendChild(el("b",null,"이 건의 확정 계약방법 ("+c0.at+")"));
+      ok.appendChild(el("p",null,c0.h+" · "+(c0.priv?"사립":"공립")+" · "+ckMKind(c0.kind)+" · 추정가격 "+ckWon(c0.amt)+" · 계약상대 "+ckMSt(c0.st)));
+      ok.appendChild(el("small",null,"근거: "+c0.law));
+      var un=el("button","pill","확정 취소"); un.type="button"; un.onclick=function(){ delete cs.ct; ckSave(); head(); draw(); }; ok.appendChild(un);
+      res.appendChild(ok); }
     if(isNaN(a)){ res.appendChild(el("p","note","추정가격을 넣으면 결과가 나와요.")); return; }
     var r=ckMethod(kind,a,st,priv);
     r.forEach(function(x,i){ var c=el("div","ckmcard "+x.t); c.appendChild(el("b",null,(i===0?"① ":i===1?"② ":"③ ")+x.h));
-      x.p.forEach(function(p){ c.appendChild(el("p",null,p)); }); c.appendChild(el("small",null,"근거: "+x.law)); res.appendChild(c); });
+      x.p.forEach(function(p){ c.appendChild(el("p",null,p)); }); c.appendChild(el("small",null,"근거: "+x.law));
+      if(cs){ var fx=el("button","btn ckmfix","이 방법으로 확정"); fx.type="button";
+        fx.onclick=function(){ cs.ct={k:k,priv:priv,kind:kind,amt:a,st:st.slice(),h:x.h,law:x.law,at:ckToday()}; ckSave(); head(); draw(); };
+        c.appendChild(fx); }
+      res.appendChild(c); });
+    if(!cs) res.appendChild(el("p","note","이 업무로 건을 시작하면 고른 계약방법을 그 건에 확정해 둘 수 있어요."));
     res.appendChild(el("p","note","같은 목적의 물품·공사를 나눠 금액 기준을 피하면 안 돼요. 금액 기준은 2026년 현행 시행령·경남 2026 계약실무편람 기준이니, 그해 개정과 공고문 기준을 꼭 확인하세요."+(priv?" 사립은 낙찰하한율·견적공고 방식이 국가 계약예규(나라장터)를 따라 다를 수 있어요.":"")));
   }
   draw(); de.appendChild(box); return de;
 }
+function ckMKind(k){ for(var i=0;i<CKM_KIND.length;i++) if(CKM_KIND[i][0]===k) return CKM_KIND[i][1]; return k; }
+function ckMSt(st){ var n=CKM_ST.filter(function(x){ return st.indexOf(x[0])>=0; }).map(function(x){ return x[1]; }); return n.length?n.join(", "):"해당 없음(일반 업체)"; }
 
 })();
 </script>

@@ -1431,9 +1431,8 @@ function ckSide(){
   var gs=Object.keys(CKG); gs.sort(function(a,b){ return (a===grp?-1:0)-(b===grp?-1:0); });   /* 지금 묶음을 맨 위로 */
   gs.forEach(function(g){
     var L=CKL.filter(function(c){return c.g===g}); if(!L.length) return;
-    L.sort(function(a,b){return b.star-a.star});
     var og=el("optgroup"); og.label=CKG[g];
-    L.forEach(function(c){ var o=el("option",null,(c.star?"★ ":"")+c.title); o.value=c.id; og.appendChild(o); });
+    L.forEach(function(c){ var o=el("option",null,c.title); o.value=c.id; og.appendChild(o); });
     sel.appendChild(og);
   });
   if(CK.pv) sel.value=CK.pv;
@@ -1751,11 +1750,11 @@ function ckCats(){
   drop.appendChild(rib); drop.appendChild(pn);
   function fill(cat){
     pn.textContent="";
-    var L=CKL.filter(function(c){return ckIn(c,cat)}).sort(function(a,b){return (b.cat===cat)-(a.cat===cat)||b.star-a.star});   /* 그 분야 고유 업무 먼저, 다른 분야에서 같이 보이는 것(cat2)은 뒤에 */
+    var L=CKL.filter(function(c){return ckIn(c,cat)}).sort(function(a,b){return (b.cat===cat)-(a.cat===cat)});   /* 그 분야 고유 업무 먼저, 다른 분야에서 같이 보이는 것(cat2)은 뒤에 */
     var g=el("div","ckgrid");
     L.forEach(function(c){
-      var b=el("button","ckitem"+(c.star?" star":"")); b.type="button"; b.setAttribute("role","menuitem");
-      b.appendChild(el("span","t",(c.star?"★ ":"")+c.title)); b.appendChild(el("span","s",c.steps.length+"단계"));
+      var b=el("button","ckitem"); b.type="button"; b.setAttribute("role","menuitem");
+      b.appendChild(el("span","t",c.title)); b.appendChild(el("span","s",c.steps.length+"단계"));
       b.onclick=function(){ CK.pv=c.id; CK.cur=""; CK.mode="flow"; ckSave(); closeCat(); document.activeElement&&document.activeElement.blur(); ckRender(); window.scrollTo(0,0); };
       g.appendChild(b);
     });

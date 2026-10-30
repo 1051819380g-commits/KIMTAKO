@@ -612,6 +612,10 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 .ckzb{margin-top:10px}
 .ckzb .cksub{margin-top:6px}
 .ckzf{position:sticky;bottom:-14px;display:flex;justify-content:flex-end;gap:8px;margin:14px -20px -14px;padding:10px 20px 14px;background:var(--surface);border-top:1px solid var(--line)}
+/* 원문 칸 제목 글자색을 자료 종류 색으로 */
+.cksub.k-law>summary{color:#B42318}.cksub.k-gd>summary{color:#1D4ED8}.cksub.k-man>summary{color:#15803D}.cksub.k-flow>summary{color:#6D28D9}.cksub.k-dr>summary{color:#B45309}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cksub.k-law>summary{color:#FCA5A5}:root:not([data-theme="light"]) .cksub.k-gd>summary{color:#93B4FF}:root:not([data-theme="light"]) .cksub.k-man>summary{color:#86EFAC}:root:not([data-theme="light"]) .cksub.k-flow>summary{color:#C4A8FF}:root:not([data-theme="light"]) .cksub.k-dr>summary{color:#FCD34D}}
+:root[data-theme="dark"] .cksub.k-law>summary{color:#FCA5A5}:root[data-theme="dark"] .cksub.k-gd>summary{color:#93B4FF}:root[data-theme="dark"] .cksub.k-man>summary{color:#86EFAC}:root[data-theme="dark"] .cksub.k-flow>summary{color:#C4A8FF}:root[data-theme="dark"] .cksub.k-dr>summary{color:#FCD34D}
 
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
@@ -1263,7 +1267,7 @@ function ckSrcTag(label){
 }
 function ckFold(cls,label,draw){
   var d=el("details",cls), su=el("summary"), body=el("div","cksubin"); d.appendChild(su); d.appendChild(body);
-  if(/cksub/.test(cls)){ var tg=ckSrcTag(label); su.appendChild(el("span","cksrc "+tg[1],tg[0])); }
+  if(/cksub/.test(cls)){ var tg=ckSrcTag(label); su.appendChild(el("span","cksrc "+tg[1],tg[0])); d.classList.add("k-"+tg[1]); }   /* 제목 글자색도 꼬리표 색 */
   su.appendChild(document.createTextNode(label));
   var done=false; d.ontoggle=function(){ if(d.open&&!done){ done=true; draw(body); } }; return d;
 }

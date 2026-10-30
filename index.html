@@ -621,6 +621,9 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 .ckfavbtn.on .ckstar{color:#F59E0B}
 .ckitem.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink)}.ckitem.on .t{font-weight:700}
 
+/* 왼쪽 카드: 처음 자리(main 위 여백 22px) 그대로 고정해 스크롤해도 안 움직이게 */
+.listpane.ckside{top:calc(var(--hdr,100px) + 22px)}
+
 @media (max-width:600px){.gdoc{font-size:14px}.gdoc .d2{margin-left:1em}.gdoc .d3{margin-left:2em}.gdoc .d4{margin-left:3em}}
 .gtbl{margin:10px 0 16px}
 .gtbl table{font-size:12.8px;width:100%}

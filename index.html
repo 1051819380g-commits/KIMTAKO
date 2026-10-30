@@ -2045,8 +2045,10 @@ function ckMon(){
   (CK.ev||[]).forEach(function(e){ if(e.d.indexOf(pre)===0) add(+e.d.slice(8),{k:"my",e:e,t:e.t}); });
   if(withCal){
     var gsel=CK.cgrp||"", off=CK.coff||[], gcats=CKGROUPS.filter(function(g){ return !gsel||g[0]===gsel; }).reduce(function(a,g){ return a.concat(g[1]); },[]);
+    var seen={};   /* 행정·교무에 같은 일정이 따로 있으면(예: 사이버보안진단의 날) 같은 날 하나만 */
     CKCAL.forEach(function(x){ if((x.d==null&&!x.wk)||gcats.indexOf(x.cat)<0||off.indexOf(x.cat)>=0||used.indexOf(x)>=0) return;
-      if(x.m===M||x.m==="M"){ var dd=x.wk?ckNth(Y,M,x.wk):Math.min(x.d,new Date(Y,M,0).getDate()); if(dd) add(dd,{k:"cal",x:x,t:x.t+(x.wk?" ("+x.dl.replace(/^\d+월\s*|^매월\s*/,"")+")":"")}); } });
+      if(x.m===M||x.m==="M"){ var dd=x.wk?ckNth(Y,M,x.wk):Math.min(x.d,new Date(Y,M,0).getDate()), key=dd+"|"+x.t.replace(/[\s·・]|운영$/g,"");
+        if(dd&&!seen[key]&&(seen[key]=1)) add(dd,{k:"cal",x:x,t:x.t+(x.wk?" ("+x.dl.replace(/^\d+월\s*|^매월\s*/,"")+")":"")}); } });
   }
   var sum=el("div","ckmonsum");
   sum.appendChild(el("span","s plan","예정 "+nplan)); sum.appendChild(el("span","s done","완료 "+ndone));

@@ -4592,7 +4592,7 @@ function lawCands(q,ctx){
   qs.forEach(function(wd,i){
     var mm=wd.match(/^([가-힣ㆍ·]*?(?:법률|법|시행령|시행규칙))(?:상|에서|에는|에|의|은|는|을|이|과|와)?(제\d+조(?:의\d+)?)?$/); if(!mm) return;
     var art=mm[2]||((qs[i+1]||"").match(/^제\d+조(?:의\d+)?/)||[])[0], alts=[];
-    for(var k=Math.min(2,i);k>=0;k--){ var nm=(k?qs.slice(i-k,i).join(" ")+" ":"")+mm[1]; if(nm.length>=4&&!/^(같은|동법|이법|해당|관계|관련)/.test(nm)) alts.push(nm); }
+    for(var k=Math.min(4,i);k>=0;k--){ var nm=(k?qs.slice(i-k,i).join(" ")+" ":"")+mm[1]; if(nm.length>=4&&!/^(같은|동법|이법|해당|관계|관련)/.test(nm)) alts.push(nm); }
     if(alts.length){ var o={n:alts[0],alts:alts,w:5,arts:{}}; if(art) o.arts[art]=2; qc.push(o); }
   });
   var L=localLaws(), isLocal=function(n){ n=n.replace(/\s/g,""); return L.some(function(d){ return d.indexOf(n)===0; }); };
@@ -4606,17 +4606,22 @@ function lawLiveMcp(cs,q,topS){
       NOK=/^(언제|얼마|무엇|어떻게|어디|누가|왜|기한|여부|방법|경우|관련|규정|기준|내용|알려|하나|인가|되나|있나|가능)/;
   /* 조문 찾을 낱말 2~3개: 조사·물음말·법 이름 조각은 뺀다 */
   var kw=[]; toks(q).forEach(function(t){ t=t.replace(/(으로|에서|에게|까지|부터|이나|하고|에는|상|은|는|이|가|을|를|에|의|로|와|과|도|만|요)$/,"");
-    if(t.length>=2&&kw.indexOf(t)<0&&nms.indexOf(t)<0&&!/법|령|규칙/.test(t)&&!NOK.test(t)) kw.push(t); });
+    if(t.length>=2&&kw.indexOf(t)<0&&nms.indexOf(t)<0&&!/법|령|규칙/.test(t)&&!NOK.test(t)&&!/^제?\d|\d조/.test(t)&&!/(받나|되나|하나|있나|없나|인가|일까|는지|할까)$/.test(t)) kw.push(t); });
   kw=kw.filter(function(t){ return !kw.some(function(u){ return u!==t&&u.indexOf(t)>=0; }); })   /* '수련활'처럼 다른 낱말의 조각은 뺀다 */
     .sort(function(a,b){return (W[b]||b.length/10)-(W[a]||a.length/10)}).slice(0,3).join(" ");
-  var per=Math.floor(LAWCAP/cs.length), day=new Date().toISOString().slice(0,10), nn=function(x){ return String(x||"").replace(/[\s·ㆍ․「」]/g,""); };
-  function call(nm,art){   /* 같은 호출은 한 번만, 돌아온 법령 이름이 다르면 버린다 */
-    var key=nn(nm)+"|"+art; if(seen[key]) return Promise.resolve(null); seen[key]=1;
-    return mcpCall("law",{name:nm,article:art}).then(function(t){
+  var per=Math.floor(LAWCAP/cs.length), day=new Date().toISOString().slice(0,10), nn=function(x){ return String(x||"").replace(/[\s·ㆍ‧․・「」()\[\]]/g,""); };
+  function call(nm,art,id){   /* 같은 호출은 한 번만, 돌아온 법령 이름이 다르면 버린다 */
+    var key=nn(nm)+"|"+art+"|"+(id||""); if(seen[key]) return Promise.resolve(null); seen[key]=1;
+    var a={name:nm,article:art}; if(id) a.id=id;
+    return mcpCall("law",a).then(function(t){
+      /* 후보가 여러 개면('- id=002235 이름 (…') 보낸 이름과 같은 것의 id로 한 번 더 */
+      if(!id&&/여러 개가 나왔습니다/.test(t)){ var m, re=/^- id=(\d+) (.+?) \(/gm, pick="";
+        while((m=re.exec(t))){ if(nn(m[2])===nn(nm)){ pick=m[1]; break; } }
+        return pick?call(nm,art,pick):null; }
       if(!/\n제\d+조/.test(t)) return null;
       var h=/^\s*(.+?) — 현행 \(.*?(\d{4}\.\d{2}\.\d{2})\. 시행/.exec(t); if(!h||nn(h[1])!==nn(nm)) return null;
       return {name:h[1],ef:h[2],body:t.replace(/^[^\n]*\n출처:[^\n]*\n+/,"").trim()};
-    },function(){ return null; });
+    }).catch(function(){ return null; });
   }
   function pack(o){
     var body=o.body.length>per?o.body.slice(0,per)+"…":o.body, refs=[];

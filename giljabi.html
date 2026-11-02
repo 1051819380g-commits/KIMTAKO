@@ -7006,6 +7006,8 @@ function backups(){
     c.sort(function(a,b){ var sa=/preview|exp/i.test(a)?1:0, sb=/preview|exp/i.test(b)?1:0; return sa-sb||ver(b)-ver(a); });
     if(c[0]) out.push(c[0]);
   });
+  var ok=OK.filter(function(id){ return id!==CFG.model; });
+  if(ok.length) out=[ok[0]].concat(out.filter(function(id){ return /lite|haiku/i.test(id); }));
   return out.slice(0,2);
 }
 /* 가벼운 모델(질문 정리 같은 짧은 일): gemini = flash-lite, anthropic = haiku, 없으면 지금 모델.
@@ -7046,7 +7048,40 @@ function pickDelta(o){
   if(o.choices&&o.choices[0]&&o.choices[0].delta&&o.choices[0].delta.content) return o.choices[0].delta.content;
   return "";
 }
+/* 빠른 모델 고르기(gemini): 연결될 때 flash 후보 몇 개에 아주 짧은 요청을 동시에 보내 가장 먼저 응답한 모델로 답한다.
+   가장 최신 판이 혼잡해 응답조차 없을 때 질문이 멈추지 않게. 모델 목록이 비어 있으면 받아 둔다(질문 정리용 lite·대체 모델에 필요).
+   MODELS = 목록 준비(질문 정리가 기다림), FAST = 모델 고르기 끝(답변이 기다림), OK = 응답한 순서 */
+var MODELS=null, FAST=null, OK=[];
+function pickFast(){
+  OK=[];
+  MODELS=(CFG.models&&CFG.models!=="[]"?Promise.resolve():listModels().then(function(ids){ CFG.models=JSON.stringify(ids); })).catch(function(){});
+  if(CFG.prov!=="gemini"){ FAST=MODELS; return; }
+  FAST=MODELS.then(function(){
+    var ids=[]; try{ ids=JSON.parse(CFG.models||"[]"); }catch(e){}
+    var c=ids.filter(function(id){ return /flash/i.test(id)&&!/lite|preview|exp|thinking|tts|image|audio|live|native/i.test(id); })
+      .sort(function(a,b){ return ver(b)-ver(a); }).slice(0,5);
+    if(c.indexOf(CFG.model)<0) c.unshift(CFG.model);
+    return new Promise(function(done){
+      var left=c.length, won=false;
+      c.forEach(function(m){
+        var h={"content-type":"application/json"}, a=authHeaders(); for(var k in a) h[k]=a[k];
+        fetch(cfgBase()+prov().chat,{method:"POST",headers:h,body:JSON.stringify({model:m,stream:true,messages:[{role:"user",content:"1"}]})})
+        .then(function(r){
+          if(r.body) r.body.cancel().catch(function(){});
+          if(!r.ok) throw 0;
+          OK.push(m);
+          if(!won){ won=true; if(m!==CFG.model){ CFG.model=m; if(window.__kbgRefresh) window.__kbgRefresh(); } done(); }
+        }).catch(function(){ if(--left===0&&!won) done(); });
+      });
+    });
+  });
+}
 function makeSampler(){
+  pickFast();
+  var run=sampler0();
+  return function(input,opts){ var w=(opts&&opts.light)?MODELS:FAST; return (w||Promise.resolve()).then(function(){ return run(input,opts); }); };
+}
+function sampler0(){
   return function(input,opts){
     opts=opts||{};
     var arr=(typeof input==="string")?[{role:"user",content:input}]:input;
@@ -7306,6 +7341,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
     b.onclick=function(){ setupCard.hidden=false; statusBar.hidden=true; };
     statusBar.appendChild(b);
   }
+  window.__kbgRefresh=function(){ if(!statusBar.hidden&&setupCard.hidden) connected(); };
   window.__kbgOpenSetup=function(){ setupCard.hidden=false; statusBar.hidden=true; setupCard.scrollIntoView({block:"start"}); };
 
   connect.onclick=function(){

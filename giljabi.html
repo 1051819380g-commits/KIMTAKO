@@ -4382,7 +4382,7 @@ function aiBudget(){
   return {room:room, cap:Math.round(RC.cap*room/RC.room)};
 }
 var RULES="당신은 대한민국 사립 고등학교의 행정실(회계·계약·급여·여비) 담당자를 돕는 실무 조력자입니다.\n"+
-"아래에 주어지는 자료는 (1) 2026학년도 사학기관 학교회계 세입·세출예산 표준안, (2) 이 학교의 "+CARD_DATE+" 기준 사업관리카드(현액), "+
+"아래에 주어지는 자료는 (1) 2026학년도 사학기관 학교회계 세입·세출예산 표준안, "+
 "(3) 인사혁신처 「공무원 여비의 합리적 지출을 위한 100문100답」(2022.11), (4) 경상남도교육청 총무과 「공무국외출장 업무처리 지침」(2023.12.12), "+
 "(5) 행정안전부 「지방자치단체 세출예산 집행기준」 예규 제99호(2020.1.1. 시행), "+
 "(6) 행정안전부 「지방자치단체 업무추진비 집행에 관한 규칙」(행정안전부령 제381호, 2023. 3. 3. 일부개정) 및 해설집, "+
@@ -4391,7 +4391,7 @@ var RULES="당신은 대한민국 사립 고등학교의 행정실(회계·계�
 "(9) 경상남도교육청 「2026 계약실무편람」과 「교복 학교주관구매 길라잡이」(2026. 6.), (10) 계약 법령·예규: 지방계약법·시행령·시행규칙, 「사학기관 재무·회계 규칙」 계약 조항, 행정안전부 「지방자치단체 입찰 및 계약 집행기준」·「지방자치단체 입찰시 낙찰자 결정기준」(2026.7.1. 시행), "+
 "(11) 급여 지침·법령: 공무원보수규정·공무원수당 등에 관한 규정과 별표, 공무원보수 업무지침·지방공무원보수 업무처리지침, 2026년 교육공무직원 임금 지급 기준·단체(임금)협약, 계약제 교원 운영 지침, 맞춤형 복지 처리기준, 사립학교법·사학연금법·교육공무원법, 근로기준법 등, (12) 경상남도교육청 「학교회계 세출예산 집행기준」(2025.12.)의 '학교회계 묻고 답하기' 문답(예산·세출·여비), (13) 인사 지침·법령: 경남교육청 「2025년 지방공무원 인사실무」·인력관리 계획·평정 업무처리지침·교육훈련시간 승진반영 지침·정부포상 업무지침, 지방공무원 복무에 관한 예규·특별휴가 지침·권장 연가·초과근무·외부강의 신고 안내, 교육공무직원 취업규칙·노무관리설명서·단체협약 해설·수습평가·퇴직급여·촉탁계약 계획, 지방공무원법·임용령·복무규정·평정규칙·징계 및 소청 규정·인사기록 규칙, 기간제법·남녀고용평등법·청탁금지법, (14) 국토교통부·한국건설기술연구원 「건설공사 표준시장단가」(2026년 하반기, 2026.5.8. 공고) 공종별 단가, (15) '법제처 현행 법령 · 실시간 조회' 묶음: 위 자료에 인용됐지만 이 파일에 없는 법령을 질문할 때 법제처에서 방금 받은 현행 조문(법령 원문으로 인용해도 됨. 질문에 맞는 조문만 쓰고 맞지 않으면 무시)입니다.\n"+
 "(12) 학교운영위원회: 초·중등교육법·시행령의 학운위 조문, 「경상남도립학교 운영위원회 운영 조례」, 경상남도교육청 2026학년도 학교운영위원회 운영 계획, 교육부 「2025 학교운영위원회 길잡이」, 2022 업무편람·연수자료, 사립학교는 학칙은 자문, 그 밖은 심의, 발전기금은 심의·의결. 국공립용 조례는 사립에 바로 적용되지 않으니 사립 질문에는 그 학교 운영위원회 규정과 법 제32조·시행령 제63조를 앞세우세요.\n"+
-"(13) 업무흐름도: 경상남도교육청 「학교행정 업무흐름도」(2026.3.) — 업무별 순서도, 세부업무별 관련법규·주요내용·참고자료. 일의 순서·시기·서류를 물으면 먼저 보고, 수치·조문은 해당 지침·법령으로 확인하세요. 학교발전기금은 학운위 묶음에 경남교육청 「학교발전기금의 조성·운용 및 회계관리요령」(2026.3.)이 있습니다.\n"+"(14) 행정: 경상남도교육청 「보안업무 실무편람」(2025.6.), 「표준 개인정보 보호지침」(개인정보보호위원회 고시, 2025.4.11. — CCTV·개인영상정보는 제41~51조), 보안업무규정, 2025 경상남도교육청 민원편람, 학교 민원 처리 매뉴얼(경남·교육부), 기록물관리 업무지침(2025.3.), 학교급식법·시행령·시행규칙과 경남 급식 조례, 집단급식소 관련 식품위생법·원산지표시법 조문, 2026 학교우유급식 사업 지침, 2026 현장체험학습 매뉴얼. 교육부 학교 영상정보처리기기 가이드라인은 2017년판이라 표준 개인정보 보호지침이 우선합니다.\n"+
+"학교발전기금은 학운위 묶음에 경남교육청 「학교발전기금의 조성·운용 및 회계관리요령」(2026.3.)이 있습니다.\n"+"(14) 행정: 경상남도교육청 「보안업무 실무편람」(2025.6.), 「표준 개인정보 보호지침」(개인정보보호위원회 고시, 2025.4.11. — CCTV·개인영상정보는 제41~51조), 보안업무규정, 2025 경상남도교육청 민원편람, 학교 민원 처리 매뉴얼(경남·교육부), 기록물관리 업무지침(2025.3.), 학교급식법·시행령·시행규칙과 경남 급식 조례, 집단급식소 관련 식품위생법·원산지표시법 조문, 2026 학교우유급식 사업 지침, 2026 현장체험학습 매뉴얼. 교육부 학교 영상정보처리기기 가이드라인은 2017년판이라 표준 개인정보 보호지침이 우선합니다.\n"+
 "규칙:\n"+
 "1. 반드시 제공된 자료에 근거해 답하고, 자료에 없는 내용은 '주어진 자료에서는 확인되지 않습니다'라고 밝히세요. 추측한 규정을 만들어내지 마세요.\n"+
 "1-1. '확인되지 않습니다'라고 답하기 전에 [자료]의 모든 묶음을 끝까지 확인하세요. 질문과 자료의 낱말이 달라도 같은 뜻이면 근거로 삼습니다(예: 강연비·강의료=강사료, 사후품의=강의 이후 지출품의, 근속년수=근무연수, 재채용=채용). 같은 상황을 다룬 문답이나 조항이 있으면 그것으로 답하세요.\n"+
@@ -4530,9 +4530,41 @@ function mcpCall(tool,args,signal){
   .then(function(j){ clearTimeout(t); var res=j&&j.result; if(!res||res.isError) throw new Error("mcp error");
     return (res.content||[]).map(function(c){ return c.text||""; }).join("\n"); },function(e){ clearTimeout(t); throw e; });
 }
-function mcpAsk(q,signal){
+/* 서버 initialize의 instructions = 서버가 정한 답 규칙. 도구 쓰는 법 문장은 빼고 답변 지시에 붙인다 */
+var SRVRULE="";
+(function(){ if(!mcpURL()) return;
+  fetch(mcpURL(),{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream","X-KBG-Client":"giljabi"},
+    body:JSON.stringify({jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-03-26",capabilities:{},clientInfo:{name:"giljabi",version:"1"}}})})
+  .then(function(r){ return r.json(); }).then(function(j){
+    var t=(j&&j.result&&j.result.instructions)||"";
+    var ss=t.split(/(?<=다\.)\s+/).filter(function(x){ return x&&!/\b(ask|search|read|procedure|status|report_gap)\b|law로|establishment|staff|부른다|넘긴다|넣는다|보관|검색 서버|^예:|갈릴 때도/.test(x); });
+    if(ss.length) SRVRULE="\n[자료 서버의 답 규칙 — 함께 지키세요]\n"+ss.join(" ")+"\n";
+  }).catch(function(){});
+})();
+/* 사용자가 밝힌 설립(공립·사립)·신분만 서버에 넘긴다 — 추측하지 않는다. 신분이 둘 이상 보이면 넘기지 않는다 */
+function mcpWho(q){
+  var o={}, t=String(q||""), sa=/사립|학교\s*법인|수익용\s*기본\s*재산|사무직원/.test(t), go=/(^|[^사국])공립/.test(t);
+  if(sa&&!go) o.establishment="사립"; else if(go&&!sa) o.establishment="공립";
+  var k=[]; if(/공무직|조리\s*실무사|조리사/.test(t)) k.push("공무직"); if(/교원|교사|교감|교장/.test(t)) k.push("교원"); if(/지방\s*공무원|일반직|주무관|행정\s*실장/.test(t)) k.push("지방공무원");
+  if(k.length===1) o.staff=k[0];
+  return o;
+}
+function mcpOpt(a,who){ for(var k in (who||{})) a[k]=who[k]; return a; }
+/* 근거가 모자랄 때: 다른 낱말로 search + ask가 본문까지 주지 않은 후보(3위 요지·목록 앞 2건)를 read */
+function mcpMore(more,mcTxt,who,signal){
+  if(!mcpURL()) return Promise.resolve("");
+  var ids=[]; String(mcTxt||"").replace(/^(?:=== 3위 요지 |- )\[(c\d+)\]/gm,function(_,id){ if(ids.length<2&&ids.indexOf(id)<0) ids.push(id); return _; });
+  return Promise.all([mcpCall("search",mcpOpt({query:more,limit:6},who),signal).catch(function(){ return ""; })]
+    .concat(ids.map(function(id){ return mcpCall("read",{id:id},signal).catch(function(){ return ""; }); }))).then(function(a){
+    var out="";
+    if(a[0]&&!/— 0건|맞는 자료가 없|넣어 주세요/.test(a[0])) out+="[경남 자료 다시 찾기 · "+more+"]\n"+a[0].slice(0,3000)+"\n\n";
+    a.slice(1).forEach(function(t,i){ if(t) out+="[경남 자료 원문 읽기 · "+ids[i]+"]\n"+t.slice(0,2500)+"\n\n"; });
+    return out;
+  });
+}
+function mcpAsk(q,signal,who){
   if(!mcpURL()) return Promise.resolve(null);
-  return mcpCall("ask",{question:q},signal).then(function(txt){
+  return mcpCall("ask",mcpOpt({question:q},who),signal).then(function(txt){
     var nohit=/맞는 자료가 없습니다|낱말을 넣어 주세요/.test(txt), refs=[], seen={};
     txt.replace(/^(?:=== |- )\[c\d+\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,t){ var doc=t.replace(/^📌 /,"").split(" › ")[0];
       if(!seen[t]){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ alert(t+"\n\n경남 자료에서 가져온 근거입니다."); }}); } return _; });
@@ -4560,36 +4592,52 @@ function lawCands(q,ctx){
   qs.forEach(function(wd,i){
     var mm=wd.match(/^([가-힣ㆍ·]*?(?:법률|법|시행령|시행규칙))(?:상|에서|에는|에|의|은|는|을|이|과|와)?(제\d+조(?:의\d+)?)?$/); if(!mm) return;
     var art=mm[2]||((qs[i+1]||"").match(/^제\d+조(?:의\d+)?/)||[])[0], alts=[];
-    for(var k=Math.min(2,i);k>=0;k--){ var nm=qs.slice(i-k,i).join("")+mm[1]; if(nm.length>=4&&!/^(같은|동법|이법|해당|관계|관련)/.test(nm)) alts.push(nm); }
+    for(var k=Math.min(2,i);k>=0;k--){ var nm=(k?qs.slice(i-k,i).join(" ")+" ":"")+mm[1]; if(nm.length>=4&&!/^(같은|동법|이법|해당|관계|관련)/.test(nm)) alts.push(nm); }
     if(alts.length){ var o={n:alts[0],alts:alts,w:5,arts:{}}; if(art) o.arts[art]=2; qc.push(o); }
   });
-  var L=localLaws(), isLocal=function(n){ return L.some(function(d){ return d.indexOf(n)===0; }); };
+  var L=localLaws(), isLocal=function(n){ n=n.replace(/\s/g,""); return L.some(function(d){ return d.indexOf(n)===0; }); };
   qc=qc.filter(function(o){ return !o.alts.some(isLocal); });
-  if(qc.length) return qc.slice(0,2);                                          /* 질문이 법을 짚었으면 그 법만 */
-  return Object.keys(c).map(function(k){return c[k]}).filter(function(o){
-    return !isLocal(o.n);                                                      /* 이미 파일에 든 법령은 빼고 */
-  }).filter(function(o){return o.w>=0.9}).sort(function(a,b){return b.w-a.w}).slice(0,2);
+  return qc.slice(0,2);   /* 질문이 짚은 법령만 — 검색 결과에 우연히 나온 법령은 부르지 않는다(서버 요청) */
 }
 /* 법제처는 부르는 컴퓨터의 IP를 등록해야 해서(공용 ID 차단) 브라우저에서 직접 부르기 어렵다 →
    학교행정 자료 서버가 있으면 서버의 law(서버 IP 등록됨)로 조문을 받는다. 질문이 짚은 조문은 번호로, 아니면 질문 낱말로 */
 function lawLiveMcp(cs,q,topS){
-  var nms=cs.map(function(c){return (c.alts||[c.n]).join(" ")}).join(" "), W=weights(toks(q)),
-      kw=toks(q).filter(function(t){ return nms.indexOf(t)<0&&t.length>=2; }).sort(function(a,b){return (W[b]||0)-(W[a]||0)}).slice(0,4).join(" ");
-  var per=Math.floor(LAWCAP/cs.length), day=new Date().toISOString().slice(0,10);
-  function one(c){
-    var arts=Object.keys(c.arts||{}), alts=c.alts||[c.n], i=0;
-    var art=arts.length?arts.join(", "):kw; if(!art) return Promise.resolve(null);
-    return (function nx(){ if(i>=alts.length) return Promise.resolve(null); var nm=alts[i++];
-      return mcpCall("law",{name:nm,article:art}).then(function(t){
-        if(!/\n제\d+조/.test(t)) return nx();   /* 못 찾음·후보 여러 개·맞는 조문 없음 → 다음 이름 */
-        var h=/^(.+?) — 현행 \(.*?(\d{4}\.\d{2}\.\d{2})\. 시행/.exec(t), name=h?h[1]:nm;
-        var body=t.replace(/^[^\n]*\n출처:[^\n]*\n+/,"").trim(); if(body.length>per) body=body.slice(0,per)+"…";
-        var refs=[]; body.replace(/^(제\d+조(?:의\d+)?(?:\([^)\n]*\))?)/gm,function(_,a){ var no=a.match(/^제\d+조(?:의\d+)?/)[0];
-          refs.push({t:name+" › "+a+" · 법제처",s:(topS||1)*0.5,doc:name,parts:[a],go:function(){ window.open("https://www.law.go.kr/법령/"+encodeURIComponent(name.replace(/\s/g,""))+"/"+no,"_blank","noopener"); }}); return _; });
-        return {text:"[법제처 현행 법령 · 실시간 조회("+day+") · 「"+name+"」"+(h?"(시행 "+h[2]+")":"")+"]\n"+body+"\n\n",refs:refs};
-      },function(){ return nx(); }); })();
+  var nms=cs.map(function(c){return (c.alts||[c.n]).join(" ")}).join(" ").replace(/\s/g,""), W=weights(toks(q)), seen={},
+      NOK=/^(언제|얼마|무엇|어떻게|어디|누가|왜|기한|여부|방법|경우|관련|규정|기준|내용|알려|하나|인가|되나|있나|가능)/;
+  /* 조문 찾을 낱말 2~3개: 조사·물음말·법 이름 조각은 뺀다 */
+  var kw=[]; toks(q).forEach(function(t){ t=t.replace(/(으로|에서|에게|까지|부터|이나|하고|에는|상|은|는|이|가|을|를|에|의|로|와|과|도|만|요)$/,"");
+    if(t.length>=2&&kw.indexOf(t)<0&&nms.indexOf(t)<0&&!/법|령|규칙/.test(t)&&!NOK.test(t)) kw.push(t); });
+  kw=kw.filter(function(t){ return !kw.some(function(u){ return u!==t&&u.indexOf(t)>=0; }); })   /* '수련활'처럼 다른 낱말의 조각은 뺀다 */
+    .sort(function(a,b){return (W[b]||b.length/10)-(W[a]||a.length/10)}).slice(0,3).join(" ");
+  var per=Math.floor(LAWCAP/cs.length), day=new Date().toISOString().slice(0,10), nn=function(x){ return String(x||"").replace(/[\s·ㆍ․「」]/g,""); };
+  function call(nm,art){   /* 같은 호출은 한 번만, 돌아온 법령 이름이 다르면 버린다 */
+    var key=nn(nm)+"|"+art; if(seen[key]) return Promise.resolve(null); seen[key]=1;
+    return mcpCall("law",{name:nm,article:art}).then(function(t){
+      if(!/\n제\d+조/.test(t)) return null;
+      var h=/^\s*(.+?) — 현행 \(.*?(\d{4}\.\d{2}\.\d{2})\. 시행/.exec(t); if(!h||nn(h[1])!==nn(nm)) return null;
+      return {name:h[1],ef:h[2],body:t.replace(/^[^\n]*\n출처:[^\n]*\n+/,"").trim()};
+    },function(){ return null; });
   }
-  return Promise.all(cs.map(one)).then(function(rs){ rs=rs.filter(Boolean); if(!rs.length) return null;
+  function pack(o){
+    var body=o.body.length>per?o.body.slice(0,per)+"…":o.body, refs=[];
+    body.replace(/^(제\d+조(?:의\d+)?(?:\([^)\n]*\))?)/gm,function(_,a){ var no=a.match(/^제\d+조(?:의\d+)?/)[0];
+      refs.push({t:o.name+" › "+a+" · 법제처",s:(topS||1)*0.5,doc:o.name,parts:[a],go:function(){ window.open("https://www.law.go.kr/법령/"+encodeURIComponent(o.name.replace(/\s/g,""))+"/"+no,"_blank","noopener"); }}); return _; });
+    return {text:"[법제처 현행 법령 · 실시간 조회("+day+") · 「"+o.name+"」(시행 "+o.ef+")]\n"+body+"\n\n",refs:refs};
+  }
+  function one(c){
+    var arts=Object.keys(c.arts||{}), alts=c.alts||[c.n], i=0, art=arts.length?arts.join(", "):kw;
+    if(!art) return Promise.resolve([]);
+    return (function nx(){ if(i>=alts.length) return Promise.resolve([]);
+      return call(alts[i++],art).then(function(o){
+        if(!o) return nx();
+        var got=[pack(o)];
+        /* 법률이 '대통령령/○○부령으로 정한다'고 하면 하위 법령도 같은 낱말로 — 기한·서류·금액은 거기 있는 일이 많다 */
+        var sub=/시행(령|규칙)$/.test(o.name)||!kw?"":/대통령령으로\s*정하/.test(o.body)?" 시행령":/(부령|총리령)으로\s*정하/.test(o.body)?" 시행규칙":"";
+        if(!sub) return got;
+        return call(o.name+sub,kw).then(function(o2){ return o2?got.concat([pack(o2)]):got; });
+      }); })();
+  }
+  return Promise.all(cs.map(one)).then(function(rs){ rs=[].concat.apply([],rs); if(!rs.length) return null;
     return {text:rs.map(function(r){return r.text}).join(""),refs:[].concat.apply([],rs.map(function(r){return r.refs}))}; });
 }
 /* 결과: {text, refs} 또는 null */
@@ -4617,12 +4665,13 @@ function doAsk(){
   addUser(q);
   var box=addAssistant(), body=box.querySelector(".body");
   var lastU=null; for(var ti=turns.length-1;ti>=0;ti--){ if(turns[ti].role==="user"){ lastU=turns[ti].content; break; } }
+  var askQ=lastU&&q.length<15?lastU+" "+q:q, who=mcpWho(askQ);   /* 서버 ask에는 사용자 문장 그대로 */
   /* 연결된 모델에 맞춰 자료량을 정한다(aiBudget) — 이 질문에만 적용하고 되돌린다 */
   var bud=aiBudget(), r, qs=[], more="", semN=0, mc=null;
   /* 답변 AI 호출. extra가 있으면(첫 시도) '[추가 검색' 표시는 화면에 그리지 않는다 */
   function callAnswer(extra){
     var hold=!!extra, input=turns.slice(-4).map(function(t){ return t.role==="assistant"&&t.content.length>600?{role:t.role,content:t.content.slice(0,600)+"…"}:t; }).concat([{role:"user",
-      content:RULES+extra+"\n\n[자료]\n"+r.ctx+"\n[질문]\n"+q}]);
+      content:RULES+SRVRULE+extra+"\n\n[자료]\n"+r.ctx+"\n[질문]\n"+q}]);
     var draw=function(t){ if(hold&&/^\s*\[(추|$)/.test(t)) return; mdRender(body,t); };
     return sampleFn(input,{cache:false,signal:ctl.signal,
     onStatus:function(m){ var th=body.querySelector(".thinking"); if(th){ th.lastChild.textContent=" "+m; } },
@@ -4644,7 +4693,7 @@ function doAsk(){
     if(th) th.lastChild.textContent=lawCands(q,r.ctx).length?" 법제처에서 관련 법령을 찾는 중":" 근거를 모으는 중";
     var topS=r.refs.reduce(function(m,f){return Math.max(m,f.s||0)},0);
     if(th&&mcpURL()) th.lastChild.textContent=" 자료와 법령에서 근거를 찾는 중";
-    return Promise.all([lawLive(q,r.ctx,topS).catch(function(){return null}),mcpAsk(qs[0]||q,ctl.signal)]);
+    return Promise.all([lawLive(q,r.ctx,topS).catch(function(){return null}),mcpAsk(askQ,ctl.signal,who)]);
   }).then(function(two){
     var lw=two[0]; mc=two[1];
     /* 서버 근거(정리 노트·원문)를 맨 앞에 — 자료 한도의 절반까지, 그만큼 이 파일 자료 끝을 던다 */
@@ -4667,13 +4716,15 @@ function doAsk(){
     var mm=/^\s*\[추가 검색\s*[:：]\s*([^\]\n]{2,80})\]/.exec(res&&res.text||"");
     if(!mm) return res;
     more=mm[1].trim(); mdRender(body,"_근거가 부족해 ‘"+more+"’(으)로 한 번 더 찾는 중…_");
-    var room0=RC.room, cap0=RC.cap, r2; RC.room=Math.round(bud.room*0.45); RC.cap=bud.cap;
-    try{ r2=retrieve(more,""); } finally{ RC.room=room0; RC.cap=cap0; }
-    var lim=Math.round(bud.room*0.55), cut=r.ctx.lastIndexOf("\n- [",lim);
-    if(r.ctx.length>lim) r.ctx=r.ctx.slice(0,cut>lim*0.6?cut:lim)+"\n…(이하 생략)\n";
-    r.ctx+="\n[근거가 부족해 다시 찾은 자료 · "+more+"]\n"+r2.ctx.replace(/^\[우리 학교 예산 총괄[^\n]*\]\n[\s\S]*?\n\n/,"");   /* 예산 총괄은 이미 앞에 있다 */
-    var seen={}; r.refs=r2.refs.concat(r.refs).filter(function(f){ if(seen[f.t]) return false; seen[f.t]=1; return true; });
-    return callAnswer("");
+    return mcpMore(more,mc&&mc.text,who,ctl.signal).then(function(sv){
+      var room0=RC.room, cap0=RC.cap, r2; RC.room=Math.round(bud.room*(sv?0.25:0.45)); RC.cap=bud.cap;
+      try{ r2=retrieve(more,""); } finally{ RC.room=room0; RC.cap=cap0; }
+      var lim=Math.round(bud.room*0.55), cut=r.ctx.lastIndexOf("\n- [",lim);
+      if(r.ctx.length>lim) r.ctx=r.ctx.slice(0,cut>lim*0.6?cut:lim)+"\n…(이하 생략)\n";
+      r.ctx+="\n"+sv+"[근거가 부족해 다시 찾은 자료 · "+more+"]\n"+r2.ctx;
+      var seen={}; r.refs=r2.refs.concat(r.refs).filter(function(f){ if(seen[f.t]) return false; seen[f.t]=1; return true; });
+      return callAnswer("");
+    });
   })
   .then(function(res){
     mdRender(body,res.text);
@@ -4699,7 +4750,8 @@ function doAsk(){
       det.appendChild(rlm);
     }
     /* 서버에서 못 찾았거나 근거가 모자라 다시 찾았으면 서버에 '못 찾음'을 알린다(정리 노트 보강 목록) */
-    if(mcpURL()&&(mc&&mc.nohit||more)) mcpCall("report_gap",{topic:(qs[0]||q).slice(0,120),detail:more?"추가 검색: "+more:"서버 자료에서 찾지 못함"}).catch(function(){});
+    /* search·read까지 했는데도 답이 '확인되지 않는다'일 때만 서버에 못 찾음을 알린다 */
+    if(mcpURL()&&more&&/확인되지 않|확인하지 못|찾지 못|자료에 없/.test(res.text)) mcpCall("report_gap",{topic:q.slice(0,120),detail:"search·read 후에도 근거 없음 · 추가 검색: "+more}).catch(function(){});
     [["직접 근거",sr.dir],[sr.dir.length?"보충 설명":"관련 자료",sr.sup]].forEach(function(g){
       if(!g[1].length) return;
       det.appendChild(el("div","note",g[0]));

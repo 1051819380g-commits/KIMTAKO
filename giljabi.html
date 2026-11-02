@@ -285,7 +285,7 @@ td.r{text-align:right}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .pill[aria-pressed="true"]{color:#fff}}
 
 /* ---------- AI ---------- */
-.ai{max-width:980px;margin:0 auto}
+.ai{max-width:1100px}
 @media (max-width:900px){.ai{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:700px){header{position:static}.brand .sub{display:none}}
 .thread{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
@@ -1139,7 +1139,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 
 /* 메뉴 한 줄: 머리띠 = 제목 · 탭 · 통합검색 */
 .navwrap{display:none}
-.hdr .brand{flex:0 0 auto}
+.hdr .brand{flex:1 1 auto}
+.hdr nav#tabs{display:none!important}   /* 위 탭 대신 왼쪽 메뉴 */
 .hdr .brand .sub{display:none}
 .hdr nav#tabs{flex:1 1 auto;align-self:stretch;margin:-10px 0;gap:0;overflow:visible}
 .hdr nav#tabs button{color:rgba(255,255,255,.78);padding:0 14px;margin:0;border-bottom:3px solid transparent;font-size:15px}
@@ -1149,10 +1150,12 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 /* 지침·법령 왼쪽 목차(분야 ▸ 자료 ▸ 장 ▸ 절) */
 .docwrap{max-width:1440px;margin:0 auto}
 .docwrap>main{max-width:none}
-.docnav{display:none}
 .docnav select{display:none}
-.docwrap.docmode{display:grid;grid-template-columns:250px minmax(0,1fr);padding-left:20px}
-.docwrap.docmode .docnav{display:block;position:sticky;top:calc(var(--hdr,60px) + 12px);max-height:calc(100vh - var(--hdr,60px) - 24px);overflow:auto;margin-top:22px;padding-right:6px}
+.docwrap{display:grid;grid-template-columns:250px minmax(0,1fr);padding-left:20px}
+.docwrap .docnav{display:block;position:sticky;top:calc(var(--hdr,60px) + 12px);max-height:calc(100vh - var(--hdr,60px) - 24px);overflow:auto;margin-top:22px;padding-right:6px}
+.dask{display:block;width:100%;margin:0 0 12px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:14.5px;font-weight:700;text-align:left;cursor:pointer}
+.dask:hover{border-color:var(--accent-line)}
+.dask[aria-selected="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink)}
 .dsrch{display:flex;gap:6px;align-items:center}
 .dsrch input{flex:1 1 auto;min-width:0}
 .dsw{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;overflow:hidden}
@@ -1188,8 +1191,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 @media (max-width:800px){
   .hdr nav#tabs{order:3;flex-basis:100%;margin:0 -20px -10px;padding:0 6px}
   .hdr nav#tabs button{padding:9px 14px}
-  .docwrap.docmode{display:block;padding-left:0}
-  .docwrap.docmode .docnav{position:static;max-height:none;overflow:visible;margin:14px 16px 0;padding:0}
+  .docwrap{display:block;padding-left:0}
+  .dask{display:none!important}
+  .docwrap .docnav{position:static;max-height:none;overflow:visible;margin:14px 16px 0;padding:0}
   .dsrch,.dres,.dtree{display:none!important}
   .docnav select{display:block;font-size:15px;padding:9px 10px}
 }
@@ -1950,7 +1954,9 @@ dq.type="search"; dq.setAttribute("aria-label","지침 검색"); dsel.setAttribu
 [["t","제목"],["c","내용"]].forEach(function(m){ var b=el("button",null,m[1]); b.type="button"; b.dataset.m=m[0];
   b.setAttribute("aria-pressed",m[0]===dmode?"true":"false"); b.onclick=function(){ setMode(m[0]); }; dsw.appendChild(b); });
 dsrch.appendChild(dq); dsrch.appendChild(dsw); dres.hidden=true;
-dnav.appendChild(dsrch); dnav.appendChild(dsel); dnav.appendChild(dres); dnav.appendChild(dtree);
+var dask=el("button","dask","질문하기"); dask.type="button"; dask.dataset.v="ask"; dask.onclick=function(){ show("ask"); scrollTo(0,0); };
+var askOpt=el("option",null,"질문하기"); askOpt.value="ask"; dsel.appendChild(askOpt);
+dnav.appendChild(dask); dnav.appendChild(dsrch); dnav.appendChild(dsel); dnav.appendChild(dres); dnav.appendChild(dtree);
 Object.keys(DOCS).forEach(function(g){
   var items=[];
   DOCS[g].forEach(function(m){
@@ -1969,6 +1975,7 @@ Object.keys(DOCS).forEach(function(g){
   });
 });
 if(DOCV.gu) lastDoc="gu";
+if(DGRP.acc) DGRP.acc.open=true;   /* 처음엔 회계만 펼쳐 둔다 */
 /* 자료마다 원래 있던 '장' 고르기 칸(…ch, 여비는 qacat)을 목차로 옮겨 그린다 — 고르면 그 칸 값을 바꿔 목록을 거른다 */
 /* 자료마다 있던 가운데 목록(장 고르기 칸 …ch · 검색 칸 · 항목 단추 .itm)은 넓은 화면에서 숨기고 왼쪽 목차가 대신한다.
    목차 항목을 누르면 그 칸들을 같은 값으로 맞춘 뒤 원래 항목 단추를 눌러 오른쪽 본문을 연다 */
@@ -2095,8 +2102,9 @@ function show(id){
   if(vg==="acc"||vg==="con"||vg==="pay"||vg==="hr"||vg==="hw"||vg==="ad"){ if(vg!==grp) setGroup(vg); lastIn[vg]=id; }
   else if(id==="ask") lastIn[grp]="ask";
   document.querySelectorAll(".view").forEach(function(s){s.classList.toggle("on",s.id==="v-"+id)});
-  var isDoc=!!DOCV[id]; if(isDoc){ lastDoc=id; dsel.value=id;
-    Object.keys(DDET).forEach(function(k){ DDET[k].classList.toggle("on",k===id); });
+  var isDoc=!!DOCV[id]; if(id==="ask") dsel.value="ask";
+  Object.keys(DDET).forEach(function(k){ DDET[k].classList.toggle("on",k===id); });
+  if(isDoc){ lastDoc=id; dsel.value=id;
     DDET[id].parentNode.open=true; dqPh(); }
   docWrap.classList.toggle("docmode",isDoc);
   [nav,dnav].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){

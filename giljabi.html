@@ -1137,6 +1137,25 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .bs-kpi .v{overflow:hidden;text-overflow:ellipsis}
 @media (max-width:600px){.bs-ctrl label{flex:1 1 44%}.bs-ctrl select,.bs-ctrl input[type=search]{flex:1;max-width:none;min-width:0}}
 
+/* 지침·법령 왼쪽 목록 */
+.docwrap{max-width:1440px;margin:0 auto}
+.docwrap>main{max-width:none}
+.docnav{display:none}
+.docnav select{display:none}
+.docwrap.docmode{display:grid;grid-template-columns:210px minmax(0,1fr);padding-left:20px}
+.docwrap.docmode .docnav{display:block;position:sticky;top:calc(var(--hdr,100px) + 12px);max-height:calc(100vh - var(--hdr,100px) - 24px);overflow:auto;margin-top:22px;padding-right:4px}
+.docnav input,.docnav select{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-size:13px}
+.docnav h4{margin:14px 0 4px;padding-left:8px;font-size:12px;color:var(--muted);font-weight:700}
+.docnav button{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 8px;border-radius:6px;font-size:13.5px;color:var(--ink-2);cursor:pointer}
+.docnav button:hover{background:var(--surface-2)}
+.docnav button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.docnav [hidden]{display:none}
+@media (max-width:800px){
+  .docwrap.docmode{display:block;padding-left:0}
+  .docwrap.docmode .docnav{position:static;max-height:none;overflow:visible;margin:14px 16px 0;padding:0}
+  .docnav input,.docnav h4,.docnav button{display:none!important}
+  .docnav select{display:block;font-size:15px;padding:9px 10px}
+}
 </style>
 </head>
 <body>
@@ -1144,15 +1163,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
   <div class="hdr">
     <div class="brand">
       <h1>학교 행정실무 길잡이</h1>
-      <span class="sub">오프라인 사본 · 기본지침 · 표준안 · 사업관리카드 · 여비 · 계약 · 급여</span>
-    </div>
-    <div class="grp" role="group" aria-label="자료 묶음">
-      <button type="button" data-g="acc" aria-pressed="true">회계</button>
-      <button type="button" data-g="con" aria-pressed="false">계약</button>
-      <button type="button" data-g="pay" aria-pressed="false">급여</button>
-      <button type="button" data-g="hr" aria-pressed="false">인사</button>
-      <button type="button" data-g="hw" aria-pressed="false">학운위</button>
-      <button type="button" data-g="ad" aria-pressed="false">행정</button>
+      <span class="sub">질문하기 · 지침·법령</span>
     </div>
     <div class="searchwrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
@@ -1186,7 +1197,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
             <button class="btn" id="ask">질문하기</button>
           </div>
         </div>
-        <div class="sugg" id="sugg"></div>
+        <div id="sugg" hidden></div>
         <div id="ainotice"></div>
       </div>
       <div class="sidecol">
@@ -1639,7 +1650,7 @@ if(V.sahak&&V.sahak.items&&V.sahak.items.length){
   at1.B=bundle(V.sahak); mkView(at1); ATABS.unshift(at1); SK=at1.B.items;   /* 탭 순서: 경남 기본지침 바로 뒤(AQ는 위에서 이미 정함) */
 }
 /* 업무흐름도 탭(V.flow26, parse_flow.py) — 경상남도교육청 「학교행정 업무흐름도」(2026.3.). 분야(docs[].g)마다 해당 묶음 맨 앞에 '업무흐름도' 탭 하나 */
-var FLD=V.flow26||{docs:[],items:[]}, FTABS={}, FLALL=[];
+var FLD={docs:[],items:[]}, FTABS={}, FLALL=[];
 [["acc",ATABS],["con",CTABS],["pay",PTABS],["hr",HTABS],["hw",WTABS],["ad",ADTABS]].forEach(function(p){
   var g=p[0], names=FLD.docs.filter(function(d){return d.g===g}).map(function(d){return d.n});
   if(!names.length) return;
@@ -1958,7 +1969,7 @@ var VIEWS=[
   {id:"biz",label:"업무추진비 기준",cnt:String(BZ.length),g:"acc"},
   {id:"gu",label:"경남 기본지침",cnt:String(GU.length),g:"acc"}
 ];
-VIEWS=[VIEWS[0],{id:"chk",label:"업무 체크리스트",cnt:"진행",g:"all"}].concat([{id:"ct",label:"수의계약 서류",cnt:"작성",g:"con"},{id:"flow",label:"계약 흐름도",cnt:"절차",g:"con"},{id:"gb",label:"교복 구매",cnt:"절차",g:"con"},{id:"tb",label:"교과서 선정",cnt:"절차",g:"con"}],
+VIEWS=[VIEWS[0]].concat([{id:"ct",label:"수의계약 서류",cnt:"작성",g:"con"},{id:"flow",label:"계약 흐름도",cnt:"절차",g:"con"},{id:"gb",label:"교복 구매",cnt:"절차",g:"con"},{id:"tb",label:"교과서 선정",cnt:"절차",g:"con"}],
   CTABS.filter(function(t){return t.id==="gbk"}).concat(CTABS.filter(function(t){return t.id!=="gbk"})).map(function(t){return {id:t.id,label:t.label,full:t.full,cnt:String(t.B.items.length),g:"con"}}),
   [{id:"sg",label:"송금내역서 생성기",cnt:"작성",g:"pay"}],
   PTABS.map(function(t){return {id:t.id,label:t.label,cnt:String(t.B.items.length),g:"pay"}}),
@@ -1967,7 +1978,7 @@ VIEWS=[VIEWS[0],{id:"chk",label:"업무 체크리스트",cnt:"진행",g:"all"}].
   ATABS.map(function(t){return {id:t.id,label:t.label,full:t.full,cnt:String(t.B.items.length),g:"acc"}}),
   WTABS.map(function(t){return {id:t.id,label:t.label,cnt:String(t.B.items.length),g:"hw"}}),
   ADTABS.map(function(t){return {id:t.id,label:t.label,cnt:String(t.B.items.length),g:"ad"}}));
-VIEWS=VIEWS.filter(function(v){return !/^(pri|hk|ct|flow|gb|tb|sg|hb|bb|card)$/.test(v.id)});
+VIEWS=VIEWS.filter(function(v){return !/^(pri|hk|ct|flow|gb|tb|sg|hb|bb)$/.test(v.id)});
 /* 탭 두 줄: 위 = 도구(질문하기·작성·계산), 아래 = 지침·법령 원문을 묶음 이름과 함께 펼친다.
    탭 이름으로 고르므로, 새 원문 탭은 DOCS에 이름을 넣어야 아래 줄로 간다(안 넣으면 위 줄에 남는다) */
 var DOCS={
@@ -1987,28 +1998,47 @@ function tabBtn(v,to){
   b.onclick=function(){show(v.id)};
   to.appendChild(b);
 }
-VIEWS.forEach(function(v){ if(!DOCOF[v.id]) tabBtn(v,nav); });
-Object.keys(DOCS).forEach(function(g){ var first=true; DOCS[g].forEach(function(m){
-  var items=VIEWS.filter(function(v){ return v.g===g&&DOCOF[v.id]===m[0]; }); if(!items.length) return;
-  items.sort(function(a,b){ return m[1].indexOf(a.label)-m[1].indexOf(b.label); });
-  if(!first){ var sp=el("span","dgl"); sp.dataset.g=g; sp.setAttribute("aria-hidden","true"); nav2.appendChild(sp); } first=false;   /* 묶음 사이 세로선 */
-  items.forEach(function(v){ tabBtn(v,nav2); });
-}); });
+/* 탭은 두 개: 질문하기 · 지침·법령. 지침·법령은 왼쪽 목록(분야 제목 아래 자료 이름)에서 고른다 */
+var GNAME={acc:"회계",con:"계약",pay:"급여",hr:"인사",hw:"학운위",ad:"행정"}, DOCV={}, lastDoc="";
+tabBtn(VIEWS[0],nav);
+var docTab=el("button",null,"지침·법령"); docTab.type="button"; docTab.setAttribute("role","tab"); docTab.dataset.v="docs";
+docTab.onclick=function(){ show(lastDoc); }; nav.appendChild(docTab);
+var dnav=el("aside","docnav"), dq=el("input"), dsel=el("select");
+dq.type="search"; dq.placeholder="자료 이름 찾기"; dq.setAttribute("aria-label","자료 이름 찾기"); dsel.setAttribute("aria-label","자료 고르기");
+dnav.appendChild(dq); dnav.appendChild(dsel);
+Object.keys(DOCS).forEach(function(g){
+  var items=[];
+  DOCS[g].forEach(function(m){
+    items=items.concat(VIEWS.filter(function(v){ return v.g===g&&DOCOF[v.id]===m[0]; })
+      .sort(function(x,y){ return m[1].indexOf(x.label)-m[1].indexOf(y.label); }));
+  });
+  if(g==="acc") items=VIEWS.filter(function(v){ return v.id==="card"; }).concat(items);
+  if(!items.length) return;
+  var og=el("optgroup"); og.label=GNAME[g]; dsel.appendChild(og);
+  dnav.appendChild(el("h4",null,GNAME[g]));
+  items.forEach(function(v){
+    DOCV[v.id]=1; if(!lastDoc&&v.id!=="card") lastDoc=v.id;
+    var bt=el("button",null,v.label); bt.type="button"; bt.dataset.v=v.id; if(v.full) bt.title=v.full;
+    bt.onclick=function(){ show(v.id); scrollTo(0,0); }; dnav.appendChild(bt);
+    var o=el("option",null,v.label); o.value=v.id; og.appendChild(o);
+  });
+});
+if(DOCV.gu) lastDoc="gu";
+dsel.onchange=function(){ show(dsel.value); scrollTo(0,0); };
+dq.oninput=function(){
+  var t=dq.value.replace(/\s/g,"").toLowerCase(), h=null, any=false;
+  Array.prototype.forEach.call(dnav.children,function(c){
+    if(c.tagName==="H4"){ if(h) h.hidden=!any; h=c; any=false; }
+    else if(c.tagName==="BUTTON"){ c.hidden=!!t&&c.textContent.replace(/\s/g,"").toLowerCase().indexOf(t)<0; if(!c.hidden) any=true; }
+  });
+  if(h) h.hidden=!any;
+};
+var docWrap=el("div","docwrap"), mainEl=document.querySelector("main");
+mainEl.parentNode.insertBefore(docWrap,mainEl); docWrap.appendChild(dnav); docWrap.appendChild(mainEl);
+nav2.hidden=true;
 /* 회계 / 계약 묶음: 고른 묶음의 탭만 보인다. 질문하기는 양쪽 공통 */
 var grp="acc", lastIn={acc:"ask",con:"cb1",pay:"py1",hr:"hr1",hw:"hk",ad:"ask"};
-function groupOf(id){ for(var k=0;k<VIEWS.length;k++){ if(VIEWS[k].id===id) return VIEWS[k].g; } return "all"; }function setGroup(g){
-  grp=g;
-  if(typeof renderSugg==="function"&&window.__suggReady) renderSugg();
-  document.querySelectorAll(".grp button").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.g===g?"true":"false")});
-  [nav,nav2].forEach(function(n){ n.querySelectorAll("button,.dgl").forEach(function(b){ var vg=b.dataset.v?groupOf(b.dataset.v):b.dataset.g; b.hidden=!(vg==="all"||vg===g); }); });
-  nav2.hidden=!nav2.querySelector("button:not([hidden])");
-  nav.scrollLeft=0; setTimeout(syncNavBtns,50);
-}
-document.querySelectorAll(".grp button").forEach(function(b){
-  b.onclick=function(){ if(grp!==b.dataset.g){ setGroup(b.dataset.g); show("ask"); } };   /* 묶음을 바꾸면 늘 질문하기부터 */   /* 묶음을 바꾸면 늘 질문하기부터 */
-});
-if(!PTABS.length){ var pb=document.querySelector('.grp button[data-g="pay"]'); if(pb) pb.hidden=true; }
-if(!HTABS.length){ var hb=document.querySelector('.grp button[data-g="hr"]'); if(hb) hb.hidden=true; }
+function groupOf(id){ for(var k=0;k<VIEWS.length;k++){ if(VIEWS[k].id===id) return VIEWS[k].g; } return "all"; }function setGroup(g){ grp=g; }
 setGroup("acc");
 var navL=$("#navl"), navR=$("#navr");
 function syncNavBtns(){
@@ -2034,8 +2064,10 @@ function show(id){
   if(vg==="acc"||vg==="con"||vg==="pay"||vg==="hr"||vg==="hw"||vg==="ad"){ if(vg!==grp) setGroup(vg); lastIn[vg]=id; }
   else if(id==="ask") lastIn[grp]="ask";
   document.querySelectorAll(".view").forEach(function(s){s.classList.toggle("on",s.id==="v-"+id)});
-  [nav,nav2].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){
-    var on=b.dataset.v===id;
+  var isDoc=!!DOCV[id]; if(isDoc){ lastDoc=id; dsel.value=id; }
+  docWrap.classList.toggle("docmode",isDoc);
+  [nav,dnav].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){
+    var on=b.dataset.v===id||(isDoc&&b.dataset.v==="docs");
     b.setAttribute("aria-selected", on?"true":"false");
     if(on&&b.scrollIntoView) try{b.scrollIntoView({block:"nearest",inline:"nearest"})}catch(e){}
   }); });
@@ -7531,7 +7563,7 @@ function lockDialog(){
     });
   };
 }
-function mountLockButton(){
+function mountLockButton(){ return;
   if(document.getElementById("lockbtn")) return;
   var nav=document.querySelector("header .hdr .brand");
   if(!nav) return;

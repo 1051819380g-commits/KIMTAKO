@@ -2040,6 +2040,7 @@ var GNAME={acc:"회계",con:"계약",pay:"급여",hr:"인사",hw:"학운위",ad:
 tabBtn(VIEWS[0],nav);
 var docTab=el("button",null,"지침·법령"); docTab.type="button"; docTab.setAttribute("role","tab"); docTab.dataset.v="docs";
 docTab.onclick=function(){ show(lastDoc); }; nav.appendChild(docTab);
+VIEWS.filter(function(v){ return v.id==="card"; }).forEach(function(v){ tabBtn(v,nav); });   /* 우리 학교 예산 = 위 탭 */
 var dnav=el("aside","docnav"), dq=el("input"), dsel=el("select"), dtree=el("div","dtree"), DGRP={}, DDET={};
 var dmode="t", dsrch=el("div","dsrch"), dsw=el("div","dsw"), dres=el("div","dres");
 dq.type="search"; dq.setAttribute("aria-label","지침 검색"); dsel.setAttribute("aria-label","자료 고르기");
@@ -2053,12 +2054,11 @@ Object.keys(DOCS).forEach(function(g){
     items=items.concat(VIEWS.filter(function(v){ return v.g===g&&DOCOF[v.id]===m[0]; })
       .sort(function(x,y){ return m[1].indexOf(x.label)-m[1].indexOf(y.label); }));
   });
-  if(g==="acc") items=VIEWS.filter(function(v){ return v.id==="card"; }).concat(items);
   if(!items.length) return;
   var og=el("optgroup"); og.label=GNAME[g]; dsel.appendChild(og);
   var gd=el("details","dg"); gd.appendChild(el("summary",null,GNAME[g])); dtree.appendChild(gd); DGRP[g]=gd;
   items.forEach(function(v){
-    DOCV[v.id]=1; if(!lastDoc&&v.id!=="card") lastDoc=v.id;
+    DOCV[v.id]=1; if(!lastDoc) lastDoc=v.id;
     var dd=el("details","dd"), sm=el("summary",null,v.label); if(v.full) sm.title=v.full;
     dd.appendChild(sm); gd.appendChild(dd); DDET[v.id]=dd;
     sm.onclick=function(){ pickCh(v.id,""); };   /* 자료 이름 = 그 자료 열기 + 장(또는 항목) 목록 펼치기/접기 */

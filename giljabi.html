@@ -1153,6 +1153,20 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .docnav select{display:none}
 .docwrap.docmode{display:grid;grid-template-columns:250px minmax(0,1fr);padding-left:20px}
 .docwrap.docmode .docnav{display:block;position:sticky;top:calc(var(--hdr,60px) + 12px);max-height:calc(100vh - var(--hdr,60px) - 24px);overflow:auto;margin-top:22px;padding-right:6px}
+.dsrch{display:flex;gap:6px;align-items:center}
+.dsrch input{flex:1 1 auto;min-width:0}
+.dsw{display:flex;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.dsw button{border:0;background:var(--surface-2);color:var(--muted);font-size:12.5px;padding:6px 9px;cursor:pointer}
+.dsw button+button{border-left:1px solid var(--line)}
+.dsw button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+.dres .dhead{margin:12px 0 4px;padding-left:8px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.dit{display:block;width:calc(100% - 16px);margin-left:16px;text-align:left;border:0;background:none;padding:3px 8px;border-radius:6px;font-size:12.5px;line-height:1.4;color:var(--ink-2);cursor:pointer}
+.dres .dit{margin-left:0;width:100%}
+.dit:hover{background:var(--surface-2)}
+.dnone{margin-left:24px;padding:3px 0;font-size:12px;color:var(--muted)}
+.dpx{margin:4px 0 4px 16px;width:calc(100% - 16px)!important;padding:5px 7px!important}
+.dch>summary{font-size:12.5px;color:var(--ink-2)}
+@media (min-width:801px){.docwrap.docmode .view .split>.listpane{display:none}.docwrap.docmode .view .split{display:block}}   /* 넓은 화면: 메뉴는 왼쪽 목차 하나 */
 .docnav input,.docnav select{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-size:13px}
 .docnav [hidden]{display:none}
 .dtree summary{list-style:none;cursor:pointer;display:flex;gap:6px;align-items:baseline;padding:5px 8px;border-radius:6px;line-height:1.4}
@@ -1176,7 +1190,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
   .hdr nav#tabs button{padding:9px 14px}
   .docwrap.docmode{display:block;padding-left:0}
   .docwrap.docmode .docnav{position:static;max-height:none;overflow:visible;margin:14px 16px 0;padding:0}
-  .docnav input,.dtree{display:none!important}
+  .dsrch,.dres,.dtree{display:none!important}
   .docnav select{display:block;font-size:15px;padding:9px 10px}
 }
 </style>
@@ -2027,8 +2041,12 @@ tabBtn(VIEWS[0],nav);
 var docTab=el("button",null,"지침·법령"); docTab.type="button"; docTab.setAttribute("role","tab"); docTab.dataset.v="docs";
 docTab.onclick=function(){ show(lastDoc); }; nav.appendChild(docTab);
 var dnav=el("aside","docnav"), dq=el("input"), dsel=el("select"), dtree=el("div","dtree"), DGRP={}, DDET={};
-dq.type="search"; dq.placeholder="자료 이름 찾기"; dq.setAttribute("aria-label","자료 이름 찾기"); dsel.setAttribute("aria-label","자료 고르기");
-dnav.appendChild(dq); dnav.appendChild(dsel); dnav.appendChild(dtree);
+var dmode="t", dsrch=el("div","dsrch"), dsw=el("div","dsw"), dres=el("div","dres");
+dq.type="search"; dq.setAttribute("aria-label","지침 검색"); dsel.setAttribute("aria-label","자료 고르기");
+[["t","제목"],["c","내용"]].forEach(function(m){ var b=el("button",null,m[1]); b.type="button"; b.dataset.m=m[0];
+  b.setAttribute("aria-pressed",m[0]===dmode?"true":"false"); b.onclick=function(){ setMode(m[0]); }; dsw.appendChild(b); });
+dsrch.appendChild(dq); dsrch.appendChild(dsw); dres.hidden=true;
+dnav.appendChild(dsrch); dnav.appendChild(dsel); dnav.appendChild(dres); dnav.appendChild(dtree);
 Object.keys(DOCS).forEach(function(g){
   var items=[];
   DOCS[g].forEach(function(m){
@@ -2043,47 +2061,105 @@ Object.keys(DOCS).forEach(function(g){
     DOCV[v.id]=1; if(!lastDoc&&v.id!=="card") lastDoc=v.id;
     var dd=el("details","dd"), sm=el("summary",null,v.label); if(v.full) sm.title=v.full;
     dd.appendChild(sm); gd.appendChild(dd); DDET[v.id]=dd;
-    sm.onclick=function(){ pickCh(v.id,""); };   /* 자료 이름 = 그 자료 전체 + 장 목록 펼치기/접기 */
+    sm.onclick=function(){ pickCh(v.id,""); };   /* 자료 이름 = 그 자료 열기 + 장(또는 항목) 목록 펼치기/접기 */
     var o=el("option",null,v.label); o.value=v.id; og.appendChild(o);
   });
 });
 if(DOCV.gu) lastDoc="gu";
 /* 자료마다 원래 있던 '장' 고르기 칸(…ch, 여비는 qacat)을 목차로 옮겨 그린다 — 고르면 그 칸 값을 바꿔 목록을 거른다 */
+/* 자료마다 있던 가운데 목록(장 고르기 칸 …ch · 검색 칸 · 항목 단추 .itm)은 넓은 화면에서 숨기고 왼쪽 목차가 대신한다.
+   목차 항목을 누르면 그 칸들을 같은 값으로 맞춘 뒤 원래 항목 단추를 눌러 오른쪽 본문을 연다 */
 function chSel(id){ var v=document.getElementById("v-"+id); return v&&(v.querySelector('select[id$="ch"]')||v.querySelector("#qacat")); }
-function pickCh(id,val,btn){
-  show(id); scrollTo(0,0);
-  var c=chSel(id); if(c&&c.value!==val){ c.value=val; c.dispatchEvent(new Event("change")); }
-  dtree.querySelectorAll("[aria-current]").forEach(function(x){ x.removeAttribute("aria-current"); });
-  if(btn) btn.setAttribute("aria-current","true");
+function lpOf(id){ var v=document.getElementById("v-"+id); return v&&v.querySelector(".listpane"); }
+function qInp(id){ var lp=lpOf(id); return lp&&lp.querySelector(".filter input"); }
+function itemsOf(id){ var lp=lpOf(id); return lp?[].slice.call(lp.querySelectorAll(".scroller button.itm")):[]; }
+function dNorm(t){ return String(t||"").replace(/\s/g,"").toLowerCase(); }
+function markCur(x){ dnav.querySelectorAll("[aria-current]").forEach(function(y){ y.removeAttribute("aria-current"); }); if(x) x.setAttribute("aria-current","true"); }
+function setFilter(id,val,q){
+  if(cur!==id) show(id);
+  var c=chSel(id); if(c&&val!=null&&c.value!==val){ c.value=val; c.dispatchEvent(new Event("change")); }
+  var qi=qInp(id); if(qi&&q!=null&&qi.value!==q){ qi.value=q; qi.dispatchEvent(new Event("input")); }
+}
+function pickCh(id,val){ setFilter(id,val,""); markCur(null); scrollTo(0,0); }
+function mirror(id,val,box,q){
+  box.querySelectorAll(":scope>.dit,:scope>.dnone").forEach(function(x){ x.remove(); });
+  var L=itemsOf(id);
+  if(!L.length){ box.appendChild(el("div","dnone",q?"찾은 항목이 없습니다.":"항목이 없습니다.")); return 0; }
+  L.forEach(function(b,i){
+    var t=b.querySelector(".t"), it=el("button","dit",(t?t.textContent:b.textContent).trim()); it.type="button";
+    it.onclick=function(){ setFilter(id,val,q); var o=itemsOf(id)[i]; if(o) o.click(); markCur(it); };
+    box.appendChild(it);
+  });
+  return L.length;
 }
 function fillCh(id,dd){
-  var c=chSel(id), gs=c?c.querySelectorAll("optgroup"):[], ALL=/ 전체$/;
-  function leaf(o,to){ if(!o.value) return; var bt=el("button","dch",o.textContent); bt.type="button"; bt.onclick=function(){ pickCh(id,o.value,bt); }; to.appendChild(bt); }
+  var c=chSel(id), gs=c?c.querySelectorAll("optgroup"):[], ALL=/ 전체$/, any=false;
+  function node(label,val,to){
+    var d=el("details","dch"); d.appendChild(el("summary",null,label)); to.appendChild(d); any=true;
+    d.addEventListener("toggle",function(){ if(d.open){ setFilter(id,val,""); mirror(id,val,d,""); } });
+  }
   if(c) Array.prototype.forEach.call(c.children,function(k){
-    if(k.tagName==="OPTION") return leaf(k,dd);
+    if(k.tagName==="OPTION"){ if(k.value) node(k.textContent,k.value,dd); return; }
     var os=[].slice.call(k.children);
-    if(gs.length===1) return os.forEach(function(o){ if(!ALL.test(o.textContent)) leaf(o,dd); });
+    if(gs.length===1) return os.forEach(function(o){ if(o.value&&!ALL.test(o.textContent)) node(o.textContent,o.value,dd); });
     var all=os[0]&&ALL.test(os[0].textContent)?os.shift():null;
-    if(!os.length){ if(all) leaf({value:all.value,textContent:k.label},dd); return; }
-    var sd=el("details","dsub"), ss=el("summary",null,k.label); sd.appendChild(ss);
-    if(all) ss.onclick=function(){ pickCh(id,all.value,ss); };
-    os.forEach(function(o){ leaf(o,sd); }); dd.appendChild(sd);
+    if(!os.length){ if(all) node(k.label,all.value,dd); return; }
+    var sd=el("details","dsub"); sd.appendChild(el("summary",null,k.label));
+    os.forEach(function(o){ node(o.textContent,o.value,sd); }); dd.appendChild(sd);
   });
-  if(!dd.querySelector(".dch,.dsub")) dd.classList.add("leaf");
+  /* 세출 표준안의 학교 종류처럼 장이 아닌 고르기 칸은 목차에 같은 칸을 하나 더 둔다 */
+  var lp=lpOf(id), st=lp&&lp.querySelector('.filter select:not([id$="ch"]):not(#qacat)');
+  if(st){ var px=st.cloneNode(true); px.removeAttribute("id"); px.className="dpx"; px.value=st.value;
+    px.onchange=function(){ st.value=px.value; st.dispatchEvent(new Event("change")); mirror(id,"",dd,""); };
+    dd.insertBefore(px,dd.children[1]); }
+  if(!any){
+    if(lp) dd.addEventListener("toggle",function(){ if(dd.open) mirror(id,"",dd,""); });   /* 장이 없으면 항목을 바로 */
+    else dd.classList.add("leaf");
+  }
 }
 setTimeout(function(){ Object.keys(DDET).forEach(function(id){ fillCh(id,DDET[id]); }); },0);   /* 장 고르기 칸이 다 채워진 뒤 */
 dsel.onchange=function(){ show(dsel.value); scrollTo(0,0); };
-dq.oninput=function(){
-  var t=dq.value.replace(/\s/g,"").toLowerCase();
+function docName(id){ var o=dsel.querySelector('option[value="'+id+'"]'); return o?o.textContent:""; }
+function dqPh(){ dq.placeholder=dmode==="t"?"자료·장 제목 찾기":"‘"+docName(lastDoc)+"’ 본문에서 찾기"; }
+function setMode(m){
+  if(dmode==="c"&&m!=="c") setFilter(lastDoc,null,"");
+  dmode=m; dsw.querySelectorAll("button").forEach(function(b){ b.setAttribute("aria-pressed",b.dataset.m===m?"true":"false"); });
+  dqPh(); titleFilter(""); dRunSearch(); dq.focus();
+}
+/* 제목: 자료·장·절 이름으로 목차를 거른다 */
+function titleFilter(t){
   Object.keys(DGRP).forEach(function(g){
-    var any=false;
-    DGRP[g].querySelectorAll(".dd").forEach(function(dd){
-      var hit=!t||dd.querySelector("summary").textContent.replace(/\s/g,"").toLowerCase().indexOf(t)>=0;
-      dd.hidden=!hit; if(hit) any=true;
+    var gany=false;
+    DGRP[g].querySelectorAll(":scope>.dd").forEach(function(dd){
+      var dn=!t||dNorm(dd.querySelector("summary").textContent).indexOf(t)>=0, dany=false;
+      dd.querySelectorAll(".dsub,.dch").forEach(function(n){ n.hidden=false; });
+      if(!dn){
+        dd.querySelectorAll(".dsub").forEach(function(n){ if(dNorm(n.querySelector("summary").textContent).indexOf(t)>=0){ n.dataset.hit="1"; dany=true; } else delete n.dataset.hit; });
+        dd.querySelectorAll(".dch").forEach(function(n){
+          var h=dNorm(n.querySelector("summary").textContent).indexOf(t)>=0||(n.parentNode.dataset&&n.parentNode.dataset.hit==="1");
+          n.hidden=!h; if(h) dany=true; });
+        dd.querySelectorAll(".dsub").forEach(function(n){ n.hidden=!n.dataset.hit&&!n.querySelector(".dch:not([hidden])"); if(!n.hidden) n.open=true; });
+        if(dany) dd.open=true;
+      }
+      dd.hidden=!(dn||dany); if(!dd.hidden) gany=true;
     });
-    DGRP[g].hidden=!any; if(t&&any) DGRP[g].open=true;
+    DGRP[g].hidden=!gany; if(t&&gany) DGRP[g].open=true;
   });
-};
+}
+/* 내용: 지금 연 자료의 본문을 찾아 결과를 목차 자리에 보인다(모든 자료에서 찾기는 맨 위 통합검색) */
+var dqT=null;
+function dRunSearch(){
+  var q=dq.value.trim();
+  if(dmode==="t"){ dres.hidden=true; dtree.hidden=false; titleFilter(dNorm(q)); return; }
+  dres.textContent="";
+  if(!q){ dres.hidden=true; dtree.hidden=false; setFilter(lastDoc,null,""); return; }
+  dtree.hidden=true; dres.hidden=false;
+  setFilter(lastDoc,"",q);
+  var h=el("div","dhead"); dres.appendChild(h);
+  var n=mirror(lastDoc,"",dres,q);
+  h.textContent="‘"+docName(lastDoc)+"’ 본문 "+n+"건";
+}
+dq.oninput=function(){ clearTimeout(dqT); dqT=setTimeout(dRunSearch,dmode==="c"?250:0); };
 document.querySelector(".hdr .searchwrap").before(nav);
 var docWrap=el("div","docwrap"), mainEl=document.querySelector("main");
 mainEl.parentNode.insertBefore(docWrap,mainEl); docWrap.appendChild(dnav); docWrap.appendChild(mainEl);
@@ -2118,7 +2194,7 @@ function show(id){
   document.querySelectorAll(".view").forEach(function(s){s.classList.toggle("on",s.id==="v-"+id)});
   var isDoc=!!DOCV[id]; if(isDoc){ lastDoc=id; dsel.value=id;
     Object.keys(DDET).forEach(function(k){ DDET[k].classList.toggle("on",k===id); });
-    DDET[id].parentNode.open=true; }
+    DDET[id].parentNode.open=true; dqPh(); }
   docWrap.classList.toggle("docmode",isDoc);
   [nav,dnav].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){
     var on=b.dataset.v===id||(isDoc&&b.dataset.v==="docs");

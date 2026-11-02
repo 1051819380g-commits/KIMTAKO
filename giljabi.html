@@ -4511,11 +4511,9 @@ function errCopy(code){
   }
 }
 /* ---------- 법제처 현행 법령 실시간 조회 ----------
-   자료·질문에 인용됐지만 이 파일에 없는 법령(예: 「청소년활동 진흥법」)을 법제처 오픈API에서 받아
-   인용된 조문 + 질문 낱말이 많이 든 조문만 AI 자료에 붙인다(최대 LAWCAP자). 인터넷이 없거나 실패하면 건너뛴다.
-   법제처 이용 ID(OC)는 AI 연결 설정에서 넣는 'kbg.lawoc'(비우면 법제처 공개 시험용 ID 'test') */
-var LAWAPI="https://www.law.go.kr/DRF/", LAWCAP=3000, LOCALLAW=null;
-function lawOC(){ try{ return (localStorage.getItem("kbg.lawoc")||"").trim()||"test"; }catch(e){ return "test"; } }
+   자료·질문에 인용됐지만 이 파일에 없는 법령(예: 「청소년활동 진흥법」)을 학교행정 자료 서버(맥미니 MCP)의 law로 받아
+   인용된 조문 + 질문 낱말이 든 조문만 AI 자료에 붙인다(최대 LAWCAP자). 서버가 없거나 실패하면 건너뛴다. */
+var LAWCAP=3000, LOCALLAW=null;
 
 /* ---------- 학교행정 자료 서버(맥미니 MCP) ----------
    주소: 빌드 때 넣은 주소(window.KBG_MCP_DEFAULT, 길잡이_작업/mcp_url.txt)만 쓴다 — 사용자가 바꾸지 않게 입력 칸은 두지 않는다(사용자 결정).
@@ -4572,41 +4570,6 @@ function lawCands(q,ctx){
     return !isLocal(o.n);                                                      /* 이미 파일에 든 법령은 빼고 */
   }).filter(function(o){return o.w>=0.9}).sort(function(a,b){return b.w-a.w}).slice(0,2);
 }
-function lawGetAny(alts){ var i=0; return (function nx(){ return i>=alts.length?Promise.resolve(null):lawGet(alts[i++]).then(function(L){ return L||nx(); }); })(); }
-function lawFetch(u){
-  var c=new AbortController(), tm=setTimeout(function(){c.abort()},6000);
-  return fetch(u,{signal:c.signal}).then(function(r){ return r.ok?r.json():null; }).then(function(j){ clearTimeout(tm); return j; },function(e){ clearTimeout(tm); throw e; });
-}
-function lawFlat(a){
-  var out=[];
-  (function w(o){
-    if(!o) return; if(Array.isArray(o)){ o.forEach(w); return; } if(typeof o!=="object") return;
-    ["조문내용","항내용","호내용","목내용"].forEach(function(k){ var v=o[k]; if(v) out.push((Array.isArray(v)?v.flat(9).join(" "):String(v)).replace(/\s+/g," ").trim()); });
-    ["항","호","목"].forEach(function(k){ w(o[k]); });
-  })(a);
-  return out.filter(Boolean).join("\n");
-}
-function lawGet(name){
-  var key="kbg.law."+name, now=Date.now(), oc=encodeURIComponent(lawOC());
-  try{ var c0=JSON.parse(localStorage.getItem(key)||"null"); if(c0&&now-c0.at<864e5) return Promise.resolve(c0); }catch(e){}   /* 하루 동안 다시 받지 않음 */
-  return lawFetch(LAWAPI+"lawSearch.do?OC="+oc+"&target=law&type=JSON&display=20&query="+encodeURIComponent(name)).then(function(j){
-    var ls=(j&&j.LawSearch&&j.LawSearch.law)||[]; if(!Array.isArray(ls)) ls=[ls];
-    var nm=function(s){return String(s||"").replace(/\s/g,"")};
-    var hit=ls.filter(function(x){ return x["현행연혁코드"]!=="연혁"&&(nm(x["법령명한글"])===name||nm(x["법령약칭명"])===name); })[0];
-    if(!hit) return null;                                                        /* 이름이 정확히 같은 법령만 — '계약방법' 같은 오탐 차단 */
-    return lawFetch(LAWAPI+"lawService.do?OC="+oc+"&target=law&type=JSON&MST="+hit["법령일련번호"]).then(function(j2){
-      var u=j2&&j2["법령"]&&j2["법령"]["조문"]&&j2["법령"]["조문"]["조문단위"]; if(!u) return null; if(!Array.isArray(u)) u=[u];
-      var o={at:now,name:hit["법령명한글"],ef:hit["시행일자"],arts:u.filter(function(a){return a["조문여부"]==="조문"}).map(function(a){
-        return {no:"제"+a["조문번호"]+"조"+(a["조문가지번호"]?"의"+a["조문가지번호"]:""),ti:a["조문제목"]||"",t:lawFlat(a)}; })};
-      try{
-        var ks=[]; for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k.indexOf("kbg.law.")===0) ks.push(k); }
-        if(ks.length>=8) ks.forEach(function(k){ localStorage.removeItem(k); });   /* 8개 넘으면 비우고 새로 */
-        localStorage.setItem(key,JSON.stringify(o));
-      }catch(e){}
-      return o;
-    });
-  });
-}
 /* 법제처는 부르는 컴퓨터의 IP를 등록해야 해서(공용 ID 차단) 브라우저에서 직접 부르기 어렵다 →
    학교행정 자료 서버가 있으면 서버의 law(서버 IP 등록됨)로 조문을 받는다. 질문이 짚은 조문은 번호로, 아니면 질문 낱말로 */
 function lawLiveMcp(cs,q,topS){
@@ -4632,37 +4595,8 @@ function lawLiveMcp(cs,q,topS){
 /* 결과: {text, refs} 또는 null */
 function lawLive(q,ctx,topS){
   var cs=lawCands(q,ctx); if(!cs.length) return Promise.resolve(null);
-  if(mcpURL()) return lawLiveMcp(cs,q,topS).catch(function(){ return null; });
-  /* 법 이름 조각('진흥법')은 조문 고르기에 쓰지 않는다 — '…진흥원의 설치' 같은 조문이 끼지 않게 */
-  var nms=cs.map(function(c){return (c.alts||[c.n]).join(" ")}).join(" "), ts=toks(q).filter(function(t){ return nms.indexOf(t)<0; }), W=weights(ts), tw=0;
-  ts.forEach(function(t){ tw+=W[t]; });
-  return Promise.all(cs.map(function(c){ return lawGetAny(c.alts||[c.n]).then(function(L){ return L&&L.arts.length?{L:L,c:c}:null; },function(){ return null; }); })).then(function(rs){
-    rs=rs.filter(Boolean); if(!rs.length) return null;
-    var per=Math.floor(LAWCAP/rs.length), text="", refs=[], day=new Date().toISOString().slice(0,10);
-    rs.forEach(function(o){
-      /* 인용된 조문은 가산(+2)하되, 질문 낱말이 더 많이 든 조문이 앞선다 — 편람이 엉뚱한 조를 인용해도 맞는 조문이 들어가게 */
-      /* 질문이 직접 짚은 조문은 무조건, 나머지는 질문 낱말 가중치 합의 15% 이상이면서 이 법에서 가장 맞는 조문의 60% 이상인 것만
-         — '가입' 한 낱말만 겹친 엉뚱한 조문 차단 */
-      /* 분모는 이 법 어딘가에 나오는 질문 낱말만 — '수학여행'처럼 법에 없는 낱말이 모든 조문 점수를 깎지 않게 */
-      var all=o.L.arts.map(function(a){return a.ti+" "+a.t}).join("\n").toLowerCase(), lw=0;
-      ts.forEach(function(t){ if(all.indexOf(t)>=0) lw+=W[t]; });
-      /* 낱말이 조문 여기저기 흩어진 긴 조문보다 한곳(300자)에 모인 조문을 — 제목은 늘 그 구간에 포함 */
-      var sc=o.L.arts.map(function(a){ var k=o.c.arts[a.no]||0, v=prox((a.ti+" "+a.t).toLowerCase(),ts,300)/(lw||1); return {a:a,k:k,v:v,s:v+(k?0.1:0)+(k===2?9:0)}; });
-      var best=Math.max.apply(null,sc.map(function(x){return x.k?0:x.v}).concat([0]));
-      sc=sc.filter(function(x){return x.k===2||(x.v>=0.5&&lw>=tw*0.3&&x.v>=best*0.6)}).sort(function(x,y){return y.s-x.s}).slice(0,3);
-      if(!sc.length) return;
-      var left=per, lines=[];
-      sc.forEach(function(x){
-        if(left<150) return;
-        var a=x.a, nm=a.no+(a.ti?"("+a.ti+")":""), t=a.t.length>left?a.t.slice(0,left)+"…":a.t; left-=t.length; lines.push("- "+t);
-        refs.push({t:o.L.name+" › "+nm+" · 법제처",s:(topS||1)*0.5,   /* 답변이 인용할 때만 '직접 근거'로 뜨고 보충 목록엔 안 끼게 */doc:o.L.name,parts:[nm],
-          go:function(){ window.open("https://www.law.go.kr/법령/"+encodeURIComponent(o.L.name.replace(/\s/g,""))+"/"+a.no,"_blank","noopener"); }});
-      });
-      var ef=String(o.L.ef||""); ef=ef.length===8?ef.slice(0,4)+"."+ef.slice(4,6)+"."+ef.slice(6):ef;
-      text+="[법제처 현행 법령 · 실시간 조회("+day+") · 「"+o.L.name+"」(시행 "+ef+")]\n"+lines.join("\n")+"\n\n";
-    });
-    return text?{text:text,refs:refs}:null;
-  });
+  if(!mcpURL()) return Promise.resolve(null);
+  return lawLiveMcp(cs,q,topS).catch(function(){ return null; });
 }
 function doAsk(){
   if(busy) return;

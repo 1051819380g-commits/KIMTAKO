@@ -4513,7 +4513,7 @@ function errCopy(code){
   switch(code){
     case "auth": return "API 키가 올바르지 않거나 권한이 없습니다. 설정에서 키를 다시 확인해 주세요.";
     case "network": return "모델 서버에 연결하지 못했습니다. 인터넷 연결(또는 로컬 모델 실행 여부)을 확인해 주세요.";
-    case "rate_limited": return "요청이 몰렸습니다. 잠시 뒤 다시 물어봐 주세요.";
+    case "rate_limited": return "이 키의 사용량 한도를 넘었습니다. 1분 한도면 잠시 뒤, 하루 한도(무료 키는 모델마다 하루 횟수가 정해져 있음)면 아래 시간이 지나야 풀립니다.";
     case "overloaded": return "지금 모델 서버가 모두 혼잡합니다. 다시 시도하고 대체 모델로도 바꿔 봤지만 응답하지 못했습니다. 파일 문제가 아니라 모델 제공사(구글 등) 쪽 상황이니, 1~2분 뒤 다시 물어봐 주세요.";
     case "cancelled": return "";
     case "http": return "답변을 가져오지 못했습니다. 모델 이름과 설정을 확인해 주세요.";
@@ -4744,7 +4744,7 @@ function doAsk(){
   .then(function(res){
     mdRender(body,res.text);
     var fx=[]; if(res.shrunk) fx.push("참고 자료를 절반으로 줄여"); if(res.model&&window.__kbgModel&&res.model!==window.__kbgModel()) fx.push(res.model+" 모델로 바꿔");
-    if(fx.length){ var fm=el("div","note","서버가 혼잡해 "+fx.join(", ")+" 답했습니다."); fm.style.marginTop="6px"; box.appendChild(fm); }
+    if(fx.length){ var fm=el("div","note","기본 모델이 혼잡하거나 오늘 사용량을 다 써서 "+fx.join(", ")+" 답했습니다."); fm.style.marginTop="6px"; box.appendChild(fm); }
     if(res.truncated){
       var tw=el("div","warnbox","답변이 중간에 끊겼습니다(모델 서버가 도중에 응답을 멈춤). 다시 받아 보세요."); tw.style.marginTop="8px";
       var tb=el("button","btn","같은 질문 다시 하기"); tb.type="button"; tb.style.marginLeft="8px"; tb.onclick=function(){ $("#q").value=q; doAsk(); };
@@ -4925,6 +4925,10 @@ function preferred(ids){
 /* 혼잡할 때 넘어갈 대체 모델: 저장된 모델 목록에서 지금 모델이 아닌 것 중 가볍고 안정적인 순서로 최대 2개.
    gemini = flash(정식) → flash-lite, anthropic = sonnet → haiku. 로컬 모델은 대체 없음. */
 var COOL={model:"",until:0};
+var DEAD={}; try{ DEAD=JSON.parse(localStorage.getItem("kbgDead")||"{}")||{}; }catch(e){}
+function isDead(m){ return DEAD[m]&&DEAD[m]>Date.now(); }
+function markDead(m,t){ var r=/retry in (?:(\d+)h)?(?:(\d+)m)?/i.exec(t||""), ms=r&&(r[1]||r[2])?((+r[1]||0)*60+(+r[2]||0)+1)*60000:3600000;
+  DEAD[m]=Date.now()+ms; try{ localStorage.setItem("kbgDead",JSON.stringify(DEAD)); }catch(e){} }
 window.__kbgModel=function(){ return CFG.model; };
 window.__kbgProv=function(){ return CFG.key||CFG.prov==="openai"?CFG.prov:""; };   /* 길잡이가 자료량을 정할 때 씀 */
 /* 최근 60초에 보낸 글자 수(무료 키 분당 토큰 한도 보호용, 이 탭 안에서만) */
@@ -4995,26 +4999,7 @@ var MODELS=null, FAST=null, OK=[];
 function pickFast(){
   OK=[];
   MODELS=(CFG.models&&CFG.models!=="[]"?Promise.resolve():listModels().then(function(ids){ CFG.models=JSON.stringify(ids); })).catch(function(){});
-  if(CFG.prov!=="gemini"){ FAST=MODELS; return; }
-  FAST=MODELS.then(function(){
-    var ids=[]; try{ ids=JSON.parse(CFG.models||"[]"); }catch(e){}
-    var c=ids.filter(function(id){ return /flash/i.test(id)&&!/lite|preview|exp|thinking|tts|image|audio|live|native/i.test(id); })
-      .sort(function(a,b){ return ver(b)-ver(a); }).slice(0,5);
-    if(c.indexOf(CFG.model)<0) c.unshift(CFG.model);
-    return new Promise(function(done){
-      var left=c.length, won=false;
-      c.forEach(function(m){
-        var h={"content-type":"application/json"}, a=authHeaders(); for(var k in a) h[k]=a[k];
-        fetch(cfgBase()+prov().chat,{method:"POST",headers:h,body:JSON.stringify({model:m,stream:true,messages:[{role:"user",content:"1"}]})})
-        .then(function(r){
-          if(r.body) r.body.cancel().catch(function(){});
-          if(!r.ok) throw 0;
-          OK.push(m);
-          if(!won){ won=true; if(m!==CFG.model){ CFG.model=m; if(window.__kbgRefresh) window.__kbgRefresh(); } done(); }
-        }).catch(function(){ if(--left===0&&!won) done(); });
-      });
-    });
-  });
+  FAST=MODELS;   /* 예전엔 flash 후보마다 시험 요청을 보내 골랐으나 무료 키는 모델마다 하루 20회라 그것만으로 한도를 깎아 뺐다 */
 }
 function makeSampler(){
   pickFast();
@@ -5058,6 +5043,7 @@ function sampler0(){
     /* opts.light(질문 정리): 가벼운 모델 하나로, 한 번만 다시 시도 — 실패하면 길잡이가 원래 질문으로 진행한다 */
     var chain=opts.light?[lightModel()]:[CFG.model].concat(backups()), maxN=opts.light?1:2, lastTry=false;
     if(!opts.light&&Date.now()<COOL.until&&COOL.model===CFG.model&&chain.length>1) chain.push(chain.shift());
+    var live=chain.filter(function(m){ return !isDead(m); }); if(live.length) chain=live;   /* 하루 한도 다 쓴 모델은 건너뜀 */
     var shrunk=false, tries=0, t0=Date.now(), codes=[];
     function shrink(){
       var last=body.messages[body.messages.length-1], c=last.content, a=c.indexOf("[자료]\n"), z=c.indexOf("\n[질문]\n");
@@ -5071,6 +5057,15 @@ function sampler0(){
       return post(true).then(function(res){
         if(!busy(res.status)||(opts.signal&&opts.signal.aborted)) return res;
         codes.push(res.status);
+        /* 하루 한도(per day) 초과는 기다려도 안 풀린다 — 다시 보내지 않고 바로 다음 모델로 */
+        if(res.status===429) return res.clone().text().catch(function(){ return ""; }).then(function(t){
+          if(!/per day/i.test(t)) return more();
+          markDead(chain[mi],t);
+          if(mi+1<chain.length){ if(opts.onStatus) opts.onStatus(chain[mi]+" 오늘 사용량을 다 씀 · "+chain[mi+1]+" 모델로 답하는 중"); return attempt(mi+1,0); }
+          return res;
+        });
+        return more();
+        function more(){
         /* 429 = 이 키의 사용량 한도(분당·일일), 5xx = 구글·앤트로픽 서버 혼잡 — 원인이 달라 문구를 나눈다 */
         var why=res.status===429?"사용량 한도(429)":"서버 혼잡("+res.status+")";
         /* 504(시간 초과)는 자료가 많아 늦은 것일 수 있으니 자료부터 줄여 같은 모델로 다시 */
@@ -5099,6 +5094,7 @@ function sampler0(){
           return wait(12000+Math.random()*3000).then(function(){ return attempt(0,maxN); });
         }
         return res;
+        }
       });
     }
     var inChars=JSON.stringify(body.messages).length;

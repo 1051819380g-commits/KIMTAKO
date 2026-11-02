@@ -1137,23 +1137,46 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .bs-kpi .v{overflow:hidden;text-overflow:ellipsis}
 @media (max-width:600px){.bs-ctrl label{flex:1 1 44%}.bs-ctrl select,.bs-ctrl input[type=search]{flex:1;max-width:none;min-width:0}}
 
-/* 지침·법령 왼쪽 목록 */
+/* 메뉴 한 줄: 머리띠 = 제목 · 탭 · 통합검색 */
+.navwrap{display:none}
+.hdr .brand{flex:0 0 auto}
+.hdr .brand .sub{display:none}
+.hdr nav#tabs{flex:1 1 auto;align-self:stretch;margin:-10px 0;gap:0;overflow:visible}
+.hdr nav#tabs button{color:rgba(255,255,255,.78);padding:0 14px;margin:0;border-bottom:3px solid transparent;font-size:15px}
+.hdr nav#tabs button:hover{color:#fff}
+.hdr nav#tabs button[aria-selected="true"]{color:#fff;border-bottom-color:#fff;font-weight:700}
+.hdr nav#tabs .cnt{display:none}
+/* 지침·법령 왼쪽 목차(분야 ▸ 자료 ▸ 장 ▸ 절) */
 .docwrap{max-width:1440px;margin:0 auto}
 .docwrap>main{max-width:none}
 .docnav{display:none}
 .docnav select{display:none}
-.docwrap.docmode{display:grid;grid-template-columns:210px minmax(0,1fr);padding-left:20px}
-.docwrap.docmode .docnav{display:block;position:sticky;top:calc(var(--hdr,100px) + 12px);max-height:calc(100vh - var(--hdr,100px) - 24px);overflow:auto;margin-top:22px;padding-right:4px}
+.docwrap.docmode{display:grid;grid-template-columns:250px minmax(0,1fr);padding-left:20px}
+.docwrap.docmode .docnav{display:block;position:sticky;top:calc(var(--hdr,60px) + 12px);max-height:calc(100vh - var(--hdr,60px) - 24px);overflow:auto;margin-top:22px;padding-right:6px}
 .docnav input,.docnav select{width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);color:var(--ink);font-size:13px}
-.docnav h4{margin:14px 0 4px;padding-left:8px;font-size:12px;color:var(--muted);font-weight:700}
-.docnav button{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 8px;border-radius:6px;font-size:13.5px;color:var(--ink-2);cursor:pointer}
-.docnav button:hover{background:var(--surface-2)}
-.docnav button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
 .docnav [hidden]{display:none}
+.dtree summary{list-style:none;cursor:pointer;display:flex;gap:6px;align-items:baseline;padding:5px 8px;border-radius:6px;line-height:1.4}
+.dtree summary::-webkit-details-marker{display:none}
+.dtree summary::before{content:"▸";flex:0 0 10px;font-size:10px;color:var(--muted);transition:transform .15s}
+.dtree details[open]>summary::before{transform:rotate(90deg)}
+.dtree details.leaf>summary::before{content:""}
+.dtree summary:hover,.dch:hover{background:var(--surface-2)}
+.dg>summary{margin-top:10px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.dg>.dd{margin-left:8px}
+.dd>summary{font-size:13.5px;color:var(--ink-2)}
+.dd.on>summary{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.dd>.dch,.dd>.dsub{margin-left:16px}
+.dsub>summary{font-size:12.5px;color:var(--ink-2)}
+.dsub>.dch{margin-left:16px}
+.dch{display:block;width:calc(100% - 16px);text-align:left;border:0;background:none;padding:4px 8px;border-radius:6px;font-size:12.5px;line-height:1.4;color:var(--muted);cursor:pointer}
+.dtree [aria-current]{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+@media (min-width:801px){.docwrap main select[id$="ch"],.docwrap #qacat{display:none}}   /* 장 고르기는 왼쪽 목차가 맡는다 */
 @media (max-width:800px){
+  .hdr nav#tabs{order:3;flex-basis:100%;margin:0 -20px -10px;padding:0 6px}
+  .hdr nav#tabs button{padding:9px 14px}
   .docwrap.docmode{display:block;padding-left:0}
   .docwrap.docmode .docnav{position:static;max-height:none;overflow:visible;margin:14px 16px 0;padding:0}
-  .docnav input,.docnav h4,.docnav button{display:none!important}
+  .docnav input,.dtree{display:none!important}
   .docnav select{display:block;font-size:15px;padding:9px 10px}
 }
 </style>
@@ -2003,9 +2026,9 @@ var GNAME={acc:"회계",con:"계약",pay:"급여",hr:"인사",hw:"학운위",ad:
 tabBtn(VIEWS[0],nav);
 var docTab=el("button",null,"지침·법령"); docTab.type="button"; docTab.setAttribute("role","tab"); docTab.dataset.v="docs";
 docTab.onclick=function(){ show(lastDoc); }; nav.appendChild(docTab);
-var dnav=el("aside","docnav"), dq=el("input"), dsel=el("select");
+var dnav=el("aside","docnav"), dq=el("input"), dsel=el("select"), dtree=el("div","dtree"), DGRP={}, DDET={};
 dq.type="search"; dq.placeholder="자료 이름 찾기"; dq.setAttribute("aria-label","자료 이름 찾기"); dsel.setAttribute("aria-label","자료 고르기");
-dnav.appendChild(dq); dnav.appendChild(dsel);
+dnav.appendChild(dq); dnav.appendChild(dsel); dnav.appendChild(dtree);
 Object.keys(DOCS).forEach(function(g){
   var items=[];
   DOCS[g].forEach(function(m){
@@ -2015,24 +2038,53 @@ Object.keys(DOCS).forEach(function(g){
   if(g==="acc") items=VIEWS.filter(function(v){ return v.id==="card"; }).concat(items);
   if(!items.length) return;
   var og=el("optgroup"); og.label=GNAME[g]; dsel.appendChild(og);
-  dnav.appendChild(el("h4",null,GNAME[g]));
+  var gd=el("details","dg"); gd.appendChild(el("summary",null,GNAME[g])); dtree.appendChild(gd); DGRP[g]=gd;
   items.forEach(function(v){
     DOCV[v.id]=1; if(!lastDoc&&v.id!=="card") lastDoc=v.id;
-    var bt=el("button",null,v.label); bt.type="button"; bt.dataset.v=v.id; if(v.full) bt.title=v.full;
-    bt.onclick=function(){ show(v.id); scrollTo(0,0); }; dnav.appendChild(bt);
+    var dd=el("details","dd"), sm=el("summary",null,v.label); if(v.full) sm.title=v.full;
+    dd.appendChild(sm); gd.appendChild(dd); DDET[v.id]=dd;
+    sm.onclick=function(){ pickCh(v.id,""); };   /* 자료 이름 = 그 자료 전체 + 장 목록 펼치기/접기 */
     var o=el("option",null,v.label); o.value=v.id; og.appendChild(o);
   });
 });
 if(DOCV.gu) lastDoc="gu";
+/* 자료마다 원래 있던 '장' 고르기 칸(…ch, 여비는 qacat)을 목차로 옮겨 그린다 — 고르면 그 칸 값을 바꿔 목록을 거른다 */
+function chSel(id){ var v=document.getElementById("v-"+id); return v&&(v.querySelector('select[id$="ch"]')||v.querySelector("#qacat")); }
+function pickCh(id,val,btn){
+  show(id); scrollTo(0,0);
+  var c=chSel(id); if(c&&c.value!==val){ c.value=val; c.dispatchEvent(new Event("change")); }
+  dtree.querySelectorAll("[aria-current]").forEach(function(x){ x.removeAttribute("aria-current"); });
+  if(btn) btn.setAttribute("aria-current","true");
+}
+function fillCh(id,dd){
+  var c=chSel(id), gs=c?c.querySelectorAll("optgroup"):[], ALL=/ 전체$/;
+  function leaf(o,to){ if(!o.value) return; var bt=el("button","dch",o.textContent); bt.type="button"; bt.onclick=function(){ pickCh(id,o.value,bt); }; to.appendChild(bt); }
+  if(c) Array.prototype.forEach.call(c.children,function(k){
+    if(k.tagName==="OPTION") return leaf(k,dd);
+    var os=[].slice.call(k.children);
+    if(gs.length===1) return os.forEach(function(o){ if(!ALL.test(o.textContent)) leaf(o,dd); });
+    var all=os[0]&&ALL.test(os[0].textContent)?os.shift():null;
+    if(!os.length){ if(all) leaf({value:all.value,textContent:k.label},dd); return; }
+    var sd=el("details","dsub"), ss=el("summary",null,k.label); sd.appendChild(ss);
+    if(all) ss.onclick=function(){ pickCh(id,all.value,ss); };
+    os.forEach(function(o){ leaf(o,sd); }); dd.appendChild(sd);
+  });
+  if(!dd.querySelector(".dch,.dsub")) dd.classList.add("leaf");
+}
+setTimeout(function(){ Object.keys(DDET).forEach(function(id){ fillCh(id,DDET[id]); }); },0);   /* 장 고르기 칸이 다 채워진 뒤 */
 dsel.onchange=function(){ show(dsel.value); scrollTo(0,0); };
 dq.oninput=function(){
-  var t=dq.value.replace(/\s/g,"").toLowerCase(), h=null, any=false;
-  Array.prototype.forEach.call(dnav.children,function(c){
-    if(c.tagName==="H4"){ if(h) h.hidden=!any; h=c; any=false; }
-    else if(c.tagName==="BUTTON"){ c.hidden=!!t&&c.textContent.replace(/\s/g,"").toLowerCase().indexOf(t)<0; if(!c.hidden) any=true; }
+  var t=dq.value.replace(/\s/g,"").toLowerCase();
+  Object.keys(DGRP).forEach(function(g){
+    var any=false;
+    DGRP[g].querySelectorAll(".dd").forEach(function(dd){
+      var hit=!t||dd.querySelector("summary").textContent.replace(/\s/g,"").toLowerCase().indexOf(t)>=0;
+      dd.hidden=!hit; if(hit) any=true;
+    });
+    DGRP[g].hidden=!any; if(t&&any) DGRP[g].open=true;
   });
-  if(h) h.hidden=!any;
 };
+document.querySelector(".hdr .searchwrap").before(nav);
 var docWrap=el("div","docwrap"), mainEl=document.querySelector("main");
 mainEl.parentNode.insertBefore(docWrap,mainEl); docWrap.appendChild(dnav); docWrap.appendChild(mainEl);
 nav2.hidden=true;
@@ -2064,7 +2116,9 @@ function show(id){
   if(vg==="acc"||vg==="con"||vg==="pay"||vg==="hr"||vg==="hw"||vg==="ad"){ if(vg!==grp) setGroup(vg); lastIn[vg]=id; }
   else if(id==="ask") lastIn[grp]="ask";
   document.querySelectorAll(".view").forEach(function(s){s.classList.toggle("on",s.id==="v-"+id)});
-  var isDoc=!!DOCV[id]; if(isDoc){ lastDoc=id; dsel.value=id; }
+  var isDoc=!!DOCV[id]; if(isDoc){ lastDoc=id; dsel.value=id;
+    Object.keys(DDET).forEach(function(k){ DDET[k].classList.toggle("on",k===id); });
+    DDET[id].parentNode.open=true; }
   docWrap.classList.toggle("docmode",isDoc);
   [nav,dnav].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){
     var on=b.dataset.v===id||(isDoc&&b.dataset.v==="docs");

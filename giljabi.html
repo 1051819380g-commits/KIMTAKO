@@ -4758,12 +4758,6 @@ function doAsk(){
     if(qs.length) det.appendChild(el("div","note","질문을 이렇게 바꿔서도 찾았습니다: "+qs.join(" / ")));
     if(semN) det.appendChild(el("div","note","낱말이 달라도 뜻이 가까운 지침·법령 항목을 함께 찾았습니다(뜻 검색)."));
     if(more) det.appendChild(el("div","note","처음 찾은 근거가 부족해 ‘"+more+"’(으)로 한 번 더 찾아 답했습니다."));
-    if(mc&&!mc.nohit&&mc.refs.length){   /* 서버 근거는 이 파일 근거 정리(sortRefs)를 거치지 않고 따로 묶어 보인다 */
-      det.appendChild(el("div","note","경남 자료·정리 노트"));
-      var rlm=el("div","refs");
-      mc.refs.forEach(function(f){ var a=el("button","pill",f.t.length>60?f.t.slice(0,60)+"…":f.t); a.type="button"; a.title=f.t; a.onclick=function(){ f.go(); }; rlm.appendChild(a); });
-      det.appendChild(rlm);
-    }
     /* 서버에서 못 찾았거나 근거가 모자라 다시 찾았으면 서버에 '못 찾음'을 알린다(정리 노트 보강 목록) */
     /* search·read까지 했는데도 답이 '확인되지 않는다'일 때만 서버에 못 찾음을 알린다 */
     if(mcpURL()&&more&&/확인되지 않|확인하지 못|찾지 못|자료에 없/.test(res.text)) mcpCall("report_gap",{topic:q.slice(0,120),detail:"search·read 후에도 근거 없음 · 추가 검색: "+more}).catch(function(){});

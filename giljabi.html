@@ -5196,12 +5196,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
   if(!saved.length){ model.textContent=""; var o0=el("option",null,"연결하면 사용 가능한 모델이 채워집니다"); o0.value=""; model.appendChild(o0); model.disabled=true; modelTxt.hidden=false; }
 
   var fProv=field("연결 방식",provSel), fBase=field("서버 주소",base,"o-basewrap"), fKey=field("API 키",key,"o-keywrap"), fModel=field("모델",mwrap);
-  /* 법제처 오픈API 이용 ID: 비밀값이 아니라 바로 저장. 비우면 법제처 공개 시험용 ID(test) */
-  var lawoc=el("input"); lawoc.type="text"; lawoc.placeholder="비우면 시험용(test)"; lawoc.autocomplete="off";
-  try{ lawoc.value=(LS&&LS.getItem("kbg.lawoc"))||""; }catch(e){}
-  lawoc.oninput=function(){ try{ if(LS){ if(lawoc.value.trim()) LS.setItem("kbg.lawoc",lawoc.value.trim()); else LS.removeItem("kbg.lawoc"); } }catch(e){} };
-  var fLaw=field("법제처 오픈API ID (법령 실시간 조회)",lawoc);
-  grid.appendChild(fProv); grid.appendChild(fBase); grid.appendChild(fKey); grid.appendChild(fModel); grid.appendChild(fLaw);
+  grid.appendChild(fProv); grid.appendChild(fBase); grid.appendChild(fKey); grid.appendChild(fModel);
   setupCard.appendChild(grid);
 
   var row=el("div","setbtns");
@@ -5231,7 +5226,6 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
   ul.appendChild(liKey);
   ul.appendChild(el("li",null,"키는 이 컴퓨터의 브라우저에만 저장되고, 질문할 때 해당 회사 서버로만 전송됩니다. 공용 PC에서는 저장을 끄세요. 질문에는 학교 예산 자료 일부가 함께 전송됩니다."));
   ul.appendChild(el("li",null,"브라우저 기록을 지우면 저장한 키도 함께 지워집니다. 그럴 때는 ‘이 파일에 키 저장’을 누르세요. 키를 파일 안에 넣은 사본이 내려받아지고, 그 파일을 원래 파일 자리에 덮어 두면 다음부터는 아무것도 넣지 않아도 바로 연결됩니다. 대신 그 파일에는 키가 들어 있으니 다른 사람에게 주지 마세요."));
-  ul.appendChild(el("li",null,"자료에 인용됐지만 이 파일에 없는 법령(예: 청소년활동 진흥법)은 질문할 때 법제처에서 현행 조문을 받아 함께 참고합니다. 법제처 오픈API ID는 open.law.go.kr에서 무료로 신청하며, 비워 두면 법제처 공개 시험용 ID로 조회합니다."));
   ul.appendChild(el("li",null,"인터넷 없이 쓰시려면 Ollama 등 로컬 모델을 띄우고 ‘OpenAI 호환’을 고르세요. Ollama는 OLLAMA_ORIGINS=\"*\" 환경변수를 설정해야 이 파일에서 접속됩니다."));
   tip.appendChild(ul); setupCard.appendChild(tip);
   /* 최근 AI 요청 기록(이 PC) — 혼잡(5xx)·한도(429)·키 문제(401/403)를 구분해 보려고 */

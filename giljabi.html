@@ -4434,7 +4434,7 @@ function retrieveIn(q,cat){
 /* 질문 1회 자료량: Gemini(무료 키 포함)·Claude는 문맥 창이 커서 넉넉히(근거가 잘리지 않게), 로컬 모델(문맥 4~8천 토큰)은 작게,
    연결 정보를 모르면(온라인 게시본 등) 기본값. 503(혼잡)은 크기와 거의 무관하고 504(시간 초과)만 크기 영향 → offline_ai.js가 504면 자료를 줄여 다시 보냄.
    최근 1분에 보낸 양이 무료 키 분당 한도(약 25만 토큰 ≈ 30만 자)의 70%를 넘으면 이번 질문은 60%로 줄인다(연달아 물을 때 429 방지) */
-var AIROOM={gemini:28000,anthropic:28000,openai:8000};
+var AIROOM={gemini:28000,anthropic:28000,kbg:28000,openai:8000};
 function aiBudget(){
   var p=(window.__kbgProv&&window.__kbgProv())||"", room=AIROOM[p]||RC.room;
   if(((window.__kbgRecent&&window.__kbgRecent())||0)>210000) room=Math.round(room*0.6);
@@ -4938,22 +4938,26 @@ try{
 try{var _r=LS&&LS.getItem("kbg.llm"); if(_r){var _o=JSON.parse(_r); for(var _k in CFG){ if(_o[_k]!=null) CFG[_k]=String(_o[_k]); }}}catch(e){}
 /* 기본 키로 저장된 설정이면 모델은 파일의 기본 모델을 따른다(기본 모델을 바꿨을 때 예전 값이 남지 않게) */
 if(FILECFG&&FILECFG.model&&FILECFG.key&&CFG.key===FILECFG.key) CFG.model=String(FILECFG.model);
+/* 공개판 기본 답변: 맥미니 서버(/llm)를 거친 Claude Haiku. 본인 키를 넣었거나 로컬 모델이면 그대로 */
+if(window.KBG_MCP_DEFAULT&&CFG.prov!=="openai"&&(!CFG.key||(FILECFG&&CFG.key===FILECFG.key))){ CFG.prov="kbg"; CFG.key=""; CFG.base=""; CFG.model="claude-haiku-5-5"; CFG.models='["claude-haiku-5-5"]'; }
 var PROV={
   gemini:{label:"Google Gemini",base:"https://generativelanguage.googleapis.com/v1beta/openai",chat:"/chat/completions",models:"/models",needKey:true,ph:"AIza..."},
   anthropic:{label:"Anthropic API",base:"https://api.anthropic.com",chat:"/v1/messages",models:"/v1/models?limit=100",needKey:true,ph:"sk-ant-..."},
-  openai:{label:"로컬 모델",base:"http://localhost:11434",chat:"/v1/chat/completions",models:"/v1/models",needKey:false,ph:"(선택)"}
+  openai:{label:"로컬 모델",base:"http://localhost:11434",chat:"/v1/chat/completions",models:"/v1/models",needKey:false,ph:"(선택)"},
+  kbg:{label:"길잡이 기본 (Claude Haiku)",base:"",chat:"/llm",models:"",needKey:false,ph:"(필요 없음)"}   /* 맥미니 서버가 키를 붙여 Claude에 전달 */
 };
+function gemKey(){ return FILECFG&&(FILECFG.prov||"gemini")==="gemini"&&FILECFG.key?String(FILECFG.key):""; }   /* 파일에 넣어 둔 Gemini 무료 키 */
 function prov(){ return PROV[CFG.prov]||PROV.gemini }
 /* 뜻 검색용 질문 벡터(Gemini 임베딩). Gemini로 연결했을 때만, 실패하면 null → 낱말 검색만 */
 window.__kbgEmbed=function(text,model,dim){
-  if(CFG.prov!=="gemini"||!CFG.key) return Promise.resolve(null);
+  var ek=CFG.prov==="gemini"?CFG.key:gemKey(); if(!ek) return Promise.resolve(null);
   return fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":embedContent",{method:"POST",
-    headers:{"Content-Type":"application/json","x-goog-api-key":CFG.key},
+    headers:{"Content-Type":"application/json","x-goog-api-key":ek},
     body:JSON.stringify({model:"models/"+model,content:{parts:[{text:String(text).slice(0,2000)}]},taskType:"RETRIEVAL_QUERY",outputDimensionality:dim})})
     .then(function(r){ return r.ok?r.json():null; }).then(function(j){ return j&&j.embedding&&j.embedding.values||null; })
     .catch(function(){ return null; });
 };
-function cfgBase(){ return (CFG.base || prov().base).replace(/\/+$/,""); }
+function cfgBase(){ if(CFG.prov==="kbg") return String(window.KBG_MCP_DEFAULT||"").replace(/\/mcp\/?$/,""); return (CFG.base || prov().base).replace(/\/+$/,""); }
 function saveCfg(on){
   try{
     if(!LS) return;
@@ -4967,6 +4971,7 @@ function authHeaders(){
 }
 var SKIP=/embedding|embed|aqa|-tts|image-generation|imagen|veo|learnlm/i;
 function listModels(){
+  if(CFG.prov==="kbg") return Promise.resolve(["claude-haiku-5-5"]);
   return fetch(cfgBase()+prov().models,{headers:authHeaders()}).then(function(r){
     if(!r.ok) throw {code:(r.status===401||r.status===403)?"auth":"http",message:"HTTP "+r.status};
     return r.json();
@@ -5014,7 +5019,7 @@ function isDead(m){ return DEAD[m]&&DEAD[m]>Date.now(); }
 function markDead(m,t){ var r=/retry in (?:(\d+)h)?(?:(\d+)m)?/i.exec(t||""), ms=r&&(r[1]||r[2])?((+r[1]||0)*60+(+r[2]||0)+1)*60000:3600000;
   DEAD[m]=Date.now()+ms; try{ localStorage.setItem("kbgDead",JSON.stringify(DEAD)); }catch(e){} }
 window.__kbgModel=function(){ return CFG.model; };
-window.__kbgProv=function(){ return CFG.key||CFG.prov==="openai"?CFG.prov:""; };   /* 길잡이가 자료량을 정할 때 씀 */
+window.__kbgProv=function(){ return CFG.key||CFG.prov==="openai"||CFG.prov==="kbg"?CFG.prov:""; };   /* 길잡이가 자료량을 정할 때 씀 */
 /* 최근 60초에 보낸 글자 수(무료 키 분당 토큰 한도 보호용, 이 탭 안에서만) */
 var SENT=[];
 window.__kbgRecent=function(){ var t=Date.now()-60000; SENT=SENT.filter(function(s){return s.t>t}); return SENT.reduce(function(m,s){return m+s.c},0); };
@@ -5088,7 +5093,16 @@ function pickFast(){
 function makeSampler(){
   pickFast();
   var run=sampler0();
-  return function(input,opts){ var w=(opts&&opts.light)?MODELS:FAST; return (w||Promise.resolve()).then(function(){ return run(input,opts); }); };
+  /* 길잡이 기본(kbg): 질문 정리 같은 가벼운 일은 Gemini lite(빠름·무료), 답변은 서버의 Claude Haiku.
+     서버가 막히면(하루 한도·오류·연결 실패) 그 답변은 Gemini lite로. sampler0은 처음 부를 때만 CFG를 읽으므로 그때만 바꿔 끼운다 */
+  var viaGem=function(input,opts){ var save=CFG, p; CFG={prov:"gemini",base:"",key:gemKey(),model:"gemini-3.5-flash-lite",models:'["gemini-3.5-flash-lite"]'}; try{ p=run(input,opts); } finally{ CFG=save; } return p; };
+  var stop=function(e,opts){ return (opts&&opts.signal&&opts.signal.aborted)||(e&&e.name==="AbortError"); };
+  return function(input,opts){ var w=(opts&&opts.light)?MODELS:FAST; return (w||Promise.resolve()).then(function(){
+    if(CFG.prov!=="kbg"||!gemKey()) return run(input,opts);
+    if(opts&&opts.light) return viaGem(input,opts).catch(function(e){ if(stop(e,opts)) throw e; return run(input,opts); });
+    if(isDead(CFG.model)) return viaGem(input,opts);
+    return run(input,opts).catch(function(e){ if(stop(e,opts)) throw e; return viaGem(input,opts); });
+  }); };
 }
 function sampler0(){
   return function(input,opts){
@@ -5096,7 +5110,7 @@ function sampler0(){
     var arr=(typeof input==="string")?[{role:"user",content:input}]:input;
     var msgs=[]; for(var i=0;i<arr.length;i++) msgs.push({role:arr[i].role,content:String(arr[i].content)});
     var url,headers,body;
-    if(CFG.prov==="anthropic"){
+    if(CFG.prov==="anthropic"||CFG.prov==="kbg"){
       url=cfgBase()+prov().chat;
       headers={"content-type":"application/json"};
       var a=authHeaders(); for(var h in a) headers[h]=a[h];
@@ -5125,7 +5139,7 @@ function sampler0(){
     /* 혼잡(503 등): 같은 모델로 한 번 더(2~3.5초 뒤) → 그래도 안 되면 대체 모델로 넘어가 답한다.
        대체 모델로 답했으면 5분 동안은 대체 모델부터 쓴다(혼잡한 모델을 계속 두드리지 않게). */
     /* opts.light(질문 정리): 가벼운 모델 하나로, 한 번만 다시 시도 — 실패하면 길잡이가 원래 질문으로 진행한다 */
-    var chain=opts.light?[lightModel()]:[CFG.model].concat(backups()), maxN=opts.light?1:2, lastTry=false;
+    var chain=opts.light?[lightModel()]:[CFG.model].concat(backups()), kb=CFG.prov==="kbg", maxN=opts.light?1:(kb?0:2), lastTry=kb;
     if(!opts.light&&Date.now()<COOL.until&&COOL.model===CFG.model&&chain.length>1) chain.push(chain.shift());
     var live=chain.filter(function(m){ return !isDead(m); }); if(live.length) chain=live;   /* 하루 한도 다 쓴 모델은 건너뜀 */
     var shrunk=false, tries=0, t0=Date.now(), codes=[];
@@ -5167,7 +5181,7 @@ function sampler0(){
           return attempt(mi+1,0);
         }
         /* 마지막 수단: 모든 모델이 막혔을 때만 자료를 절반으로 줄여 처음 모델부터 다시(자료가 줄면 근거를 놓칠 수 있어 맨 뒤로) */
-        if(!shrunk&&shrink()){
+        if(!kb&&!shrunk&&shrink()){
           if(opts.onStatus) opts.onStatus("혼잡 · 참고 자료를 줄여 다시 시도하는 중");
           return attempt(0,1);
         }
@@ -5254,7 +5268,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
     var w=el("label","fld"); w.appendChild(el("span",null,label)); w.appendChild(node); if(id) w.id=id; return w;
   }
   var provSel=el("select"); provSel.id="o-prov";
-  [["gemini","Google Gemini"],["anthropic","Anthropic API · Claude"],["openai","OpenAI 호환 · 로컬 모델(Ollama 등)"]].forEach(function(o){
+  [["kbg","길잡이 기본 (Claude Haiku · 키 필요 없음)"],["gemini","Google Gemini"],["anthropic","Anthropic API · Claude"],["openai","OpenAI 호환 · 로컬 모델(Ollama 등)"]].forEach(function(o){
     var op=el("option",null,o[1]); op.value=o[0]; if(CFG.prov===o[0]) op.selected=true; provSel.appendChild(op);
   });
   var base=el("input"); base.type="text"; base.placeholder="http://localhost:11434"; base.value=CFG.base||"";
@@ -5411,7 +5425,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
 
   thread.parentNode.insertBefore(statusBar,thread);
   thread.parentNode.insertBefore(setupCard,thread);
-  if((CFG.key||CFG.prov==="openai")&&CFG.model){ sampleFn=makeSampler(); connected(); }
+  if((CFG.key||CFG.prov==="openai"||CFG.prov==="kbg")&&CFG.model){ sampleFn=makeSampler(); connected(); }
   else idle();
 })();
 

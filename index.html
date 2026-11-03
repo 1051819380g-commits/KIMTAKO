@@ -470,17 +470,18 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 @media print{.ckcalm{break-inside:avoid}}
 .split.ckcalmode{display:block!important}
 .split.ckcalmode>.ckside{display:none}
-.ckqa{max-width:none;margin:0;display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;height:600px;min-height:300px}
-.ckqmain{display:flex;flex-direction:column;min-height:0;min-width:0}
-.ckrel{min-height:0;overflow-y:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.ckqa{max-width:none;margin:0;display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
+.ckqmain{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - var(--hdr,120px) - 70px)}
+.ckrel{position:sticky;top:calc(var(--hdr,0px) + 14px);max-height:calc(100dvh - var(--hdr,0px) - 28px);overflow-y:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
 .ckrel h3{font-size:15px;margin:0 0 8px}.ckrel .note{font-size:13px;color:var(--muted);margin:0 0 8px;line-height:1.5}
 .ckrel .relit{display:block;width:100%;text-align:left;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:0 0 8px;cursor:pointer;color:var(--ink)}
 .ckrel .relit:hover{border-color:var(--accent)}.ckrel .relit .c{display:block;font-size:11px;color:var(--muted)}.ckrel .relit b{display:block;font-size:14px;line-height:1.4}
 .ckrel .relit .s{display:block;font-size:12px;color:var(--accent-ink);margin-top:3px}
 @media (max-width:900px){.ckqa{grid-template-columns:1fr}.ckrel{display:none}}
-.ckqa .thread{flex:1;min-height:0;overflow-y:auto;position:relative;display:flex;flex-direction:column;gap:10px;padding:4px 4px 10px;overscroll-behavior:contain}
+.ckqa .thread{flex:1;display:flex;flex-direction:column;gap:10px;padding:4px 4px 10px}
 .ckqa .thread>:first-child{margin-top:auto}
-.ckqa .askbox{flex:none}
+.ckqa .askbox{flex:none;position:sticky;bottom:10px;z-index:5;box-shadow:0 -10px 18px var(--surface)}
+body.ckasking .cktopbtn{bottom:196px}
 .ckqa .ainotice:empty{display:none}
 .ckqa .msg{border-radius:12px;padding:12px 16px;line-height:1.7;font-size:15px}
 .ckqa .msg.u{align-self:flex-end;max-width:80%;background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent-line);white-space:pre-wrap}
@@ -1777,7 +1778,7 @@ function ckCal(){
   });
   d.appendChild(grid);
 }
-function ckRender(){ if(!CKL.length) return; var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"||CK.mode==="ask"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else if(CK.mode==="ask") ckAsk(); else ckMain(); ckCats(); }
+function ckRender(){ if(!CKL.length) return; document.body.classList.toggle("ckasking",CK.mode==="ask"); var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"||CK.mode==="ask"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else if(CK.mode==="ask") ckAsk(); else ckMain(); ckCats(); }
 /* 업무 메뉴 3단: [연간 달력][행정][교무] → (마우스를 올리면) 분야 리본 → (분야에 올리면) 업무 목록. 모바일은 누르면 열고 다시 누르면 닫기.
    교무 분야는 경남교육청 학교업무 도움자료(중고등학교) 분류를 따른다 */
 var CKGROUPS=[["행정",["회계","계약","급여","인사","학운위","행정","시설·물품","기록물","신설학교"]],["교무",["교무","교육과정·평가","연구","정보","과학·수학","인성","체육·안전","교감업무"]]];
@@ -2432,15 +2433,11 @@ function addAssistant(){
   th.appendChild(document.createTextNode(" 질문을 살펴보는 중")); b.appendChild(th); d.appendChild(b); thread.appendChild(d);
   toEnd(); return d;
 }
-/* 질문 창 높이: 머리글·바닥글(출처·제작)까지 한 화면에 들어오게 — 페이지 자체는 스크롤이 생기지 않고 대화 칸만 스크롤 */
-function fit(){ if(!root||!root.isConnected||!root.offsetParent) return;
-  var t=root.getBoundingClientRect().top+window.scrollY, h=Math.max(300,window.innerHeight-t-16); root.style.height=h+"px";
-  var over=document.documentElement.scrollHeight-window.innerHeight; if(over>0) root.style.height=Math.max(300,h-over)+"px"; }
-addEventListener("resize",fit);
-if(window.ResizeObserver) new ResizeObserver(function(){ fit(); }).observe(document.querySelector("header"));   /* 분야 리본이 열리고 닫혀 머리글 높이가 바뀔 때 */
-document.addEventListener("click",function(){ setTimeout(fit,30); });   /* 메뉴를 누른 뒤에도 한 번 더 */
-function toEnd(){ thread.scrollTop=thread.scrollHeight; }
-function toAns(b){ var top=b.offsetTop-8; thread.scrollTop=b.offsetHeight>thread.clientHeight?top:thread.scrollHeight; }   /* 답이 창보다 길면 답 첫 줄부터 */
+/* 페이지 스크롤: 새 질문은 맨 아래로, 답이 화면보다 길면 답 첫 줄이 머리글 바로 아래 오게 */
+function hdrH(){ var h=document.querySelector("header"); return h&&getComputedStyle(h).position==="sticky"?h.offsetHeight:0; }
+function toEnd(){ window.scrollTo(0,document.documentElement.scrollHeight); }
+function toAns(b){ var r=b.getBoundingClientRect(), ask=root.querySelector(".askbox").offsetHeight, room=window.innerHeight-hdrH()-ask-24;
+  if(r.height>room) window.scrollTo(0,window.scrollY+r.top-hdrH()-12); else toEnd(); }
 /* 관련 업무 바로가기: 질문 낱말이 업무 이름·단계에 얼마나 들었는지로 체크리스트 업무를 고른다(AI 안 씀).
    여러 업무에 흔한 낱말(학교·교사 등)은 무게를 낮춘다 */
 var rel;
@@ -2561,7 +2558,7 @@ function doAsk(ta,go,stopB,notice){
     toEnd();
   }).then(function(){ busy=false; go.disabled=false; stopB.hidden=true; ctl=null; });
 }
-return { render:function(d){ if(!root) build(); d.appendChild(root); var ta=root.querySelector("textarea"); if(ta) ta.focus({preventScroll:true}); fit(); toEnd(); } };
+return { render:function(d){ if(!root) build(); d.appendChild(root); var ta=root.querySelector("textarea"); if(ta) ta.focus({preventScroll:true}); toEnd(); } };
 })();
 function ckAsk(){ var d=$("#ckdetail"); d.textContent=""; CKQA.render(d); }
 function ckMon(){

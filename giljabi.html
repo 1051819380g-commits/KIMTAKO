@@ -1214,6 +1214,8 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .dch>summary::before,.dsub>summary::before{font-size:10px}
 .dit{font-size:12px;color:var(--muted)}
 }
+.fsec{scroll-margin-top:calc(var(--hdr,60px) + 14px)}
+.fsec+.fsec{margin-top:26px;padding-top:22px;border-top:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -2129,6 +2131,7 @@ function show(id){
   if(isDoc){ lastDoc=id; dsel.value=id;
     DDET[id].parentNode.open=true; dqPh(); }
   docWrap.classList.toggle("docmode",isDoc);
+  if(isDoc) fullOpen(id);   /* 지침 전문 이어 그리기 */
   [nav,dnav].forEach(function(n){ n.querySelectorAll("button").forEach(function(b){
     var on=b.dataset.v===id||(isDoc&&b.dataset.v==="docs");
     b.setAttribute("aria-selected", on?"true":"false");
@@ -2577,6 +2580,7 @@ function renderGdList(){
   if(!list.some(function(g){return g.i===gdSel})){gdSel=list[0].i;renderGdDetail(list[0]);box.firstChild.setAttribute("aria-current","true");}
 }
 function renderGdDetail(g){
+  if(fullGo("guide",g,renderGdDetail,GD,$("#gddetail"))) return;
   var d=$("#gddetail"); d.textContent="";
   d.appendChild(el("div","eyebrow",g.h1));
   d.appendChild(el("h2",null,g.h2||g.h1));
@@ -2610,6 +2614,7 @@ function renderExList(){
   if(!list.some(function(x){return x.i===exSel})){exSel=list[0].i;renderExDetail(list[0]);box.firstChild.setAttribute("aria-current","true");}
 }
 function renderExDetail(x){
+  if(fullGo("exec",x,renderExDetail,EX,$("#exdetail"))) return;
   var d=$("#exdetail"); d.textContent="";
   d.appendChild(el("div","eyebrow",x.ch));
   d.appendChild(el("h2",null,bare(x.l3)||bare(x.l2)||bare(x.l1)));
@@ -2741,6 +2746,34 @@ function richTable(box, rows, cap){
   });
   t.appendChild(tb); wr.appendChild(t); w.appendChild(wr); box.appendChild(w);
 }
+/* 지침 전문 이어 보기: 자료를 열면 항목을 모두 이어 그리고(.fdoc), 그 뒤엔 고른 항목으로 스크롤만 한다.
+   안 보이는 자료는 그리지 않고(시작이 느려지지 않게) 열 때(show → fullOpen) 그린다 */
+var FULLB={}, FULLREG={}, FULLBUSY=false;
+function fullBuild(id){
+  var R=FULLREG[id], d=R.d, F=FULLB[id]={doc:el("div","fdoc"),at:{}}, pe="", pn=null;
+  FULLBUSY=true;
+  try{ R.items.forEach(function(it,k){
+    d.textContent=""; R.raw(it);
+    var sec=el("section","fsec"), e=d.querySelector(".eyebrow"), n=d.lastElementChild;
+    if(k) d.querySelectorAll(".dtools").forEach(function(t){ t.remove(); });   /* 복사·인쇄는 맨 앞 하나(전문을 복사) */
+    if(e){ if(e.textContent===pe) e.remove(); else pe=e.textContent; }      /* 장 이름은 바뀔 때만 */
+    if(n&&n.classList.contains("note")){ if(pn&&pn.textContent===n.textContent) pn.remove(); pn=n; } else pn=null;   /* 같은 출처 줄은 맨 끝 하나만 */
+    while(d.firstChild) sec.appendChild(d.firstChild);
+    F.doc.appendChild(sec); F.at[it.i]=sec; }); }
+  finally{ FULLBUSY=false; }
+  d.textContent=""; d.appendChild(F.doc);
+  return F;
+}
+function fullGo(id,x,raw,items,d){
+  if(FULLBUSY) return false;
+  FULLREG[id]={raw:raw,items:items,d:d};
+  if(!d.closest(".view.on")) return false;   /* 안 보이는 자료: 예전처럼 한 항목만 */
+  var F=FULLB[id], fresh=false;
+  if(!F||!d.contains(F.doc)){ F=fullBuild(id); fresh=true; }
+  var sc=F.at[x.i]; if(sc&&!(fresh&&x===items[0])) sc.scrollIntoView({block:"start"});
+  return true;
+}
+function fullOpen(id){ var R=FULLREG[id], F=FULLB[id]; if(R&&!(F&&R.d.contains(F.doc))) fullBuild(id); }
 function renderBlocks(box, blocks, fallbackText){
   var d=el("div","gdoc"), h=box.querySelector("h2"), title=h?h.textContent.replace(/\s/g,""):"", first=true;
   if(blocks && blocks.length){
@@ -2774,6 +2807,7 @@ function renderGuList(){
   if(!list.some(function(x){return x.i===guSel})){guSel=list[0].i;renderGuDetail(list[0]);box.firstChild.setAttribute("aria-current","true");}
 }
 function renderGuDetail(x){
+  if(fullGo("gu",x,renderGuDetail,GU,$("#gudetail"))) return;
   var d=$("#gudetail"); d.textContent="";
   d.appendChild(el("div","eyebrow",x.ch));
   d.appendChild(el("h2",null,x.l2||x.l1||x.ch));
@@ -2849,6 +2883,7 @@ function bundleTab(p, B, view){
     if(!L.some(function(x){return x.i===sel})){sel=L[0].i;detail(L[0]);box.firstChild.setAttribute("aria-current","true");}
   }
   function detail(x){
+    if(fullGo(view||p,x,detail,B.items,$("#"+p+"detail"))) return;
     var d=$("#"+p+"detail"), dc=B.doc(x.doc); d.textContent="";
     d.appendChild(detailTools(d));
     d.appendChild(el("div","eyebrow",x.doc+(x.ch&&x.ch!=="조문"?" · "+x.ch:"")));
@@ -3821,6 +3856,7 @@ function renderBzList(){
   if(!list.some(function(x){return x.i===bzSel})){bzSel=list[0].i;renderBzDetail(list[0]);box.firstChild.setAttribute("aria-current","true");}
 }
 function renderBzDetail(x){
+  if(fullGo("biz",x,renderBzDetail,BZ,$("#bzdetail"))) return;
   var d=$("#bzdetail"); d.textContent="";
   d.appendChild(el("div","eyebrow",x.ch));
   d.appendChild(el("h2",null,x.l2||x.l1||x.ch));

@@ -472,12 +472,16 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 .split.ckcalmode>.ckside{display:none}
 .ckqa{max-width:none;margin:0;display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;align-items:start}
 .ckqmain{display:flex;flex-direction:column;min-width:0;min-height:calc(100dvh - var(--hdr,120px) - 70px)}
-.ckrel{position:sticky;top:calc(var(--hdr,0px) + 14px);max-height:calc(100dvh - var(--hdr,0px) - 28px);overflow-y:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.ckrel{position:sticky;top:calc(var(--hdr,0px) + 41px);max-height:calc(100dvh - var(--hdr,0px) - 56px);overflow-y:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
 .ckrel h3{font-size:15px;margin:0 0 8px}.ckrel .note{font-size:13px;color:var(--muted);margin:0 0 8px;line-height:1.5}
 .ckrel .relit{display:block;width:100%;text-align:left;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:0 0 8px;cursor:pointer;color:var(--ink)}
 .ckrel .relit:hover{border-color:var(--accent)}.ckrel .relit .c{display:block;font-size:11px;color:var(--muted)}.ckrel .relit b{display:block;font-size:14px;line-height:1.4}
 .ckrel .relit .s{display:block;font-size:12px;color:var(--accent-ink);margin-top:3px}
+/* 카드 윗변 고정: 메뉴 아래 바탕 띠(22px) + 카드 윗 테두리·안쪽 여백(19px) — 카드의 바깥 여백·테두리·안쪽 여백 값에 맞춤 */
+.ckcap{position:sticky;top:var(--hdr,0px);z-index:6;height:41px;margin:-41px -21px 0;background:linear-gradient(var(--ground) 22px,transparent 22px)}
+.ckcap::after{content:"";position:absolute;left:0;right:0;top:22px;height:18px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0}
 @media (max-width:900px){.ckqa{grid-template-columns:1fr}.ckrel{display:none}}
+@media (max-width:700px){.ckcap{display:none}}
 .ckqa .thread{flex:1;display:flex;flex-direction:column;gap:10px;padding:4px 4px 10px}
 .ckqa .thread>:first-child{margin-top:auto}
 .ckqa .askbox{flex:none;position:sticky;bottom:10px;z-index:5;box-shadow:0 -10px 18px var(--surface)}
@@ -2560,7 +2564,7 @@ function doAsk(ta,go,stopB,notice){
 }
 return { render:function(d){ if(!root) build(); d.appendChild(root); var ta=root.querySelector("textarea"); if(ta) ta.focus({preventScroll:true}); toEnd(); } };
 })();
-function ckAsk(){ var d=$("#ckdetail"); d.textContent=""; CKQA.render(d); }
+function ckAsk(){ var d=$("#ckdetail"); d.textContent=""; d.appendChild(el("div","ckcap")); CKQA.render(d); }   /* ckcap: 스크롤해도 흰 카드 윗변이 메뉴 아래에 그대로 보이게 덮는 띠 */
 function ckMon(){
   var d=$("#ckdetail"); d.textContent="";
   var today=ckToday(), ym=CK.mon||today.slice(0,7), Y=+ym.slice(0,4), M=+ym.slice(5,7);

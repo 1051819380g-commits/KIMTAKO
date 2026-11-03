@@ -5221,7 +5221,9 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
     var op=el("option",null,o[1]); op.value=o[0]; if(CFG.prov===o[0]) op.selected=true; provSel.appendChild(op);
   });
   var base=el("input"); base.type="text"; base.placeholder="http://localhost:11434"; base.value=CFG.base||"";
-  var key=el("input"); key.type="password"; key.placeholder="sk-ant-..."; key.value=CFG.key||""; key.autocomplete="off";
+  var key=el("input"); key.type="password"; key.placeholder="sk-ant-..."; key.value=(FILECFG&&CFG.key&&CFG.key===FILECFG.key)?"":(CFG.key||""); key.autocomplete="off";
+  /* 파일에 넣어 둔 기본 키(같은 제공사일 때만) — 칸에는 보이지 않고, 칸이 비면 이 키로 연결한다 */
+  function defKey(){ return FILECFG&&FILECFG.key&&provSel.value===(FILECFG.prov||"gemini")?String(FILECFG.key):""; }
   var model=el("select"); model.id="o-modelsel";
   var modelTxt=el("input"); modelTxt.type="text"; modelTxt.placeholder="모델 이름 직접 입력"; modelTxt.value=CFG.model||""; modelTxt.style.marginTop="6px"; modelTxt.hidden=true;
   var mwrap=el("div"); mwrap.style.cssText="display:flex;flex-direction:column"; mwrap.appendChild(model); mwrap.appendChild(modelTxt);
@@ -5292,7 +5294,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
     var d=PROV[provSel.value]||PROV.gemini;
     fBase.style.display=(provSel.value==="openai")?"":"none";
     fKey.querySelector("span").textContent=d.needKey?"API 키":"API 키 (없으면 비워 두세요)";
-    key.placeholder=d.ph;
+    key.placeholder=defKey()?"비우면 기본 키 사용":d.ph;
   }
   provSel.onchange=syncFields; syncFields();
 
@@ -5322,7 +5324,7 @@ var setupCard=el("div","setup"), statusBar=el("div","connbar");
   window.__kbgOpenSetup=function(){ setupCard.hidden=false; statusBar.hidden=true; setupCard.scrollIntoView({block:"start"}); };
 
   connect.onclick=function(){
-    CFG.prov=provSel.value; CFG.base=base.value.trim(); CFG.key=key.value.trim(); CFG.model=chosenModel();
+    CFG.prov=provSel.value; CFG.base=base.value.trim(); CFG.key=key.value.trim()||defKey(); CFG.model=chosenModel();
     if(prov().needKey&&!CFG.key){ setMsg("warnbox","API 키를 넣어 주세요."); return; }
     connect.disabled=true; setMsg("note","모델 목록을 불러오는 중…");
     listModels().then(function(ids){

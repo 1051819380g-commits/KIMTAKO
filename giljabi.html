@@ -4550,6 +4550,20 @@ function mdRender(box, text){
 }
 
 var sampleFn=null, turns=[], busy=false, ctl=null;
+/* 이어지는 질문: 서버는 대화 맥락을 모르므로 앞 질문 주제어를 넣은 한 문장으로 다시 써서 보낸다 */
+var LASTASK="", LASTWHO={};
+var FOLLOW=/^\s*(그럼|그러면|그렇다면|그건|그거|그것|그게|그 경우|그런 경우|그런데|근데|그래도|그때|그렇게|그러니까|아니면|이 경우|이럴 때|이때|그리고|또는)/;
+function isFollow(q,prev){ return !!prev&&(q.length<15||FOLLOW.test(q)); }
+var STANDALONE="아래 [이번 질문]은 [앞 질문]에 이어지는 질문이다. 앞 질문의 주제어(대상·기관·사람·업무 이름)를 넣어, 혼자 읽어도 뜻이 통하는 한 문장의 질문으로 다시 써라.\n"+
+  "- 이번 질문의 뜻은 그대로. 앞 질문에도 이번 질문에도 없는 낱말은 덧붙이지 마라. '그럼·그건' 같은 이음말은 뺀다.\n- 질문 한 문장만 써라. 설명·따옴표 없이.\n\n[앞 질문]\n";
+function standaloneQ(q,prev,signal){
+  if(!isFollow(q,prev)) return Promise.resolve(q);
+  var fb=prev+" "+q;   /* 실패하면 예전처럼 앞 질문 + 이번 질문 */
+  return sampleFn([{role:"user",content:STANDALONE+prev+"\n\n[이번 질문]\n"+q}],{cache:false,signal:signal,light:true}).then(function(res){
+    var t=(String(res&&res.text||"").split("\n").map(function(x){ return x.trim(); }).filter(Boolean)[0]||"").replace(/^["'“”‘’]+|["'“”‘’]+$/g,"");
+    return t.length>=8&&t.length<=200?t:fb;
+  }).catch(function(){ return fb; });
+}
 var thread=$("#thread");
 function addUser(t){var d=el("div","msg u",t); thread.appendChild(d); return d;}
 function addAssistant(){
@@ -4734,7 +4748,9 @@ function doAsk(){
   addUser(q);
   var box=addAssistant(), body=box.querySelector(".body");
   var lastU=null; for(var ti=turns.length-1;ti>=0;ti--){ if(turns[ti].role==="user"){ lastU=turns[ti].content; break; } }
-  var askQ=lastU&&q.length<15?lastU+" "+q:q, who=mcpWho(askQ);   /* 서버 ask에는 사용자 문장 그대로 */
+  var prevQ=lastU?(LASTASK||lastU):"", fol=isFollow(q,prevQ), askQ=q, who=mcpWho(q);
+  if(fol) for(var wk in LASTWHO) if(!who[wk]) who[wk]=LASTWHO[wk];   /* 앞 질문에서 밝힌 공·사립·신분을 이어받는다 */
+  LASTWHO=who;   /* 서버 ask에는 사용자 문장 그대로 */
   /* 연결된 모델에 맞춰 자료량을 정한다(aiBudget) — 이 질문에만 적용하고 되돌린다 */
   var bud=aiBudget(), r, qs=[], more="", semN=0, mc=null;
   /* 답변 AI 호출. extra가 있으면(첫 시도) '[추가 검색' 표시는 화면에 그리지 않는다 */
@@ -4750,7 +4766,8 @@ function doAsk(){
   var th=body.querySelector(".thinking");
   if(th) th.lastChild.textContent=" 질문을 지침 용어로 정리하는 중";
   /* 1회차: 질문 정리 → 원래 질문으로 한도의 55%, 바꾼 검색어마다 나머지를 나눠 채운다(말투가 달라도 같은 근거가 들어가게) */
-  Promise.all([rewriteQ(q,ctl.signal),semQuery(q)]).then(function(two){
+  Promise.all([rewriteQ(q,ctl.signal),semQuery(q),standaloneQ(q,prevQ,ctl.signal)]).then(function(two){
+    askQ=LASTASK=two[2];   /* 서버 ask에 보낼 질문(이어지는 질문이면 앞 질문 주제어를 넣은 한 문장) */
     var rw=two[0]; SEM=two[1]; semN=SEM?SEM.size:0;
     qs=rw.qs; var cat=rw.cat;
     var room0=RC.room, cap0=RC.cap; RC.room=qs.length?Math.round(bud.room*0.55):bud.room; RC.cap=bud.cap;

@@ -470,6 +470,15 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 @media print{.ckcalm{break-inside:avoid}}
 .split.ckcalmode{display:block!important}
 .split.ckcalmode>.ckside{display:none}
+.ckaskf{display:flex;gap:8px;align-items:flex-end;margin:12px 0}
+.ckaskf textarea{flex:1;font:inherit;padding:10px 12px;border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);color:var(--ink);resize:vertical;min-height:64px}
+.ckaskf button{font:inherit;padding:10px 18px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+.ckaskf button:disabled{opacity:.6;cursor:wait}
+.ckaskout{max-width:860px}
+.ckaskq{font-weight:600;margin:16px 0 8px}
+.ckaskans{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;line-height:1.7}
+.ckaskans p{margin:0 0 8px}.ckaskans ul{margin:0 0 8px;padding-left:20px}.ckaskans h3{font-size:1em;margin:12px 0 6px}
+.ckaskerr{color:var(--neg);margin:0}
 .ckexp{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
 /* 계약방법 찾기 */
 details.ckmth{margin:6px 0 4px;border:1px solid var(--accent-line);border-radius:10px;background:var(--accent-soft)}
@@ -1064,6 +1073,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
       <li><b>월간 달력</b>에서 일정을 끌어 날짜를 옮기고, 달력 밖으로 끌면 빼요. '+ 일정 추가'로 내 일정도 넣을 수 있어요.</li>
       <li>단계 안의 <b>기안문 예시</b>는 고쳐 쓰고 복사해 업무관리시스템에 붙여 넣어요. 계약 단계에는 <b>계약방법 찾기</b>가 있어요.</li>
       <li>끝난 업무는 <b>엑셀로 받기</b>로 기록을 남겨요.</li>
+      <li>궁금한 건 <b>질문하기 (AI)</b>에 물어보면 경남교육청 업무 자료를 찾아 AI가 답해요.</li>
     </ol>
     <p class="lead" style="margin-top:12px">체크·메모·일정은 이 PC의 이 브라우저에만 저장돼요. 업무 참고용이니 실제 처리 전에 그해 공문과 원문을 꼭 확인하세요.</p>
     <p class="lead" style="margin-top:8px">궁금한 점이나 고칠 점은 <a href="https://open.kakao.com/o/sQp88MKh" target="_blank" rel="noopener">카카오톡 오픈채팅</a>으로 알려 주세요.</p>
@@ -1745,7 +1755,7 @@ function ckCal(){
   });
   d.appendChild(grid);
 }
-function ckRender(){ if(!CKL.length) return; var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else ckMain(); ckCats(); }
+function ckRender(){ if(!CKL.length) return; var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"||CK.mode==="ask"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else if(CK.mode==="ask") ckAsk(); else ckMain(); ckCats(); }
 /* 업무 메뉴 3단: [연간 달력][행정][교무] → (마우스를 올리면) 분야 리본 → (분야에 올리면) 업무 목록. 모바일은 누르면 열고 다시 누르면 닫기.
    교무 분야는 경남교육청 학교업무 도움자료(중고등학교) 분류를 따른다 */
 var CKGROUPS=[["행정",["회계","계약","급여","인사","학운위","행정","시설·물품","기록물","신설학교"]],["교무",["교무","교육과정·평가","연구","정보","과학·수학","인성","체육·안전","교감업무"]]];
@@ -1754,10 +1764,10 @@ function ckGrpOf(cat){ for(var i=0;i<CKGROUPS.length;i++) if(CKGROUPS[i][1].inde
 function ckIn(c,cat){ return c.cat===cat||c.cat2===cat; }
 var CKHOVER=!!(window.matchMedia&&matchMedia("(hover: hover) and (pointer: fine)").matches);   /* 마우스 화면만 올려서 열기 */
 function ckCats(){
-  var bar=$("#ckcats"), cur=CK.mode==="cal"?"__cal":CK.mode==="mon"?"__mon":(CKBY[(ckCase(CK.cur)||{}).t]||CKBY[CK.pv]||{}).cat, curG=cur&&cur!=="__cal"&&cur!=="__mon"?ckGrpOf(cur):"";
+  var bar=$("#ckcats"), cur=CK.mode==="cal"?"__cal":CK.mode==="mon"?"__mon":CK.mode==="ask"?"__ask":(CKBY[(ckCase(CK.cur)||{}).t]||CKBY[CK.pv]||{}).cat, curG=cur&&cur!=="__cal"&&cur!=="__mon"&&cur!=="__ask"?ckGrpOf(cur):"";
   bar.ckCur=cur;   /* 다시 그릴 때마다 지금 보는 분야를 바꿔 둔다(먼저 만든 함수들도 이 값을 읽는다) */
   function mark(){ var cur=bar.ckCur;
-    bar.querySelectorAll(".ckc").forEach(function(x){ x.classList.toggle("on",!!x.dataset.cat&&x.dataset.cat===cur&&(cur==="__cal"||cur==="__mon"||!!x.closest(".ckrib"))); });   /* 켜진 것만 옅은 강조색: 보고 있는 달력, 리본에서는 지금 보는 업무의 분야. 행정·교무와 펼친 분야는 aria-expanded */
+    bar.querySelectorAll(".ckc").forEach(function(x){ x.classList.toggle("on",!!x.dataset.cat&&x.dataset.cat===cur&&(cur==="__cal"||cur==="__mon"||cur==="__ask"||!!x.closest(".ckrib"))); });   /* 켜진 것만 옅은 강조색: 보고 있는 달력, 리본에서는 지금 보는 업무의 분야. 행정·교무와 펼친 분야는 aria-expanded */
   }
   if(bar.firstChild){ mark(); return; }   /* 한 번만 만들고 이후엔 표시만 */
   var top=el("div","cktop"), drop=el("div","ckdrop"), rib=el("div","ckrib"), pn=el("div","ckpanel"), oG="", oC="";
@@ -1808,6 +1818,9 @@ function ckCats(){
     b.onclick=function(){ if(oG!==g[0]||!drop.classList.contains("open")) openGrp(g[0],b); };   /* 누르면 리본이 열려 그대로 남는다(연간 달력을 누를 때만 닫힘) */
     top.appendChild(b);
   });
+  var qb=el("button","ckc ckccal"); qb.type="button"; qb.dataset.cat="__ask"; qb.textContent="질문하기 (AI)";
+  qb.onclick=function(){ close(); CK.mode="ask"; ckSave(); ckRender(); window.scrollTo(0,0); }; if(CKHOVER) qb.onmouseenter=closeCat;
+  top.appendChild(qb);
   ckSearchBox(top,closeCat);   /* 메뉴 줄 오른쪽 끝 검색 */
   if(CKHOVER) top.onmouseenter=closeCat;   /* 커서가 첫째 줄(달력·행정·교무·검색)로 올라가면 업무 목록을 닫는다 */
   bar.appendChild(top); bar.appendChild(drop); ckFav();
@@ -2004,6 +2017,78 @@ function ckDropDay(c,ds){
   c.ondrop=function(e){ e.preventDefault(); var o=CKDRAG; CKDRAG=null; if(!o) return;
     if(o.e) o.e.d=ds; else if(o.star) o.cs.ab=ds; else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; }
     ckSave(); ckMon(); }; }
+/* 질문하기 (AI): 경남 자료 서버에서 근거를 찾아(ask) 맥미니 /llm(Claude Haiku)이 답한다. 막히면 Gemini lite 무료 키로 */
+var CKAI={srv:"https://macmini.tail2940ce.ts.net", last:null};
+function ckGemKey(){ try{ var t=JSON.parse(document.getElementById("CKCFGX").textContent), k="kbg-2026", x=decodeURIComponent(escape(atob(t))), o="";
+  for(var i=0;i<x.length;i++) o+=String.fromCharCode(x.charCodeAt(i)^k.charCodeAt(i%k.length)); return JSON.parse(o).key||""; }catch(e){ return ""; } }
+function ckMcp(tool,args){
+  return fetch(CKAI.srv+"/mcp",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json, text/event-stream","X-KBG-Client":"checklist"},
+    body:JSON.stringify({jsonrpc:"2.0",id:Date.now(),method:"tools/call",params:{name:tool,arguments:args}})})
+  .then(function(r){ if(!r.ok) throw new Error("mcp "+r.status); return r.json(); })
+  .then(function(j){ var res=j&&j.result; if(!res||res.isError) throw new Error("mcp error"); return (res.content||[]).map(function(c){ return c.text||""; }).join("\n"); });
+}
+/* ask 결과 + 목록에만 나온 후보(📌 정리 노트 먼저) 3건의 본문 */
+function ckMcpAsk(q){
+  return ckMcp("ask",{question:q}).then(function(t){
+    if(/조회 횟수\(하루 \d+번\)를 다 썼|맞는 자료가 없습니다|낱말을 넣어 주세요/.test(t)) return t;
+    var ids=[], m, re=/^- \[(c\d+)\] (📌)?/gm; while((m=re.exec(t))) ids.push({id:m[1],n:!!m[2]});
+    ids=ids.sort(function(a,b){ return b.n-a.n; }).slice(0,3);
+    return Promise.all(ids.map(function(x){ return ckMcp("read",{id:x.id}).then(function(r){ return /최근 검색 결과에 없|조회 횟수/.test(r)?"":"\n\n[원문 · "+x.id+"]\n"+r.slice(0,4000); },function(){ return ""; }); }))
+      .then(function(a){ return t.slice(0,12000)+a.join(""); });
+  });
+}
+var CKSYS="당신은 경남 학교 행정·교무 업무를 돕는 도우미입니다. 아래 [자료]에 있는 내용만으로 한국어로 답하세요.\n"+
+  "1. 첫 문장에 결론을 쓰고, 이어서 필요한 절차·기한·금액을 짧게 정리하세요.\n2. 공립과 사립이 다르면 나눠 답하세요.\n"+
+  "3. [자료]에 없는 내용은 지어내지 말고 '자료에서 확인되지 않습니다'라고 쓰세요.\n4. 마지막 줄에 '근거: ' 뒤에 쓴 자료 이름을 적으세요(📌는 경남 정리 노트).\n5. [c12345] 같은 자료 번호는 답에 쓰지 말고 자료 이름으로 말하세요.\n6. '원하시면 더 찾아 드리겠습니다' 같은 제안이나, 원문·공문을 확인하라는 당부로 끝내지 마세요(화면에 이미 있음).";
+function ckLLM(sys,user){
+  return fetch(CKAI.srv+"/llm",{method:"POST",headers:{"content-type":"application/json"},
+    body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:4000,system:sys,messages:[{role:"user",content:user}]})})
+  .then(function(r){ if(!r.ok) throw new Error("llm "+r.status); return r.json(); })
+  .then(function(j){ var t=(j.content||[]).filter(function(c){ return c.type==="text"; }).map(function(c){ return c.text; }).join(""); if(!t) throw new Error("빈 답"); return {text:t}; })
+  .catch(function(e){ var k=ckGemKey(); if(!k) throw e;
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":k},
+      body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:[{role:"user",parts:[{text:user}]}]})})
+    .then(function(r){ if(r.status===429) throw new Error("오늘 AI 사용량을 다 썼습니다. 내일 다시 질문해 주세요."); if(!r.ok) throw new Error("AI 서버 오류 "+r.status); return r.json(); })
+    .then(function(j){ var c=j.candidates&&j.candidates[0], t=c&&c.content&&(c.content.parts||[]).map(function(p){ return p.text||""; }).join(""); if(!t) throw new Error("빈 답"); return {text:t,alt:true}; });
+  });
+}
+function ckMd(box,t){   /* 굵게·목록·제목만 */
+  box.textContent=""; t=String(t).replace(/\s*[\[(]c\d{3,}[\])]/g,"").replace(/,\s*c\d{3,}\b/g,"").replace(/\s*\bc\d{4,}\b/g,"");   /* 자료 번호는 빼고 보여 줌 */
+  var ul=null;
+  String(t).split("\n").forEach(function(line){
+    var m=/^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line), h=/^\s*#{1,4}\s+(.*)$/.exec(line), node;
+    if(m){ if(!ul){ ul=el("ul"); box.appendChild(ul); } node=el("li"); ul.appendChild(node); line=m[1]; }
+    else { ul=null; if(!line.trim()) return; node=el(h?"h3":"p"); box.appendChild(node); if(h) line=h[1]; }
+    line.split(/\*\*(.+?)\*\*/).forEach(function(part,i){ node.appendChild(i%2?el("b",null,part):document.createTextNode(part)); });
+  });
+}
+function ckAsk(){
+  var d=$("#ckdetail"); d.textContent="";
+  d.appendChild(el("h2",null,"질문하기 (AI)"));
+  d.appendChild(el("p","note","경남교육청 업무 자료를 찾아 AI가 답해요. 공립·사립, 신분(교원·지방공무원·공무직)을 같이 적으면 더 정확해요. 참고용이니 실제 처리 전에 원문을 확인하세요."));
+  var f=el("form","ckaskf"), ta=el("textarea"), go=el("button","pri","질문하기"), out=el("div","ckaskout");
+  ta.rows=3; ta.placeholder="예: 공립 고등학교 교사 국외출장 여비는 어떻게 계산하나요?"; ta.setAttribute("aria-label","질문"); go.type="submit";
+  f.appendChild(ta); f.appendChild(go); d.appendChild(f); d.appendChild(out);
+  ta.onkeydown=function(e){ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); f.requestSubmit(); } };
+  function show(r){ out.textContent=""; out.appendChild(el("p","ckaskq","Q. "+r.q)); var b=el("div","ckaskans"); out.appendChild(b);
+    if(r.err){ b.appendChild(el("p","ckaskerr",r.err)); return; } ckMd(b,r.text);
+    if(r.note) out.appendChild(el("p","note",r.note)); }
+  if(CKAI.last) show(CKAI.last);
+  f.onsubmit=function(e){
+    e.preventDefault(); var q=ta.value.trim(); if(!q||go.disabled) return;
+    go.disabled=true; out.textContent=""; out.appendChild(el("p","note","자료를 찾는 중…"));
+    var lim=false;
+    ckMcpAsk(q).then(function(t){ if(/조회 횟수\(하루 \d+번\)를 다 썼/.test(t)){ lim=true; return ""; } return /맞는 자료가 없습니다|낱말을 넣어 주세요/.test(t)?"":t; },function(){ return ""; })
+    .then(function(ctx){
+      if(!ctx){ return {q:q,err:lim?"오늘 이 인터넷 주소에서 쓸 수 있는 자료 조회(하루 500번)를 다 썼습니다. 한국 시간 자정에 다시 열립니다.":"맞는 자료를 찾지 못했습니다. 업무 이름이나 원문 용어로 바꿔 다시 물어보세요."}; }
+      out.lastChild.textContent="답변을 만드는 중…";
+      return ckLLM(CKSYS,"[자료]\n"+ctx.slice(0,24000)+"\n\n[질문]\n"+q).then(function(a){ return {q:q,text:a.text,note:a.alt?"기본 AI가 혼잡하거나 오늘 사용량을 다 써서 다른 AI(Gemini)가 답했습니다.":""}; });
+    })
+    .catch(function(e){ return {q:q,err:"답변을 받지 못했습니다: "+(e&&e.message||e)}; })
+    .then(function(r){ CKAI.last=r; show(r); go.disabled=false; });
+  };
+  ta.focus();
+}
 function ckMon(){
   var d=$("#ckdetail"); d.textContent="";
   var today=ckToday(), ym=CK.mon||today.slice(0,7), Y=+ym.slice(0,4), M=+ym.slice(5,7);
@@ -2142,5 +2227,6 @@ function ckPlanTxt(pl){ return pl.mo?(+pl.d.slice(5,7))+"월 중":pl.d; }
 
 })();
 </script>
+<script id="CKCFGX" type="application/json">"EEAXX11GEAxJBQJAW15bFEdADEhLEggUKjNJbFAIYHhdKVJZa1Zifw0XFRl/VkRpBFoidVNIeBskNzBGWFJ+BSUEImZie2APLzAtdXMSHhQGDQNIXhIIFAwHCkRcWR8FRVdKS15RQV5GDg5ZVxJP"</script>
 </body>
 </html>

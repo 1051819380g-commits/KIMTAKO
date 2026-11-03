@@ -1197,6 +1197,23 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
   .dsrch,.dres,.dtree{display:none!important}
   .docnav select{display:block;font-size:15px;padding:9px 10px}
 }
+/* 왼쪽 메뉴 가독성: 카드 하나 + 큰제목(분야)·중간제목(자료)·작은제목(장) */
+@media (min-width:801px){
+.docwrap .docnav{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(16,24,40,.06);padding:14px 10px 12px 12px;margin-bottom:16px}
+.dask{margin-bottom:10px}
+.dsrch{margin-bottom:8px}
+.dg{border-top:1px solid var(--line);padding:4px 0}
+.dg:first-child{border-top:0}
+.dg>summary{margin-top:0;padding:9px 8px;font-size:15px;font-weight:800;color:var(--ink)}
+.dg>summary::before{color:var(--accent);font-size:13px}
+.dg>.dd{margin-left:10px;padding-left:6px;border-left:2px solid var(--accent-soft)}
+.dd>summary::before{font-size:11px}
+.dd>summary{padding:6px 8px;font-size:14px;font-weight:600;color:var(--ink)}
+.dd>.dch,.dd>.dsub{margin-left:14px}
+.dch>summary,.dsub>summary{padding:4px 8px;font-size:12.5px;font-weight:400;color:var(--muted)}
+.dch>summary::before,.dsub>summary::before{font-size:10px}
+.dit{font-size:12px;color:var(--muted)}
+}
 </style>
 </head>
 <body>

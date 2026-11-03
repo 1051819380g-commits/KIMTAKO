@@ -470,7 +470,7 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 @media print{.ckcalm{break-inside:avoid}}
 .split.ckcalmode{display:block!important}
 .split.ckcalmode>.ckside{display:none}
-.ckqa{max-width:900px;margin:0 auto;display:flex;flex-direction:column;height:600px;min-height:380px}
+.ckqa{max-width:900px;margin:0 auto;display:flex;flex-direction:column;height:600px;min-height:300px}
 .ckqa .thread{flex:1;min-height:0;overflow-y:auto;position:relative;display:flex;flex-direction:column;gap:10px;padding:4px 4px 10px;overscroll-behavior:contain}
 .ckqa .thread>:first-child{margin-top:auto}
 .ckqa .askbox{flex:none}
@@ -2425,8 +2425,13 @@ function addAssistant(){
   th.appendChild(document.createTextNode(" 질문을 살펴보는 중")); b.appendChild(th); d.appendChild(b); thread.appendChild(d);
   toEnd(); return d;
 }
-function fit(){ if(!root||!root.isConnected) return; var t=root.getBoundingClientRect().top+window.scrollY; root.style.height=Math.max(380,window.innerHeight-t-16)+"px"; }   /* 화면 아래 끝까지(입력창이 늘 보이게) */
+/* 질문 창 높이: 머리글·바닥글(출처·제작)까지 한 화면에 들어오게 — 페이지 자체는 스크롤이 생기지 않고 대화 칸만 스크롤 */
+function fit(){ if(!root||!root.isConnected||!root.offsetParent) return;
+  var t=root.getBoundingClientRect().top+window.scrollY, h=Math.max(300,window.innerHeight-t-16); root.style.height=h+"px";
+  var over=document.documentElement.scrollHeight-window.innerHeight; if(over>0) root.style.height=Math.max(300,h-over)+"px"; }
 addEventListener("resize",fit);
+if(window.ResizeObserver) new ResizeObserver(function(){ fit(); }).observe(document.querySelector("header"));   /* 분야 리본이 열리고 닫혀 머리글 높이가 바뀔 때 */
+document.addEventListener("click",function(){ setTimeout(fit,30); });   /* 메뉴를 누른 뒤에도 한 번 더 */
 function toEnd(){ thread.scrollTop=thread.scrollHeight; }
 function toAns(b){ var top=b.offsetTop-8; thread.scrollTop=b.offsetHeight>thread.clientHeight?top:thread.scrollHeight; }   /* 답이 창보다 길면 답 첫 줄부터 */
 function build(){

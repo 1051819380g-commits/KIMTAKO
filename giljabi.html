@@ -1225,6 +1225,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
       <h1>학교 행정실무 길잡이</h1>
       <span class="sub">질문하기 · 지침·법령</span>
     </div>
+    <button type="button" class="helpbtn" id="helpbtn" aria-haspopup="dialog">사용법</button>
     <div class="searchwrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
       <input id="gq" type="text" placeholder="비목·여비·계약·급여 통합검색" aria-label="통합검색">
@@ -5600,5 +5601,48 @@ if(enc&&enc.ct){
 
 </script>
 
+<dialog id="helpdlg" aria-labelledby="helpt">
+  <div class="hb">
+    <h2 id="helpt">🧭 학교 행정실무 길잡이</h2>
+    <p>"MCP가 좋다던데… 뭔지도 모르겠고, 설치는 더 어렵고 복잡하다!" 하시는 분들께.<br>아무것도 설치하지 않고 <b>MCP를 맛보기로 써 볼 수 있는 앱</b>입니다.</p>
+    <h3>이런 걸 할 수 있어요</h3>
+    <ul>
+      <li><b>질문하기</b>: 업무 중 궁금한 걸 평소 말투로 물어보면, 지침과 법령에서 근거를 찾아 답해 드려요. 답변 아래 '근거 자료'를 누르면 원문이 바로 열립니다.</li>
+      <li><b>지침·법령 보기</b>: 회계·계약·급여·인사·학운위·행정 자료를 왼쪽 목차에서 골라 원문 전체를 읽을 수 있어요.</li>
+    </ul>
+    <h3>경남 자료를 기준으로 만들었어요</h3>
+    <p>경상남도교육청 지침과 편람, 관련 법령을 바탕으로 답합니다. 공립과 사립이 다른 내용은 나눠서 알려 드려요.</p>
+    <h3>질문이 쌓일수록 똑똑해져요</h3>
+    <p>해 주시는 질문은 서버에 쌓여 더 나은 답변을 만드는 데 쓰입니다. 답을 못 찾은 질문은 따로 모아 자료를 보강해요.<br>
+    <span class="muted">(질문은 개인정보를 가린 채 90일 동안 보관됩니다. 이름·전화번호 같은 개인정보는 넣지 말아 주세요.)</span></p>
+    <h3>써 보실 때 알아 두세요</h3>
+    <ul>
+      <li>따로 설정할 것 없이 열면 바로 질문할 수 있어요.</li>
+      <li>무료로 운영하고 있어서 하루에 쓸 수 있는 양이 정해져 있어요. 사용량이 몰리면 답이 늦거나 잠시 막힐 수 있습니다.</li>
+      <li>업무 참고용이에요. 실제로 처리하기 전에는 근거 원문과 그해 공문을 꼭 확인해 주세요.</li>
+    </ul>
+    <p>궁금한 점이나 고칠 점은 <a href="https://open.kakao.com/o/sQp88MKh" target="_blank" rel="noopener">카카오톡 오픈채팅</a>으로 편하게 알려 주세요. 🙌</p>
+  </div>
+  <div class="hf"><button type="button" class="btn" id="helpclose">닫기</button></div>
+</dialog>
+<style>
+.helpbtn{flex:0 0 auto;margin-left:auto;margin-right:10px;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.14);color:#fff;font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+.helpbtn:hover{background:rgba(255,255,255,.26)}
+#helpdlg{width:min(640px,calc(100vw - 32px));max-height:calc(100vh - 48px);padding:0;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#helpdlg::backdrop{background:rgba(15,20,30,.45)}
+#helpdlg .hb{padding:22px 24px 8px;overflow:auto;max-height:calc(100vh - 140px);font-size:14.5px;line-height:1.7}
+#helpdlg h2{margin:0 0 10px;font-size:19px}
+#helpdlg h3{margin:18px 0 6px;font-size:15px;color:var(--accent)}
+#helpdlg p{margin:0 0 6px}
+#helpdlg ul{margin:0;padding-left:20px}
+#helpdlg li{margin:3px 0}
+#helpdlg .muted{color:var(--muted);font-size:13px}
+#helpdlg .hf{display:flex;justify-content:flex-end;padding:12px 24px 18px;border-top:1px solid var(--line)}
+</style>
+<script>(function(){ var d=document.getElementById("helpdlg");
+  document.getElementById("helpbtn").onclick=function(){ if(d.showModal) d.showModal(); else d.setAttribute("open",""); };
+  document.getElementById("helpclose").onclick=function(){ d.close?d.close():d.removeAttribute("open"); };
+  d.addEventListener("click",function(e){ if(e.target===d) d.close(); });   /* 창 바깥을 누르면 닫기 */
+})();</script>
 </body>
 </html>

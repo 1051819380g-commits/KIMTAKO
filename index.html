@@ -1036,6 +1036,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
       <h1>업무 체크리스트</h1>
       <span class="sub">경상남도교육청 학교행정 업무흐름도(2026.3.) 기반 · 담당별 흐름도 · 단계별 체크</span>
     </div>
+    <nav class="sitenav" aria-label="사이트"><a href="giljabi.html">질문·지침</a><a href="./" aria-current="page">업무 체크리스트</a></nav><style>.sitenav{display:flex;gap:6px;margin-left:14px;flex-wrap:wrap}.sitenav a{padding:5px 12px;border-radius:999px;color:#fff;text-decoration:none;font-size:13px;font-weight:600;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);white-space:nowrap}.sitenav a:hover{background:rgba(255,255,255,.26)}.sitenav a[aria-current]{background:#fff;color:#4f46e5;border-color:#fff}</style>
     <button type="button" class="ckhelpbtn" id="ckhelpbtn">사용법</button>
     <div class="ckfavwrap"><button type="button" class="ckhelpbtn ckfavopen" id="ckfavopen" aria-haspopup="true" aria-expanded="false"><svg class="ckstar" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.5 5.1 5.6.8-4.05 3.95.95 5.6L12 16.4l-5 2.65.95-5.6L3.9 9.5l5.6-.8z" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>자주 찾는 업무</button><div class="ckfavpop" id="ckfav" hidden></div></div>
   </div>
@@ -2142,5 +2143,24 @@ function ckPlanTxt(pl){ return pl.mo?(+pl.d.slice(5,7))+"월 중":pl.d; }
 
 })();
 </script>
+<style>.ckask{text-decoration:none}.ckrow .ckask{margin-left:auto;align-self:center;font-size:12px;color:#4f46e5;white-space:nowrap;padding:2px 6px}
+.ckrow .ckask:hover{text-decoration:underline}</style>
+<script>/* 업무 화면에 길잡이(질문·지침)로 묻는 링크: 업무 전체 1개 + 단계마다 1개. 화면이 다시 그려질 때마다 붙인다 */
+(function(){
+  var d=document.getElementById("ckdetail"); if(!d) return;
+  function link(q,t,cls){ var a=document.createElement("a"); a.href="giljabi.html?q="+encodeURIComponent(q); a.target="_blank"; a.rel="noopener";
+    a.className=cls; a.textContent=t; a.title="길잡이(질문·지침)에서 AI에게 물어봐요 · 새 탭"; return a; }
+  function deco(){
+    var h=d.querySelector("h2"), tools=d.querySelector(".cktools"); if(!h||!tools) return;
+    var name=h.textContent.trim();
+    if(!tools.querySelector(".ckask")) tools.appendChild(link(name+" 업무는 어떤 절차로 처리하나요?","길잡이에 물어보기","pill ckask"));
+    d.querySelectorAll(".cksteps .ckrow").forEach(function(r){
+      if(r.querySelector(".ckask")) return; var lb=r.querySelector("label"); if(!lb) return;
+      var st=[].filter.call(lb.childNodes,function(n){ return n.nodeType===3; }).map(function(n){ return n.textContent; }).join("").trim()||lb.textContent.trim();
+      r.appendChild(link(name+" 업무에서 '"+st+"' 단계는 어떻게 하나요?","물어보기","ckask"));
+    });
+  }
+  new MutationObserver(deco).observe(d,{childList:true,subtree:true}); deco();
+})();</script>
 </body>
 </html>

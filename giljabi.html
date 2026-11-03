@@ -1206,6 +1206,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
       <h1>학교 행정실무 길잡이</h1>
       <span class="sub">질문하기 · 지침·법령</span>
     </div>
+    <nav class="sitenav" aria-label="사이트"><a href="giljabi.html" aria-current="page">질문·지침</a><a href="./">업무 체크리스트</a></nav><style>.sitenav{display:flex;gap:6px;margin-left:14px;flex-wrap:wrap}.sitenav a{padding:5px 12px;border-radius:999px;color:#fff;text-decoration:none;font-size:13px;font-weight:600;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);white-space:nowrap}.sitenav a:hover{background:rgba(255,255,255,.26)}.sitenav a[aria-current]{background:#fff;color:#4f46e5;border-color:#fff}</style>
     <div class="searchwrap">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
       <input id="gq" type="text" placeholder="비목·여비·계약·급여 통합검색" aria-label="통합검색">
@@ -5543,5 +5544,16 @@ if(enc&&enc.ct){
 
 </script>
 
+<script>/* 체크리스트에서 giljabi.html?q=질문 으로 오면 그 질문을 바로 물어본다(새로고침해도 다시 묻지 않게 주소에서 지움) */
+(function(){ var q=""; try{ q=new URLSearchParams(location.search).get("q")||""; }catch(e){} if(!q) return;
+  try{ history.replaceState(null,"",location.pathname); }catch(e){}
+  /* 질문 단추는 자료를 다 푼 뒤에 살아나고 AI 연결도 그 뒤라, 둘 다 될 때까지 기다렸다 누른다(30초 넘으면 채워만 둔다) */
+  var n=0, iv=setInterval(function(){
+    var t=document.getElementById("q"), b=document.getElementById("ask"), v=document.getElementById("v-ask");
+    if(!t||!b) return; if(n++===0) t.value=q.slice(0,300);
+    if(b.onclick&&!b.disabled&&v&&/연결됨/.test(v.innerText)){ clearInterval(iv); t.value=q.slice(0,300); b.click(); }
+    else if(n>100){ clearInterval(iv); t.focus(); }
+  },300);
+})();</script>
 </body>
 </html>

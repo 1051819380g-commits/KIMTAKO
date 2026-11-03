@@ -470,7 +470,14 @@ details[open].ckcalbox,details[open].ckcalm{padding-bottom:6px}
 @media print{.ckcalm{break-inside:avoid}}
 .split.ckcalmode{display:block!important}
 .split.ckcalmode>.ckside{display:none}
-.ckqa{max-width:900px;margin:0 auto;display:flex;flex-direction:column;height:600px;min-height:300px}
+.ckqa{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;height:600px;min-height:300px}
+.ckqmain{display:flex;flex-direction:column;min-height:0;min-width:0}
+.ckrel{min-height:0;overflow-y:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.ckrel h3{font-size:15px;margin:0 0 8px}.ckrel .note{font-size:13px;color:var(--muted);margin:0 0 8px;line-height:1.5}
+.ckrel .relit{display:block;width:100%;text-align:left;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:0 0 8px;cursor:pointer;color:var(--ink)}
+.ckrel .relit:hover{border-color:var(--accent)}.ckrel .relit .c{display:block;font-size:11px;color:var(--muted)}.ckrel .relit b{display:block;font-size:14px;line-height:1.4}
+.ckrel .relit .s{display:block;font-size:12px;color:var(--accent-ink);margin-top:3px}
+@media (max-width:900px){.ckqa{grid-template-columns:1fr}.ckrel{display:none}}
 .ckqa .thread{flex:1;min-height:0;overflow-y:auto;position:relative;display:flex;flex-direction:column;gap:10px;padding:4px 4px 10px;overscroll-behavior:contain}
 .ckqa .thread>:first-child{margin-top:auto}
 .ckqa .askbox{flex:none}
@@ -2434,17 +2441,50 @@ if(window.ResizeObserver) new ResizeObserver(function(){ fit(); }).observe(docum
 document.addEventListener("click",function(){ setTimeout(fit,30); });   /* 메뉴를 누른 뒤에도 한 번 더 */
 function toEnd(){ thread.scrollTop=thread.scrollHeight; }
 function toAns(b){ var top=b.offsetTop-8; thread.scrollTop=b.offsetHeight>thread.clientHeight?top:thread.scrollHeight; }   /* 답이 창보다 길면 답 첫 줄부터 */
+/* 관련 업무 바로가기: 질문 낱말이 업무 이름·단계에 얼마나 들었는지로 체크리스트 업무를 고른다(AI 안 씀).
+   여러 업무에 흔한 낱말(학교·교사 등)은 무게를 낮춘다 */
+var rel;
+function relFind(q){
+  var ts=toks(q).filter(function(t){ return t.length>=2&&!/^\d+$/.test(t)&&!/공무|무직|교원|교사|사립|공립|학교$|^학교|사무직|^교육$|^직원$/.test(t); });   /* 신분·학교급 낱말만으로는 고르지 않음 */ if(!ts.length) return [];
+  var N=CKL.length, df={}, txt=CKL.map(function(t){ return {t:t,ti:(t.title+" "+(t.cat||"")).toLowerCase(),st:t.steps.map(function(x){ return {n:(x.n||"").toLowerCase(),b:((x.w||"")+" "+(x.s||"")).toLowerCase()}; })}; });
+  ts.forEach(function(w){ df[w]=txt.filter(function(o){ return o.ti.indexOf(w)>=0||o.st.some(function(x){ return x.n.indexOf(w)>=0||x.b.indexOf(w)>=0; }); }).length; });
+  var out=txt.map(function(o){ var sc=0, best=-1, bs=0;
+    ts.forEach(function(w){ if(!df[w]) return; var idf=Math.log((N+1)/df[w]);
+      if(o.ti.indexOf(w)>=0) sc+=3*idf;
+      var hitN=o.st.some(function(x){ return x.n.indexOf(w)>=0; }), hitB=!hitN&&o.st.some(function(x){ return x.b.indexOf(w)>=0; });
+      sc+=(hitN?1:hitB?0.4:0)*idf; });
+    o.st.forEach(function(x,k){ var v=0; ts.forEach(function(w){ if(df[w]&&x.n.indexOf(w)>=0) v+=Math.log((N+1)/df[w]); }); if(v>bs){ bs=v; best=k; } });
+    return {t:o.t,s:sc,k:best}; }).filter(function(x){ return x.s>0; }).sort(function(a,b){ return b.s-a.s; });
+  if(!out.length) return [];
+  var top=out[0].s; return out.filter(function(x){ return x.s>=Math.max(top*0.45,2.5); }).slice(0,5);
+}
+function relShow(q){
+  rel.body.textContent="";
+  var L=relFind(q);
+  rel.body.appendChild(el("p","note","‘"+(q.length>40?q.slice(0,40)+"…":q)+"’ 관련"));
+  if(!L.length){ rel.body.appendChild(el("p","note","맞는 체크리스트 업무를 찾지 못했어요.")); return; }
+  L.forEach(function(x){
+    var b=el("button","relit"); b.type="button";
+    b.appendChild(el("span","c",x.t.cat||"")); b.appendChild(el("b",null,x.t.title));
+    if(x.k>=0) b.appendChild(el("span","s",(x.k+1)+"단계 · "+x.t.steps[x.k].n));
+    b.onclick=function(){ CK.pv=x.t.id; CK.cur=""; CK.mode="flow"; ckSave(); ckRender(); window.scrollTo(0,0); if(x.k>=0&&typeof ckFocus==="function") setTimeout(function(){ ckFocus(x.k); },80); };
+    rel.body.appendChild(b);
+  });
+}
 function build(){
   root=el("div","ckqa");
-  thread=el("div","thread"); root.appendChild(thread);
+  rel=el("aside","ckrel"); rel.appendChild(el("h3",null,"관련 업무 바로가기")); rel.body=el("div","relb"); rel.appendChild(rel.body);
+  rel.body.appendChild(el("p","note","질문하면 관련된 체크리스트 업무가 여기에 나와요. 누르면 그 업무 흐름도로 가요."));
+  var main=el("div","ckqmain"); root.appendChild(rel); root.appendChild(main);
+  thread=el("div","thread"); main.appendChild(thread);
   var st=el("div","msg a"); st.appendChild(el("div","who","시작하기"));
   st.appendChild(el("div","body","회계·계약·급여·인사·학운위·행정·교무 업무를 편하게 물어보세요. 경남교육청 업무 자료와 법령에서 근거를 찾아 답하고, 답변 아래 '근거 자료'에 찾은 자료가 나옵니다. 공립·사립, 신분(교원·지방공무원·공무직)을 같이 적으면 더 정확해요."));
   thread.appendChild(st);
   var box=el("div","askbox"), ta=el("textarea"), row=el("div","askrow"), stopB=el("button","btn ghost","중지"), go=el("button","btn","질문하기");
   ta.placeholder="예) 학생 동아리 간식비는 어느 비목으로 편성하나요?"; ta.setAttribute("aria-label","질문"); stopB.type=go.type="button"; stopB.hidden=true;
   row.appendChild(el("span","hint","Enter로 보내기 · Shift+Enter 줄바꿈")); row.appendChild(stopB); row.appendChild(go);
-  box.appendChild(ta); box.appendChild(row); root.appendChild(box);
-  var notice=el("div","ainotice"); root.appendChild(notice);
+  box.appendChild(ta); box.appendChild(row); main.appendChild(box);
+  var notice=el("div","ainotice"); main.appendChild(notice);
   go.onclick=function(){ doAsk(ta,go,stopB,notice); };
   stopB.onclick=function(){ if(ctl) ctl.abort(); };
   ta.addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); go.onclick(); } });
@@ -2511,6 +2551,7 @@ function doAsk(ta,go,stopB,notice){
     cp.onclick=function(){ var t=body.innerText, done=function(){ cp.textContent="복사했습니다"; setTimeout(function(){ cp.textContent="답변 복사"; },1500); };
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,function(){}); };
     bar.appendChild(cp); box.appendChild(bar); box.appendChild(det); toAns(box);
+    relShow(askQ);
   }).catch(function(e){
     if(e&&(e.name==="AbortError"||(ctl&&ctl.signal.aborted))){ box.remove(); return; }
     body.textContent="";

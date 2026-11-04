@@ -4663,8 +4663,8 @@ function mcpAsk(q,signal,who){
   if(!mcpURL()) return Promise.resolve(null);
   return mcpCall("ask",mcpOpt({question:q},who),signal).then(function(txt){
     var nohit=/맞는 자료가 없습니다|낱말을 넣어 주세요/.test(txt), refs=[], seen={};
-    txt.replace(/^(?:=== |- )\[c\d+\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,t){ var doc=t.replace(/^📌 /,"").split(" › ")[0];
-      if(!seen[t]){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ alert(t+"\n\n경남 자료에서 가져온 근거입니다."); }}); } return _; });
+    txt.replace(/^(?:=== |- )\[(c\d+)\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,cid,t){ var doc=t.replace(/^📌 /,"").split(" › ")[0];
+      if(!seen[t]){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ refPop(t,mcpCall("read",{id:cid}).then(function(x){ return x.replace(/^\(다음 조각[^)\n]*\)\s*$/gm,"").replace(/\[[cd]\d+\]\s*/g,""); }),"",mdRender); }}); } return _; });
     return {text:txt,nohit:nohit,refs:refs};
   }).catch(function(){ return null; });
 }
@@ -4724,7 +4724,8 @@ function lawLiveMcp(cs,q,topS){
   function pack(o){
     var body=o.body.length>per?o.body.slice(0,per)+"…":o.body, refs=[];
     body.replace(/^(제\d+조(?:의\d+)?(?:\([^)\n]*\))?)/gm,function(_,a){ var no=a.match(/^제\d+조(?:의\d+)?/)[0];
-      refs.push({t:o.name+" › "+a+" · 법제처",s:(topS||1)*0.5,doc:o.name,parts:[a],go:function(){ window.open("https://www.law.go.kr/법령/"+encodeURIComponent(o.name.replace(/\s/g,""))+"/"+no,"_blank","noopener"); }}); return _; });
+      refs.push({t:o.name+" › "+a+" · 법제처",s:(topS||1)*0.5,doc:o.name,parts:[a],go:function(){ var seg=o.body.split(/\n(?=제\d+조)/).filter(function(x){ return x.trim().indexOf(a)===0; })[0]||"";
+          refPop(o.name+" › "+a,Promise.resolve(seg.trim()||"조문 내용을 찾지 못했습니다."),"https://www.law.go.kr/법령/"+encodeURIComponent(o.name.replace(/\s/g,""))+"/"+no); }}); return _; });
     return {text:"[법제처 현행 법령 · 실시간 조회("+day+") · 「"+o.name+"」(시행 "+o.ef+")]\n"+body+"\n\n",refs:refs};
   }
   function one(c){
@@ -4846,14 +4847,14 @@ function doAsk(){
     turns.push({role:"assistant",content:res.text});
     if(r.widened){ var wn=el("div","note","질문이 ‘"+({acc:"회계",con:"계약",pay:"급여",hr:"인사",hw:"학운위",ad:"행정"}[r.widened]||"")+"’ 범위와 잘 맞지 않아 전체 자료에서 찾아 답했습니다."); wn.style.marginTop="6px"; box.appendChild(wn); }
     var sr=sortRefs(r.refs,res.text), det=el("details","src");
-    det.appendChild(el("summary",null,"근거 자료 — "+(sr.dir.length?"직접 근거 "+sr.dir.length+"건"+(sr.sup.length?" · 보충 설명 "+sr.sup.length+"건":""):"관련 자료 "+sr.sup.length+"건")));
+    det.appendChild(el("summary",null,"근거 자료 — "+(sr.dir.length?"직접 근거 "+sr.dir.length+"건":"관련 자료 "+sr.sup.length+"건")));
     if(qs.length) det.appendChild(el("div","note","질문을 이렇게 바꿔서도 찾았습니다: "+qs.join(" / ")));
     if(semN) det.appendChild(el("div","note","낱말이 달라도 뜻이 가까운 지침·법령 항목을 함께 찾았습니다(뜻 검색)."));
     if(more) det.appendChild(el("div","note","처음 찾은 근거가 부족해 ‘"+more+"’(으)로 한 번 더 찾아 답했습니다."));
     /* 서버에서 못 찾았거나 근거가 모자라 다시 찾았으면 서버에 '못 찾음'을 알린다(정리 노트 보강 목록) */
     /* search·read까지 했는데도 답이 '확인되지 않는다'일 때만 서버에 못 찾음을 알린다 */
     if(mcpURL()&&more&&/확인되지 않|확인하지 못|찾지 못|자료에 없/.test(res.text)) mcpCall("report_gap",{topic:q.slice(0,120),detail:"search·read 후에도 근거 없음 · 추가 검색: "+more}).catch(function(){});
-    [["직접 근거",sr.dir],[sr.dir.length?"보충 설명":"관련 자료",sr.sup]].forEach(function(g){
+    [["직접 근거",sr.dir],["관련 자료",sr.dir.length?[]:sr.sup]].forEach(function(g){
       if(!g[1].length) return;
       det.appendChild(el("div","note",g[0]));
       var rl0=el("div","refs");
@@ -5696,5 +5697,33 @@ if(enc&&enc.ct){
   document.getElementById("helpclose").onclick=function(){ d.close?d.close():d.removeAttribute("open"); };
   d.addEventListener("click",function(e){ if(e.target===d) d.close(); });   /* 창 바깥을 누르면 닫기 */
 })();</script>
+<style>
+.refpop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+.refpop .rpbox{background:var(--surface,#fff);color:var(--ink,#222);border:1px solid var(--line,#ddd);border-radius:8px;max-width:760px;width:100%;max-height:min(80vh,80dvh);display:flex;flex-direction:column;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.refpop .rphead{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--line,#ddd);font-weight:600;line-height:1.4}
+.refpop .rphead span{flex:1}
+.refpop .rpx{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:inherit;padding:0 2px}
+.refpop .rpbody{padding:12px 14px;overflow:auto;white-space:pre-wrap;line-height:1.65;font-size:14px}
+.refpop .rpfoot{padding:8px 14px;border-top:1px solid var(--line,#ddd);font-size:13px}
+</style>
+<script>
+/* 근거 자료 팝업: 제목, 내용(Promise), 원문 링크(선택), 그리는 함수(선택 — 답변과 같은 표·굵은 글씨) */
+function refPop(title,pr,link,draw){
+  var ov=document.createElement("div"); ov.className="refpop"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");
+  var bx=document.createElement("div"); bx.className="rpbox";
+  var hd=document.createElement("div"); hd.className="rphead"; var tt=document.createElement("span"); tt.textContent=title;
+  var x=document.createElement("button"); x.type="button"; x.className="rpx"; x.setAttribute("aria-label","닫기"); x.textContent="×";
+  hd.appendChild(tt); hd.appendChild(x);
+  var bd=document.createElement("div"); bd.className="rpbody"; bd.textContent="자료를 불러오는 중…";
+  bx.appendChild(hd); bx.appendChild(bd);
+  if(link){ var ft=document.createElement("div"); ft.className="rpfoot"; var a=document.createElement("a"); a.href=link; a.target="_blank"; a.rel="noopener"; a.textContent="법제처에서 원문 보기"; ft.appendChild(a); bx.appendChild(ft); }
+  ov.appendChild(bx); document.body.appendChild(ov); x.focus();
+  function close(){ ov.remove(); document.removeEventListener("keydown",esc); }
+  function esc(e){ if(e.key==="Escape") close(); }
+  x.onclick=close; ov.onclick=function(e){ if(e.target===ov) close(); }; document.addEventListener("keydown",esc);
+  Promise.resolve(pr).then(function(t){ t=String(t||"").trim(); if(draw&&t){ bd.style.whiteSpace="normal"; bd.textContent=""; try{ draw(bd,t); return; }catch(e){ bd.style.whiteSpace=""; } } bd.textContent=t.replace(/\*\*/g,"")||"내용이 없습니다."; },
+    function(e){ bd.textContent=/limit/.test(e&&e.message)?"오늘 자료 조회 횟수(하루 500번)를 다 써서 열 수 없습니다. 한국 시간 자정에 다시 열립니다.":"자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 보세요(자료는 답변을 받은 뒤 1시간 안에만 열립니다)."; });
+}
+</script>
 </body>
 </html>

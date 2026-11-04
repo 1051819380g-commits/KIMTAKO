@@ -2246,8 +2246,8 @@ function mcpAsk(q,signal,who){
   if(!mcpURL()) return Promise.resolve(null);
   return mcpCall("ask",mcpOpt({question:q},who),signal).then(function(txt){
     var nohit=/맞는 자료가 없습니다|낱말을 넣어 주세요/.test(txt), refs=[], seen={};
-    txt.replace(/^(?:=== |- )\[(c\d+)\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,cid,t){ var doc=t.replace(/^📌 /,"").split(" › ")[0];
-      if(!seen[t]&&!/^📌/.test(t)){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ refPop(t,mcpCall("read",{id:cid}).then(function(x){ return x.replace(/^\(다음 조각[^)\n]*\)\s*$/gm,"").replace(/\[[cd]\d+\]\s*/g,""); }),"",mdRender); }}); } return _; });
+    txt.replace(/^(?:=== |- )\[(c\d+)\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,cid,t){ t=t.replace(/\s*·\s*없는 낱말:.*$/,"").replace(/(\s*·\s*\[[^\]]*\])+$/,""); var doc=t.replace(/^📌 /,"").split(" › ")[0];
+      if(!seen[t]&&!/^📌/.test(t)){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ refPop(t,mcpCall("read",{id:cid}).then(function(x){ return x.replace(/^\(다음 조각[^)\n]*\)\s*$/gm,"").replace(/\[[cd]\d+\]\s*/g,""); }).then(tidyText),"",mdRender); }}); } return _; });
     return {text:txt,nohit:nohit,refs:refs};
   }).catch(function(){ return null; });
 }
@@ -2715,6 +2715,24 @@ function ckPlanTxt(pl){ return pl.mo?(+pl.d.slice(5,7))+"월 중":pl.d; }
 .refpop .rpfoot{padding:8px 14px;border-top:1px solid var(--line,#ddd);font-size:13px}
 </style>
 <script>
+/* 서버 자료 원문 읽기 좋게: PDF에서 잘게 끊긴 줄을 문장 단위로 잇고, 쪽 넘김 표시·슬라이드 번호 줄을 뺀다 */
+function tidyText(s){
+  var out=[], para="";
+  var END=/([.?!:;]|[다요음함임됨것등]|[)\]」』>”"])$/;
+  var START=/^(\d{1,2}[.)](\s|$)|[가-하][.)]\s|[①-⑳㉠-㉭㈀-㈍]|[-–•·◦○●□■▪▶▷※*>#<\[]|제\d+(조|장|절)|\(\d+\)|\d+\)|\d{4}\.\s?\d{1,2}\.)/;
+  function flush(){ if(para){ out.push(para); para=""; } }
+  String(s||"").split("\n").forEach(function(raw){
+    var t=raw.trim();
+    if(!t){ flush(); if(out.length&&out[out.length-1]!=="") out.push(""); return; }
+    if(/^(다음\s?페이지\s?계속\s?▼|▲\s?이전\s?페이지에\s?이어서)$/.test(t)||/^\d{1,2}$/.test(t)) return;
+    if(t.charAt(0)==="|"){ flush(); out.push(t); return; }
+    if(!para){ para=t; return; }
+    if(START.test(t)||END.test(para)||/^\*\*|^#/.test(para)){ flush(); para=t; return; }
+    para+=" "+t;
+  });
+  flush();
+  return out.join("\n").replace(/\n{3,}/g,"\n\n").trim();
+}
 /* 근거 자료 팝업: 제목, 내용(Promise), 원문 링크(선택), 그리는 함수(선택 — 답변과 같은 표·굵은 글씨) */
 function refPop(title,pr,link,draw){
   var ov=document.createElement("div"); ov.className="refpop"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true");

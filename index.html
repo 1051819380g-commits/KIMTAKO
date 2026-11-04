@@ -2254,7 +2254,20 @@ function mcpAsk(q,signal,who){
     var nohit=/맞는 자료가 없습니다|낱말을 넣어 주세요/.test(txt), refs=[], seen={};
     txt.replace(/^(?:=== |- )\[(c\d+)\] (.+?)(?: · \[[^\]]*\])?$/gm,function(_,cid,t){ t=t.replace(/\s*·\s*없는 낱말:.*$/,"").replace(/(\s*·\s*\[[^\]]*\])+$/,""); var doc=t.replace(/^📌 /,"").split(" › ")[0];
       if(!seen[t]&&!/^📌/.test(t)){ seen[t]=1; refs.push({t:t,doc:doc,parts:[doc],s:50,go:function(){ refPop(t,mcpCall("read",{id:cid}).then(function(x){ return x.replace(/^\(다음 조각[^)\n]*\)\s*$/gm,"").replace(/\[[cd]\d+\]\s*/g,""); }).then(tidyText),"",mdRender); }}); } return _; });
-    return {text:txt,nohit:nohit,refs:refs};
+    var laws=[], lseen={}, LAWRE=/(?:「([^」]{2,40})」|((?:경상남도(?:교육비특별회계)?\s?)?[가-힣·ㆍ]{2,20}(?:\s?(?:법 시행령|법 시행규칙|시행령|시행규칙|법|규정|규칙|조례))))\s*(제\d+조(?:의\d+)?)/g;
+    txt.split(/\n(?==== )/).forEach(function(sec){
+      if(!/^=== \[c\d+\] 📌/.test(sec)) return;
+      sec.replace(LAWRE,function(_,q,n,art){
+        var nm=(q||n||"").trim();
+        if(/^(같은|이|그|해당|동|관한|대한|따른|의한|본|위|각)\s?/.test(nm)||/(지침|취업규칙|협약|^규칙|^규정)$/.test(nm)) return _;
+        var ord=/조례$|경상남도|공립학교회계\s?규칙|재무회계\s?규칙/.test(nm);
+        if(ord&&!/^경상남도/.test(nm)) nm=/재무회계\s?규칙$/.test(nm)?"경상남도교육비특별회계 재무회계 규칙":"경상남도 "+nm;   /* 지역 없이 보내면 다른 시·도 규칙이 나온다 */
+        var key=nm.replace(/[\s·ㆍ]/g,"")+art; if(lseen[key]) return _; lseen[key]=1;
+        var lnm=nm, la=art, tg=ord?"ordin":"law";
+        laws.push({t:nm+" "+art,doc:nm,parts:[art],s:0,law:1,go:function(){ refPop(lnm+" "+la,mcpCall("law",{name:lnm,article:la,target:tg}),"",mdRender); }});
+        return _; });
+    });
+    return {text:txt,nohit:nohit,refs:refs,laws:laws};
   }).catch(function(){ return null; });
 }
 var LAWCAP=3000;
@@ -2545,10 +2558,14 @@ function doAsk(ta,go,stopB,notice){
     if(MCPLIM){ var lm=el("div","note","오늘 이 인터넷 주소(같은 학교 등)에서 쓸 수 있는 경남 자료 조회(하루 500번)를 다 써서 일부 자료 없이 답했습니다. 한국 시간 자정에 다시 열립니다."); lm.style.marginTop="6px"; box.appendChild(lm); }
     turns.push({role:"user",content:q}); turns.push({role:"assistant",content:res.text});
     var sr=sortRefs(refs,res.text), det=el("details","src");
-    det.appendChild(el("summary",null,"근거 자료 — "+(sr.dir.length?"직접 근거 "+sr.dir.length+"건":"관련 자료 "+sr.sup.length+"건")));
+    var A0=String(res.text||"").replace(/\s/g,""), REL=(mc&&mc.laws||[]).filter(function(f){ return !sr.dir.some(function(d){ return d.doc.replace(/[\s·ㆍ]/g,"")===f.doc.replace(/[\s·ㆍ]/g,"")&&d.t.indexOf(f.parts[0])>=0; }); })
+      .map(function(f,i){ var short=f.doc.replace(/^경상남도(교육비특별회계)?\s?/,"").replace(/[\s·ㆍ]/g,""); return {f:f,c:A0.indexOf(f.parts[0])>=0&&A0.replace(/[·ㆍ]/g,"").indexOf(short)>=0?0:1,i:i}; })
+      .sort(function(a,b){ return a.c-b.c||a.i-b.i; }).slice(0,6).map(function(o){ return o.f; }), RELL=REL.length?"관련 법령":"관련 자료";
+    if(!REL.length&&!sr.dir.length) REL=sr.sup;
+    det.appendChild(el("summary",null,"근거 자료 — "+([sr.dir.length?"직접 근거 "+sr.dir.length+"건":"",REL.length?RELL+" "+REL.length+"건":""].filter(Boolean).join(" · ")||"없음")));
     if(more) det.appendChild(el("div","note","처음 찾은 근거가 부족해 ‘"+more+"’(으)로 한 번 더 찾아 답했습니다."));
     if(more&&/확인되지 않|확인하지 못|찾지 못|자료에 없/.test(res.text)) mcpCall("report_gap",{topic:q.slice(0,120),detail:"search·read 후에도 근거 없음 · 추가 검색: "+more}).catch(function(){});
-    [["직접 근거",sr.dir],["관련 자료",sr.dir.length?[]:sr.sup]].forEach(function(gr){
+    [["직접 근거",sr.dir],[RELL,REL]].forEach(function(gr){
       if(!gr[1].length) return;
       det.appendChild(el("div","note",gr[0]));
       var rl=el("div","refs");

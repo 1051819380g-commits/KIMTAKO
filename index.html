@@ -2064,17 +2064,17 @@ function ckGoStep(cs,k){ CK.cur=cs.id; CK.mode="flow"; ckSave(); ckRender(); win
 /* 월간 달력 끌어서 놓기: 놓은 날을 그 단계 예정일(★ 기준일이면 cs.ab)로 저장 → 앞뒤 기한은 ckPlan이 다시 계산 */
 var CKDRAG=null;
 /* out=1: 달력에 든 칩 — 날짜 칸이 아닌 곳(달력 밖)에 놓으면 달력에서 뺀다. 놓기가 처리되면 CKDRAG가 비워지므로 dragend에 남아 있으면 밖에 놓은 것 */
-function ckDragable(b,o,out){ if(!(o.cs||o.e)||o.k==="done") return; b.draggable=true; b.classList.add("drag");
+function ckDragable(b,o,out){ if(!(o.cs||o.e||o.pk)||o.k==="done") return; b.draggable=true; b.classList.add("drag");
   b.ondragstart=function(e){ CKDRAG=o; e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",o.t); };
   b.ondragend=function(){ var o2=CKDRAG; CKDRAG=null; if(o2&&out){ ckUnplan(o2); ckSave(); ckMon(); } }; }
-function ckUnplan(o){ if(o.e){ if(confirm("'"+o.e.t+"' 일정을 지울까요?")) CK.ev=CK.ev.filter(function(x){ return x!==o.e; }); return; } var cs=o.cs;   /* 직접 정한 날짜는 지우고, 그래도 자동 예정이 남으면 '뺌'(cs.n) */
+function ckUnplan(o){ if(o.pk){ if(CK.cpl) delete CK.cpl[o.pk]; return; } if(o.e){ if(confirm("'"+o.e.t+"' 일정을 지울까요?")) CK.ev=CK.ev.filter(function(x){ return x!==o.e; }); return; } var cs=o.cs;   /* 직접 정한 날짜는 지우고, 그래도 자동 예정이 남으면 '뺌'(cs.n) */
   if(o.star){ delete cs.ab; return; }
   if(cs.p) delete cs.p[o.i]; if(ckPlan(cs,o.i)){ cs.n=cs.n||{}; cs.n[o.i]=1; } }
 function ckDropDay(c,ds){
   c.ondragover=function(e){ if(!CKDRAG) return; e.preventDefault(); c.classList.add("over"); };
   c.ondragleave=function(){ c.classList.remove("over"); };
   c.ondrop=function(e){ e.preventDefault(); var o=CKDRAG; CKDRAG=null; if(!o) return;
-    if(o.e) o.e.d=ds; else if(o.star){ o.cs.ab=ds; ckRelFree(o.cs,-1); } else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; ckRelFree(o.cs,o.i); }
+    if(o.pk) (CK.cpl=CK.cpl||{})[o.pk]=ds; else if(o.e) o.e.d=ds; else if(o.star){ o.cs.ab=ds; ckRelFree(o.cs,-1); } else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; ckRelFree(o.cs,o.i); }
     ckSave(); ckMon(); }; }
 /* 질문하기 (AI): 길잡이 질문하기와 같은 과정 — 질문 정리(이어지는 질문) → 서버 ask(공·사립·신분 전달)·법령 law → 답변 → 근거가 모자라면 search·read로 다시 → 계산 검산.
    아래 함수·규칙은 길잡이에서 그대로 옮긴 것(길잡이를 고치면 ckbuild3.py로 다시 만든다) */
@@ -2628,7 +2628,7 @@ function ckMon(){
   d.appendChild(el("h2",null,"월간 달력"));
   if(withCal) ckCalFilter(d,ckMon);   /* 연간 업무달력과 같은 자리·같은 분야 단추 — 설명·달 넘기기는 그 아래 */
   d.appendChild(el("p","note","내가 진행 중인 업무의 단계별 예정일·완료일과 연간 업무달력의 날짜 일정을 한 달로 모아 봐요. 연간 업무달력에 날짜가 있는 단계는 업무를 시작하면 자동으로 예정이 잡히고(자동), 단계마다 예정일을 직접 고칠 수 있어요."));
-  d.appendChild(el("p","note ckdraghint","내 업무 일정(예정·자동·이 달 중·다음)은 끌어서 원하는 날에 놓으면 그 날짜로 정해지고, 앞뒤로 기한이 있는 단계도 따라 옮겨져요. 달력 밖으로 끌어 놓으면 빠지고, 뺀 일정은 맨 아래에 남아 다시 끌어 넣을 수 있어요."));
+  d.appendChild(el("p","note ckdraghint","내 업무 일정(예정·자동·이 달 중·다음)은 끌어서 원하는 날에 놓으면 그 날짜로 정해지고, 앞뒤로 기한이 있는 단계도 따라 옮겨져요. 달력 밖으로 끌어 놓으면 빠지고, 뺀 일정은 맨 아래에 남아 다시 끌어 넣을 수 있어요. 날짜 미정인 연간 일정도 끌어서 날짜 칸에 놓을 수 있어요."));
   /* 달 넘기기 */
   var nav=el("div","ckmonnav");
   function mv(n){ var t=new Date(Y,M-1+n,1); CK.mon=ckYmd(t).slice(0,7); ckSave(); ckMon(); }
@@ -2664,7 +2664,7 @@ function ckMon(){
   if(withCal){
     var gsel=CK.cgrp||"", off=CK.coff||[], gcats=CKGROUPS.filter(function(g){ return !gsel||g[0]===gsel; }).reduce(function(a,g){ return a.concat(g[1]); },[]);
     var seen={};   /* 행정·교무에 같은 일정이 따로 있으면(예: 사이버보안진단의 날) 같은 날 하나만 */
-    ckCalL().forEach(function(x){ if(x.d==null&&!x.wk&&(x.m===M||x.m==="M")&&gcats.indexOf(x.cat)>=0&&off.indexOf(x.cat)<0&&used.indexOf(x)<0){ var k2="m|"+x.t.replace(/[\s·・]|운영$/g,""); if(!seen[k2]&&(seen[k2]=1)) calm.push({k:"cal",x:x,t:x.t}); return; }
+    ckCalL().forEach(function(x){ if(x.d==null&&!x.wk&&(x.m===M||x.m==="M")&&gcats.indexOf(x.cat)>=0&&off.indexOf(x.cat)<0&&used.indexOf(x)<0){ var k2="m|"+x.t.replace(/[\s·・]|운영$/g,""), pk=ym+"|"+x.cat+"|"+x.t, pd=(CK.cpl||{})[pk]; if(!seen[k2]&&(seen[k2]=1)){ if(pd&&pd.indexOf(pre)===0) add(+pd.slice(8),{k:"cal",x:x,t:x.t,pk:pk}); else calm.push({k:"cal",x:x,t:x.t,pk:pk}); } return; }
       if((x.d==null&&!x.wk)||gcats.indexOf(x.cat)<0||off.indexOf(x.cat)>=0||used.indexOf(x)>=0) return;
       if(x.m===M||x.m==="M"){ var dd=x.wk?ckNth(Y,M,x.wk):Math.min(x.d,new Date(Y,M,0).getDate()), key=dd+"|"+x.t.replace(/[\s·・]|운영$/g,"");
         if(dd&&!seen[key]&&(seen[key]=1)) add(dd,{k:"cal",x:x,t:x.t+(x.wk?" ("+x.dl.replace(/^\d+월\s*|^매월\s*/,"")+")":"")}); } });
@@ -2676,7 +2676,7 @@ function ckMon(){
   function chip(o){ var b=el("button","ckme "+o.k+(o.auto?" auto":"")); b.type="button";
     if(o.k!=="cal") b.appendChild(el("span","tag",{late:"지남",plan:o.star?"★":o.auto?"자동":"예정",done:"✓",my:"내 일정"}[o.k]));   /* 연간 일정은 회색 칩만으로 구분 */
     b.appendChild(document.createTextNode(o.cs?o.cs.name+" · "+o.t:o.t));
-    b.title=o.cs?(CKBY[o.cs.t].title+" › "+(o.i+1)+"단계 "+o.t+(o.rt?" (자동: "+o.rt+")":o.auto?" (연간 업무달력에서 자동으로 잡은 예정)":"")):o.x?(o.x.cat+" · "+(o.x.w||o.x.dl)):"";
+    b.title=o.cs?(CKBY[o.cs.t].title+" › "+(o.i+1)+"단계 "+o.t+(o.rt?" (자동: "+o.rt+")":o.auto?" (연간 업무달력에서 자동으로 잡은 예정)":"")):o.x?(o.x.cat+" · "+(o.x.w||o.x.dl)+(o.pk?" · 끌어서 날짜 칸에 놓으면 그날로 정해지고, 달력 밖에 놓으면 다시 날짜 미정으로":"")):"";
     if(o.e){ b.title="누르면 내용을 고쳐요 · 끌어서 날짜를 옮기고, 달력 밖에 놓으면 지워요";
       b.onclick=function(){ var v=prompt("일정 내용 (비우면 지워요)",o.e.t); if(v===null) return; if(v.trim()) o.e.t=v.trim(); else CK.ev=CK.ev.filter(function(x){ return x!==o.e; }); ckSave(); ckMon(); }; }
     else b.onclick=o.cs?function(){ ckGoStep(o.cs,o.i); }:function(){ ckCalGo(o.x); };

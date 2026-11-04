@@ -1636,7 +1636,7 @@ function ckMain(){
   d.appendChild(el("h3","ckh",cs?"단계별 체크":"단계별 설명"));
   if(t.rel&&t.rel.A){ var ab=el("label","ckplan star ckab"), ai=el("input"); ai.type="date"; ai.setAttribute("aria-label",t.rel.A);
     ab.appendChild(document.createTextNode("★ 기준일 · "+t.rel.A+" "));
-    if(cs){ ai.value=cs.ab||""; ai.onchange=function(){ if(ai.value) cs.ab=ai.value; else delete cs.ab; ckSave(); ckRender(); }; ab.appendChild(ai);
+    if(cs){ ai.value=cs.ab||""; ai.onchange=function(){ if(ai.value) cs.ab=ai.value; else delete cs.ab; ckRelFree(cs,-1); ckSave(); ckRender(); }; ab.appendChild(ai);
       ab.appendChild(el("span","ckauto",cs.ab?"앞뒤 기한이 아래 단계에 자동으로 잡혔어요":"날짜를 넣으면 앞뒤 기한이 자동으로 잡혀요")); }
     else ab.appendChild(el("span","ckauto","업무를 시작하고 이 날짜를 넣으면 앞뒤 기한이 자동으로 잡혀요"));
     d.appendChild(ab); }
@@ -1661,7 +1661,7 @@ function ckMain(){
       var mm=el("input","ckmemo"); mm.placeholder="메모 (문서번호·날짜·업체 등)"; mm.value=(cs.m&&cs.m[k])||""; mm.setAttribute("aria-label",s.n+" 메모");
       mm.onchange=function(){ cs.m=cs.m||{}; if(mm.value.trim()) cs.m[k]=mm.value.trim(); else delete cs.m[k]; ckSave(); };
       var pw=el("label","ckplan"), pd=el("input"); pd.type="date"; pd.value=(cs.p&&cs.p[k])||""; pd.setAttribute("aria-label",s.n+" 예정일");
-      pd.onchange=function(){ cs.p=cs.p||{}; if(pd.value){ cs.p[k]=pd.value; if(cs.n) delete cs.n[k]; } else delete cs.p[k]; ckSave(); if(t.rel) ckRender(); };   /* 월간 달력에 예정으로 나온다 · 앞뒤 기한 다시 계산 */
+      pd.onchange=function(){ cs.p=cs.p||{}; if(pd.value){ cs.p[k]=pd.value; if(cs.n) delete cs.n[k]; } else delete cs.p[k]; ckRelFree(cs,k); ckSave(); if(t.rel) ckRender(); };   /* 월간 달력에 예정으로 나온다 · 앞뒤 기한 다시 계산 */
       var star=t.rel&&t.rel.a===k; if(star){ li.classList.add("ckanchor"); pw.classList.add("star"); }
       pw.appendChild(document.createTextNode(star?"★ 중심 일정 ":"예정일 ")); pw.appendChild(pd);
       var pl=ckPlan(cs,k), rq=!(cs.p||{})[k]&&ckRel(cs,t,k);
@@ -2074,7 +2074,7 @@ function ckDropDay(c,ds){
   c.ondragover=function(e){ if(!CKDRAG) return; e.preventDefault(); c.classList.add("over"); };
   c.ondragleave=function(){ c.classList.remove("over"); };
   c.ondrop=function(e){ e.preventDefault(); var o=CKDRAG; CKDRAG=null; if(!o) return;
-    if(o.e) o.e.d=ds; else if(o.star) o.cs.ab=ds; else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; }
+    if(o.e) o.e.d=ds; else if(o.star){ o.cs.ab=ds; ckRelFree(o.cs,-1); } else { o.cs.p=o.cs.p||{}; o.cs.p[o.i]=ds; if(o.cs.n) delete o.cs.n[o.i]; ckRelFree(o.cs,o.i); }
     ckSave(); ckMon(); }; }
 /* 질문하기 (AI): 길잡이 질문하기와 같은 과정 — 질문 정리(이어지는 질문) → 서버 ask(공·사립·신분 전달)·법령 law → 답변 → 근거가 모자라면 search·read로 다시 → 계산 검산.
    아래 함수·규칙은 길잡이에서 그대로 옮긴 것(길잡이를 고치면 ckbuild3.py로 다시 만든다) */
@@ -2754,6 +2754,10 @@ function ckAdd(ymd,n,u){ var t=new Date(+ymd.slice(0,4),+ymd.slice(5,7)-1,+ymd.s
   if(u==="b"){ var s=n<0?-1:1, c=Math.abs(n); while(c){ t.setDate(t.getDate()+s); var w=t.getDay(); if(w&&w<6&&CKHOL.indexOf(" "+ckYmd(t)+" ")<0) c--; } return ckYmd(t); }
   t.setDate(t.getDate()+n); return ckYmd(t); }
 function ckRelBase(cs,t,b){ if(b<0) return cs.ab||null; return (cs.d||{})[b]||(cs.p||{})[b]||((cs.n||{})[b]?null:(ckRel(cs,t,b,1)||{}).d)||null; }
+/* b(단계 번호, ★ 기준일은 -1)의 날짜가 바뀌면 그 날짜에 (이어서라도) 기대는 단계의 직접 예정일·뺌 표시를 지워 다시 계산 */
+function ckRelFree(cs,b){ var t=CKBY[cs.t]; if(!t||!t.rel) return;
+  Object.keys(t.rel.r).forEach(function(k){ k=+k; if(k===b||(cs.d||{})[k]) return; var x=k, n=0;
+    while(t.rel.r[x]&&n++<30){ x=t.rel.r[x][0]; if(x===b){ if(cs.p) delete cs.p[k]; if(cs.n) delete cs.n[k]; return; } if(x<0) return; } }); }
 function ckRelName(t,b){ return b<0?t.rel.A:(b+1)+"단계"; }
 function ckRelTxt(t,r){ var n=Math.abs(r[1]); return ckRelName(t,r[0])+" "+n+({d:"일",b:"근무일",m:"개월"}[r[2]])+(r[1]<0?" 전":" 뒤"); }
 function ckRel(cs,t,k,deep){ var r=t.rel&&t.rel.r[k]; if(!r||(deep||0)>30) return null;

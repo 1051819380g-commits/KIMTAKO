@@ -1107,15 +1107,16 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
     <p class="lead" style="margin-top:12px">체크·메모·일정은 이 PC의 이 브라우저에만 저장돼요. 업무 참고용이니 실제 처리 전에 그해 공문과 원문을 꼭 확인하세요.</p>
     <p class="lead" style="margin-top:8px">궁금한 점이나 고칠 점은 <a href="https://open.kakao.com/o/sQp88MKh" target="_blank" rel="noopener">카카오톡 오픈채팅</a>으로 알려 주세요.</p>
   </div>
-  <div class="hf"><button type="button" id="ckhelpno">앞으로 보지 않기</button><button type="button" class="pri" id="ckhelpok">닫기</button></div>
+  <div class="hf"><button type="button" id="ckhelptour" style="margin-right:auto">튜토리얼 다시 보기</button><button type="button" id="ckhelpno">앞으로 보지 않기</button><button type="button" class="pri" id="ckhelpok">닫기</button></div>
 </dialog>
 <script>/* 사용법 창: 열 때 보여 주고, '앞으로 보지 않기'면 다음부터 안 띄움. 위쪽 '사용법' 단추로 언제든 다시 */
 (function(){ var d=document.getElementById("ckhelp"), k="kbg.help"; if(!d||!d.showModal) return;
   document.getElementById("ckhelpok").onclick=function(){ d.close(); };
   document.getElementById("ckhelpno").onclick=function(){ try{ localStorage.setItem(k,"off"); }catch(e){} d.close(); };
   document.getElementById("ckhelpbtn").onclick=function(){ d.showModal(); };
-  var off=false; try{ off=localStorage.getItem(k)==="off"; }catch(e){}
-  if(!off) d.showModal(); })();</script>
+  document.getElementById("ckhelptour").onclick=function(){ d.close(); if(window.ckTour) ckTour(); };
+  var off=false, tour=false; try{ off=localStorage.getItem(k)==="off"; tour=localStorage.getItem("kbg.tour")==="done"; }catch(e){}
+  if(!tour) window.CKTOURFIRST=1; else if(!off) d.showModal(); })();   /* 처음이면 사용법 대신 튜토리얼 */</script>
 <button type="button" id="cktop" class="cktopbtn" aria-label="맨 위로" title="맨 위로" hidden>↑</button>
 <script>/* 위로 가기: 조금 내려가면 오른쪽 아래에 나타난다 */
 (function(){ var b=document.getElementById("cktop"); b.onclick=function(){ window.scrollTo({top:0,behavior:"smooth"}); };
@@ -2828,6 +2829,59 @@ function refPop(title,pr,link,draw){
   Promise.resolve(pr).then(function(t){ t=String(t||"").trim(); if(draw&&t){ bd.style.whiteSpace="normal"; bd.textContent=""; try{ draw(bd,t); return; }catch(e){ bd.style.whiteSpace=""; } } bd.textContent=t.replace(/\*\*/g,"")||"내용이 없습니다."; },
     function(e){ bd.textContent=/limit/.test(e&&e.message)?"오늘 자료 조회 횟수(하루 500번)를 다 써서 열 수 없습니다. 한국 시간 자정에 다시 열립니다.":"자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 보세요(자료는 답변을 받은 뒤 1시간 안에만 열립니다)."; });
 }
+</script>
+<style>
+#cktour{position:fixed;inset:0;z-index:2000}
+#cktour .tspot{position:fixed;border-radius:12px;outline:3px solid #FDE68A;outline-offset:2px;transition:all .25s ease;pointer-events:none}
+#cktour .tdim{position:fixed;background:rgba(15,23,42,.6);transition:all .25s ease}
+#cktour .tcard{position:fixed;width:min(320px,calc(100vw - 24px));background:var(--surface,#fff);color:var(--ink,#111);border-radius:12px;padding:14px 16px 12px;box-shadow:0 12px 32px rgba(0,0,0,.3);font-size:14px;line-height:1.6;transition:top .25s ease,left .25s ease}
+#cktour .tcard h3{margin:0 0 4px;font-size:15px}
+#cktour .tcard p{margin:0}
+#cktour .tfoot{display:flex;align-items:center;gap:6px;margin-top:12px}
+#cktour .tn{font-size:12px;color:var(--muted,#666);margin-right:auto}
+#cktour button{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid var(--line-strong,#ccc);background:var(--surface,#fff);color:var(--ink,#111);cursor:pointer}
+#cktour button.pri{background:var(--accent,#2563eb);border-color:var(--accent,#2563eb);color:#fff}
+#cktour button.skip{border:0;background:none;color:var(--muted,#666);padding:6px 4px}
+@media (prefers-reduced-motion:reduce){#cktour .tspot,#cktour .tcard,#cktour .tdim{transition:none}}
+</style>
+<script>/* 처음 여는 사람에게 버튼을 하나씩 밝혀 보여 주는 튜토리얼. 보이지 않는 단추는 건너뛴다 */
+function ckTour(){
+  var S=[
+    ["#cklvbtn","학교급 고르기","먼저 학교급을 골라요. 교무업무 메뉴와 연간·월간 달력이 고른 학교급에 맞게 바뀌어요."],
+    ['[data-cat="__cal"]',"연간 달력","이번 달 할 일과 30일 안에 오는 마감을 한눈에 봐요."],
+    ['[data-cat="__mon"]',"월간 달력","진행 중인 업무의 예정일과 연간 일정을 한 달 달력으로 봐요. 일정을 끌어서 날짜를 옮길 수 있어요."],
+    ['[data-grp="행정"]',"행정업무","회계·계약·급여·인사 같은 행정실 업무를 분야별로 골라요. 고르면 흐름도와 단계 설명·원문이 나와요."],
+    ['[data-grp="교무"]',"교무업무","교무·연구·정보 같은 교무 업무예요. 고른 학교급의 업무만 보여요."],
+    ['[data-cat="__ask"]',"질문하기","궁금한 걸 물어보면 경남교육청 업무 자료와 법령을 찾아 AI가 답해요."],
+    [".cktop .cksearch","검색","업무 이름이나 단계 낱말(예: 추경, 정정)로 바로 찾아요."],
+    ["#ckfavopen","자주 찾는 업무","업무 화면의 별 단추로 모아 둔 업무를 여기서 바로 열어요."],
+    ["#ckhelpbtn","사용법","자세한 사용법과 이 튜토리얼은 언제든 여기서 다시 볼 수 있어요."]
+  ].filter(function(x){ var e=document.querySelector(x[0]); return e&&e.offsetParent!==null&&e.getClientRects().length; });
+  if(!S.length) return;
+  var old=document.getElementById("cktour"); if(old) old.remove();
+  var w=document.createElement("div"); w.id="cktour"; w.setAttribute("role","dialog"); w.setAttribute("aria-modal","true"); w.setAttribute("aria-label","처음 사용 안내");
+  w.innerHTML='<div class="tdim"></div><div class="tdim"></div><div class="tdim"></div><div class="tdim"></div><div class="tspot"></div><div class="tcard"><h3></h3><p></p><div class="tfoot"><span class="tn"></span><button type="button" class="skip">건너뛰기</button><button type="button" class="prev">이전</button><button type="button" class="pri next">다음</button></div></div>';
+  document.body.appendChild(w);
+  var sp=w.querySelector(".tspot"), cd=w.querySelector(".tcard"), i=0, nx=w.querySelector(".next"), pv=w.querySelector(".prev");
+  function done(){ try{ localStorage.setItem("kbg.tour","done"); localStorage.setItem("kbg.help","off"); }catch(e){} w.remove(); window.removeEventListener("resize",place); window.removeEventListener("scroll",place,true); document.removeEventListener("keydown",key); }
+  function place(){ var e=document.querySelector(S[i][0]); if(!e) return; var r=e.getBoundingClientRect(), pad=6, vw=document.documentElement.clientWidth, vh=window.innerHeight;
+    var L=r.left-pad, T=r.top-pad, R=r.right+pad, B=r.bottom+pad, dm=w.querySelectorAll(".tdim");   /* 강조 상자 둘레 4장 */
+    [[0,0,vw,T],[0,B,vw,Math.max(0,vh-B)],[0,T,L,B-T],[R,T,Math.max(0,vw-R),B-T]].forEach(function(q,j){ var x=dm[j].style; x.left=q[0]+"px"; x.top=q[1]+"px"; x.width=Math.max(0,q[2])+"px"; x.height=Math.max(0,q[3])+"px"; });
+    sp.style.left=(r.left-pad)+"px"; sp.style.top=(r.top-pad)+"px"; sp.style.width=(r.width+pad*2)+"px"; sp.style.height=(r.height+pad*2)+"px";
+    var ch=cd.offsetHeight, cw=cd.offsetWidth, top=r.bottom+14; if(top+ch>vh-8) top=Math.max(8,r.top-ch-14);
+    cd.style.top=top+"px"; cd.style.left=Math.max(12,Math.min(r.left+r.width/2-cw/2,vw-cw-12))+"px"; }
+  function show(k){ i=k; var e=document.querySelector(S[i][0]); if(e&&e.scrollIntoView){ var r=e.getBoundingClientRect(); if(r.top<0||r.bottom>window.innerHeight) e.scrollIntoView({block:"center"}); }
+    cd.querySelector("h3").textContent=S[i][1]; cd.querySelector("p").textContent=S[i][2]; cd.querySelector(".tn").textContent=(i+1)+" / "+S.length;
+    pv.hidden=i===0; nx.textContent=i===S.length-1?"시작하기":"다음"; place(); nx.focus(); }
+  function key(e){ if(e.key==="Escape") done(); else if(e.key==="ArrowRight") nx.click(); else if(e.key==="ArrowLeft"&&i>0) show(i-1); }
+  nx.onclick=function(){ if(i<S.length-1) show(i+1); else done(); };
+  pv.onclick=function(){ if(i>0) show(i-1); };
+  w.querySelector(".skip").onclick=done;
+  w.addEventListener("click",function(e){ if(e.target===w||e.target.classList.contains("tdim")) nx.click(); });   /* 어두운 곳을 눌러도 다음으로 */
+  window.addEventListener("resize",place); window.addEventListener("scroll",place,true); document.addEventListener("keydown",key);
+  show(0);
+}
+if(window.CKTOURFIRST) setTimeout(ckTour,400);
 </script>
 </body>
 </html>

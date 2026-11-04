@@ -1065,7 +1065,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .cknotice{display:flex;align-items:center;gap:8px;max-width:1440px;margin:12px auto 0;padding:8px 10px 8px 20px;font-size:13px;color:var(--ink-2);background:var(--warn-bg,#F6EEDA);border-radius:8px;box-sizing:border-box}
 .ckfoot{max-width:1440px;margin:18px auto 30px;padding:0 20px;color:var(--muted);font-size:12.5px;line-height:1.7}
 </style>
-<style>.ckcg.c17{--cgbg:hsl(200 70% 93%);--cgfg:hsl(200 60% 32%);--cgb:hsl(200 60% 82%)}.ckcg.c18{--cgbg:hsl(280 70% 93%);--cgfg:hsl(280 60% 32%);--cgb:hsl(280 60% 82%)}.ckcg.c19{--cgbg:hsl(20 70% 93%);--cgfg:hsl(20 60% 32%);--cgb:hsl(20 60% 82%)}.ckcg.c20{--cgbg:hsl(340 70% 93%);--cgfg:hsl(340 60% 32%);--cgb:hsl(340 60% 82%)}.ckcg.c21{--cgbg:hsl(160 70% 93%);--cgfg:hsl(160 60% 32%);--cgb:hsl(160 60% 82%)}.ckcg.c22{--cgbg:hsl(50 70% 93%);--cgfg:hsl(50 60% 32%);--cgb:hsl(50 60% 82%)}.ckcg.c23{--cgbg:hsl(240 70% 93%);--cgfg:hsl(240 60% 32%);--cgb:hsl(240 60% 82%)}.ckcg.c24{--cgbg:hsl(120 70% 93%);--cgfg:hsl(120 60% 32%);--cgb:hsl(120 60% 82%)}.ckcg.c25{--cgbg:hsl(0 70% 93%);--cgfg:hsl(0 60% 32%);--cgb:hsl(0 60% 82%)}.ckcg.c26{--cgbg:hsl(300 70% 93%);--cgfg:hsl(300 60% 32%);--cgb:hsl(300 60% 82%)}.cklv{display:inline-flex;align-items:center;gap:4px;margin-right:10px;padding-right:10px;border-right:1px solid var(--line,#ddd)}.cklvh{font-size:12px;opacity:.7;margin-right:2px}.cklv .pill{padding:3px 9px;font-size:13px}.cklv .pill.on{background:var(--accent,#1D4ED8);color:#fff;border-color:transparent}</style>
+<style>.ckcg.c17{--cgbg:hsl(200 70% 93%);--cgfg:hsl(200 60% 32%);--cgb:hsl(200 60% 82%)}.ckcg.c18{--cgbg:hsl(280 70% 93%);--cgfg:hsl(280 60% 32%);--cgb:hsl(280 60% 82%)}.ckcg.c19{--cgbg:hsl(20 70% 93%);--cgfg:hsl(20 60% 32%);--cgb:hsl(20 60% 82%)}.ckcg.c20{--cgbg:hsl(340 70% 93%);--cgfg:hsl(340 60% 32%);--cgb:hsl(340 60% 82%)}.ckcg.c21{--cgbg:hsl(160 70% 93%);--cgfg:hsl(160 60% 32%);--cgb:hsl(160 60% 82%)}.ckcg.c22{--cgbg:hsl(50 70% 93%);--cgfg:hsl(50 60% 32%);--cgb:hsl(50 60% 82%)}.ckcg.c23{--cgbg:hsl(240 70% 93%);--cgfg:hsl(240 60% 32%);--cgb:hsl(240 60% 82%)}.ckcg.c24{--cgbg:hsl(120 70% 93%);--cgfg:hsl(120 60% 32%);--cgb:hsl(120 60% 82%)}.ckcg.c25{--cgbg:hsl(0 70% 93%);--cgfg:hsl(0 60% 32%);--cgb:hsl(0 60% 82%)}.ckcg.c26{--cgbg:hsl(300 70% 93%);--cgfg:hsl(300 60% 32%);--cgb:hsl(300 60% 82%)}.cklv{margin-left:auto;position:relative}.cklv>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border:1px solid var(--line,#ddd);border-radius:999px;font-size:13px;background:var(--card,#fff)}.cklv>summary::-webkit-details-marker{display:none}.cklv>summary::after{content:"▾";font-size:11px;opacity:.6}.cklv[open]>summary::after{content:"▴"}.cklvh{opacity:.65}.cklvm{position:absolute;right:0;top:calc(100% + 4px);z-index:30;display:flex;flex-direction:column;min-width:110px;padding:4px;border:1px solid var(--line,#ddd);border-radius:10px;background:var(--card,#fff);box-shadow:0 6px 20px rgba(0,0,0,.12)}.cklvo{all:unset;cursor:pointer;padding:7px 12px;border-radius:7px;font-size:14px}.cklvo:hover{background:rgba(99,102,241,.1)}.cklvo.on{font-weight:700;color:var(--accent,#4F46E5)}</style>
 </head>
 <body>
 <header>
@@ -1825,13 +1825,6 @@ function ckCats(){
   function openGrp(gname,btn){
     clearTimeout(ckT);
     oG=gname; closeCat(); rib.textContent="";
-    if(gname==="교무"){   /* 학교급 고르기 */
-      var lw=el("span","cklv"); lw.appendChild(el("span","cklvh","학교급"));
-      CKLVS.forEach(function(v){ var on=(CK.lv||"중고등")===v, lb=el("button","pill"+(on?" on":""),v); lb.type="button"; lb.setAttribute("aria-pressed",on?"true":"false");
-        lb.onclick=function(e){ e.stopPropagation(); CK.lv=v; ckSave(); var gb=top.querySelector('[data-grp="교무"] .n'); if(gb) gb.textContent=String(CKL.filter(function(c){ return ckGrpOf(c.cat)==="교무"&&ckVis(c); }).length); openGrp("교무",btn); ckSide(); };
-        lw.appendChild(lb); });
-      rib.appendChild(lw);
-    }
     var gcs=CKGROUPS.filter(function(g){ return g[0]===gname; })[0][1].slice(), ord=gname==="교무"&&CKLVORD[CK.lv||"중고등"];
     if(ord) gcs=ord.concat(gcs.filter(function(c){ return ord.indexOf(c)<0; }));
     gcs.forEach(function(cat){
@@ -1842,6 +1835,15 @@ function ckCats(){
       b.onclick=function(){ if(oC===cat&&pn.classList.contains("open")){ if(!CKHOVER) closeCat(); } else openCat(cat,b); };
       rib.appendChild(b);
     });
+    if(gname==="교무"){   /* 학교급: 리본 오른쪽 끝, 누르면 펼쳐 고른다(기본 중고등) */
+      var lw=el("details","cklv"), ls=el("summary",null), cur=CK.lv||"중고등", lm=el("div","cklvm");
+      ls.appendChild(el("span","cklvh","학교급")); ls.appendChild(el("b",null,cur)); lw.appendChild(ls);
+      CKLVS.forEach(function(v){ var lb=el("button","cklvo"+(v===cur?" on":""),v); lb.type="button"; if(v===cur) lb.setAttribute("aria-current","true");
+        lb.onclick=function(e){ e.stopPropagation(); lw.open=false; if(v===cur) return; CK.lv=v; ckSave(); var gb=top.querySelector('[data-grp="교무"] .n'); if(gb) gb.textContent=String(CKL.filter(function(c){ return ckGrpOf(c.cat)==="교무"&&ckVis(c); }).length); openGrp("교무",btn); ckSide(); };
+        lm.appendChild(lb); });
+      lw.appendChild(lm); rib.appendChild(lw);
+      if(!window.CKLVDOC){ window.CKLVDOC=1; document.addEventListener("click",function(e){ var d=document.querySelector(".cklv[open]"); if(d&&!d.contains(e.target)) d.open=false; }); }
+    }
     drop.classList.add("open"); mark();
     top.querySelectorAll(".ckc").forEach(function(x){ x.setAttribute("aria-expanded",x===btn?"true":"false"); });
   }

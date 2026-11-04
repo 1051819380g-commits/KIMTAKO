@@ -2713,6 +2713,8 @@ function ckPlanTxt(pl){ return pl.mo?(+pl.d.slice(5,7))+"월 중":pl.d; }
 .refpop .rpx{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:inherit;padding:0 2px}
 .refpop .rpbody{padding:12px 14px;overflow:auto;white-space:pre-wrap;line-height:1.65;font-size:14px}
 .refpop .rpfoot{padding:8px 14px;border-top:1px solid var(--line,#ddd);font-size:13px}
+.refpop .rpbody th,.refpop .rpbody td{white-space:normal;vertical-align:top;min-width:3.5em;overflow-wrap:anywhere}
+.refpop .tblwrap{overflow-x:auto}
 </style>
 <script>
 /* 서버 자료 원문 읽기 좋게: PDF에서 잘게 끊긴 줄을 문장 단위로 잇고, 쪽 넘김 표시·슬라이드 번호 줄을 뺀다 */
@@ -2721,16 +2723,31 @@ function tidyText(s){
   var END=/([.?!:;]|[다요음함임됨것등]|[)\]」』>”"])$/;
   var START=/^(\d{1,2}[.)](\s|$)|[가-하][.)]\s|[①-⑳㉠-㉭㈀-㈍]|[-–•·◦○●□■▪▶▷※*>#<\[]|제\d+(조|장|절)|\(\d+\)|\d+\)|\d{4}\.\s?\d{1,2}\.)/;
   function flush(){ if(para){ out.push(para); para=""; } }
+  /* 표: 첫 줄에 긴 글 한 칸만 있고 나머지 칸이 빈 '상자형 표'(PDF 조문 상자)는 문단으로 풀고, 아래 줄은 'a · b · c'로 */
+  var tbl=[];
+  function cells(r){ return r.replace(/^\||\|$/g,"").split("|").map(function(c){ return c.trim(); }); }
+  function endTbl(){
+    if(!tbl.length) return;
+    var rows=tbl.filter(function(r){ return !/^\|(\s*:?-{2,}:?\s*\|)+$/.test(r); }), h=rows.length?cells(rows[0]):[], full=h.filter(function(c){ return c; });
+    if(full.length===1&&full[0].length>40&&h.length>1){
+      out.push(full[0].replace(/\s(?=(\d{1,2}|[①-⑳])\.?\s[가-힣])/g,"\n"));   /* 조문 상자 안의 1. 2. 항목은 줄을 나눈다 */
+      var rest=rows.slice(1).filter(function(r){ return cells(r).some(function(x){ return x; }); });
+      if(rest.length>=3){ out.push(""); out.push(rest[0]); out.push("|"+cells(rest[0]).map(function(){ return " --- "; }).join("|")+"|"); rest.slice(1).forEach(function(r){ out.push(r); }); out.push(""); }   /* 아래가 진짜 표면 표로 남긴다(첫 칸은 표 제목) */
+      else rest.forEach(function(r){ out.push(cells(r).filter(function(x){ return x; }).join(" · ")); });
+    } else tbl.forEach(function(r){ out.push(r); });
+    tbl=[];
+  }
   String(s||"").split("\n").forEach(function(raw){
     var t=raw.trim();
-    if(!t){ flush(); if(out.length&&out[out.length-1]!=="") out.push(""); return; }
+    if(!t){ flush(); endTbl(); if(out.length&&out[out.length-1]!=="") out.push(""); return; }
     if(/^(다음\s?페이지\s?계속\s?▼|▲\s?이전\s?페이지에\s?이어서)$/.test(t)||/^\d{1,2}$/.test(t)) return;
-    if(t.charAt(0)==="|"){ flush(); out.push(t); return; }
+    if(t.charAt(0)==="|"){ flush(); tbl.push(t); return; }
+    endTbl();
     if(!para){ para=t; return; }
     if(START.test(t)||END.test(para)||/^\*\*|^#/.test(para)){ flush(); para=t; return; }
     para+=" "+t;
   });
-  flush();
+  flush(); endTbl();
   return out.join("\n").replace(/\n{3,}/g,"\n\n").trim();
 }
 /* 근거 자료 팝업: 제목, 내용(Promise), 원문 링크(선택), 그리는 함수(선택 — 답변과 같은 표·굵은 글씨) */

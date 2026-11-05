@@ -2550,15 +2550,12 @@ function build(){
   thread.appendChild(st);
   var box=el("div","askbox"), ta=el("textarea"), row=el("div","askrow"), stopB=el("button","btn ghost","중지"), go=el("button","btn","질문하기");
   ta.placeholder="예) 학생 동아리 간식비는 어느 비목으로 편성하나요?"; ta.setAttribute("aria-label","질문"); stopB.type=go.type="button"; stopB.hidden=true;
-  row.appendChild(el("span","hint","Enter 줄바꿈 · Shift+Enter 또는 Enter 두 번이면 보내기")); row.appendChild(stopB); row.appendChild(go);
+  row.appendChild(el("span","hint","Enter로 보내기 · Shift+Enter 줄바꿈")); row.appendChild(stopB); row.appendChild(go);
   box.appendChild(ta); box.appendChild(row); main.appendChild(box);
   var notice=el("div","ainotice"); main.appendChild(notice);
   go.onclick=function(){ doAsk(ta,go,stopB,notice); };
   stopB.onclick=function(){ if(ctl) ctl.abort(); };
-  ta.addEventListener("keydown",function(e){ if(e.key!=="Enter"||e.isComposing) return;
-    var c=ta.selectionStart, two=!e.shiftKey&&c===ta.selectionEnd&&c>0&&ta.value.charAt(c-1)==="\n";   /* 바로 앞에서 Enter를 한 번 더 누른 것 */
-    if(!e.shiftKey&&!two) return;   /* 그냥 Enter는 줄바꿈 */
-    e.preventDefault(); if(two) ta.value=ta.value.slice(0,c-1)+ta.value.slice(c); go.onclick(); });
+  ta.addEventListener("keydown",function(e){ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); go.onclick(); } });
 }
 function doAsk(ta,go,stopB,notice){
   if(busy) return;

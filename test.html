@@ -2891,11 +2891,11 @@ if(window.CKTOURFIRST) setTimeout(ckTour,400);
 </script>
 <script>
 (function(){ var u="https://macmini.tail2940ce.ts.net/hit?p=ck";
-  if(window.CKTEST){ fetch(u).then(function(r){ return r.json(); }).then(function(j){ var h=document.getElementById("ckhelpbtn"); if(!h) return;
-      var b=document.createElement("span"); b.className="ckhits"; b.textContent="조회수 "+j.total+" (오늘 "+j.today+")"; h.parentNode.insertBefore(b,h); }).catch(function(){}); }
+  if(window.CKTEST){ fetch(u).then(function(r){ return r.json(); }).then(function(j){ var h=document.querySelector(".brand .sub"); if(!h) return;
+      var b=document.createElement("span"); b.className="ckhits"; b.textContent="조회수 "+j.total+" (오늘 "+j.today+")"; h.parentNode.insertBefore(b,h.nextSibling); }).catch(function(){}); }
   else if(/github\.io$/.test(location.hostname)) fetch(u,{method:"POST",keepalive:true}).catch(function(){});
 })();
 </script>
-<style>.ckhits{font-size:.8rem;color:#fff;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 10px;margin-right:6px;white-space:nowrap}</style>
+<style>.ckhits{font-size:.8rem;color:#fff;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 10px;margin-left:8px;vertical-align:middle;white-space:nowrap}</style>
 </body>
 </html>

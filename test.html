@@ -531,6 +531,7 @@ details.ckmth.fixed{border-color:#86efac;background:#ecfdf5}details.ckmth.fixed>
 :root[data-theme="dark"] details.ckmth.fixed,:root[data-theme="dark"] .ckmok{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.4)}:root[data-theme="dark"] details.ckmth.fixed>summary,:root[data-theme="dark"] .ckmok b{color:#86efac}
 /* 월간 달력 */
 .ckmonnav{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px}.ckmonym{font-size:16px;margin:0 6px}.ckmonopt{font-size:13px;margin-left:auto;cursor:pointer}
+.ckmnx{margin-top:10px}
 .ckmonsum{display:flex;gap:6px;margin-bottom:8px}.ckmonsum .s{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--surface-2);border:1px solid var(--line)}
 .ckmonsum .late{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
 .ckmgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -2668,7 +2669,8 @@ function ckMon(){
   nav.insertBefore(el("b","ckmonym",Y+"년 "+M+"월"),nav.children[1]);
   var lb=el("label","ckmonopt"), cb=el("input"); cb.type="checkbox"; cb.checked=withCal; cb.onchange=function(){ CK.monCal=cb.checked; ckSave(); ckMon(); };
   lb.appendChild(cb); lb.appendChild(document.createTextNode(" 연간 업무달력 일정도 보기"));
-  var ad=el("button","pill","+ 일정 추가"); ad.type="button"; nav.appendChild(ad); nav.appendChild(lb);
+  var mh=el("button","pill ckmonhelp","사용법"); mh.type="button"; mh.id="ckmonhelp"; mh.onclick=function(){ if(window.ckMonTour) ckMonTour(); };
+  var ad=el("button","pill","+ 일정 추가"); ad.type="button"; nav.appendChild(ad); nav.appendChild(lb); nav.appendChild(mh);
   d.appendChild(nav);
   /* 내 일정: 업무 건과 상관없는 일정(CK.ev [{d,t}]) — 끌어서 옮기고, 달력 밖에 놓으면 지우고, 누르면 고친다 */
   var af=el("form","ckmadd"); af.hidden=true;
@@ -2734,6 +2736,7 @@ function ckMon(){
   }
   grid.ondragover=function(e){ if(CKDRAG) e.preventDefault(); }; grid.ondrop=function(e){ e.preventDefault(); CKDRAG=null; };   /* 칸 사이 틈에 놓으면 그대로 */
   d.appendChild(grid);
+  try{ if(!localStorage.getItem("kbg.montour")&&!document.getElementById("cktour")&&window.ckMonTour) setTimeout(ckMonTour,350); }catch(e){}
   /* 예정일을 안 정한 다음 단계 */
   var nx=CK.cases.filter(function(cs){ return !cs.end&&CKBY[cs.t]; }).map(function(cs){ var t=CKBY[cs.t];
     for(var k=0;k<t.steps.length;k++) if(!(cs.d||{})[k]) return {cs:cs,i:k,t:t.steps[k].n,p:ckPlan(cs,k)};
@@ -2743,9 +2746,10 @@ function ckMon(){
     if(r.a<0){ if(!cs.ab) nx.unshift({cs:cs,i:0,t:"★ "+r.A,star:1}); return; }
     if((cs.d||{})[r.a]||ckPlan(cs,r.a)) return;
     nx=nx.filter(function(o){ return !(o.cs===cs&&o.i===r.a); }); nx.unshift({cs:cs,i:r.a,t:t.steps[r.a].n,anc:1}); });
-  if(nx.length){ var bx=el("section","ckmnext"); bx.appendChild(el("h3",null,"예정일을 정하지 않은 다음 단계 ("+nx.length+")"));
-    nx.forEach(function(o){ var b=el("button","ckme plan"); b.type="button"; ckDragable(b,o); b.appendChild(el("span","tag",o.star||o.anc?"★ 중심":"다음")); b.appendChild(document.createTextNode(o.cs.name+" · "+(o.star?o.t:(o.i+1)+"단계 "+o.t))); b.onclick=function(){ ckGoStep(o.cs,o.i); }; bx.appendChild(b); });
-    d.appendChild(bx); }
+  if(nx.length){ var bx=el("details","ckmcal ckmnx"), bxw=el("div","ckmcalw"); bx.open=!CK.nxShut; bx.addEventListener("toggle",function(){ CK.nxShut=!bx.open; ckSave(); });
+    bx.appendChild(el("summary",null,"예정일을 정하지 않은 다음 단계 ("+nx.length+")")); bx.appendChild(bxw);
+    nx.forEach(function(o){ var b=el("button","ckme plan"); b.type="button"; ckDragable(b,o); b.appendChild(el("span","tag",o.star||o.anc?"★ 중심":"다음")); b.appendChild(document.createTextNode(o.cs.name+" · "+(o.star?o.t:(o.i+1)+"단계 "+o.t))); b.onclick=function(){ ckGoStep(o.cs,o.i); }; bxw.appendChild(b); });
+    d.insertBefore(bx,grid); }
   if(CK.cases.length){   /* 달력에서 빼기: 여기에 끌어 놓으면 빠지고, 뺀 것은 다시 날짜 칸으로 끌어 넣는다 */
     var out=[]; CK.cases.forEach(function(cs){ var t=CKBY[cs.t]; if(!t||cs.end) return;
       Object.keys(cs.n||{}).forEach(function(k){ k=+k; if(!(cs.d||{})[k]&&t.steps[k]) out.push({k:"plan",cs:cs,i:k,t:t.steps[k].n}); }); });
@@ -2880,8 +2884,18 @@ function refPop(title,pr,link,draw){
 @media (prefers-reduced-motion:reduce){#cktour .tspot,#cktour .tcard,#cktour .tdim{transition:none}}
 </style>
 <script>/* 처음 여는 사람에게 버튼을 하나씩 밝혀 보여 주는 튜토리얼. 보이지 않는 단추는 건너뛴다 */
-function ckTour(){
-  var S=[
+function ckMonTour(){   /* 월간 달력 안내 — 처음 열 때 1회, '사용법'으로 다시 */
+  ckTour([
+    [".ckcalcat","분야 켜고 끄기","분야를 누르면 그 분야 일정을 달력에서 숨기거나 다시 보여요. '모두 끄기' 뒤에 보고 싶은 분야만 켜도 돼요."],
+    [".ckmonopt","연간 일정 통째로 끄기","체크를 풀면 연간 업무달력 일정을 모두 숨기고 내 업무 일정만 봐요."],
+    [".ckmgrid","끌어서 날짜에 넣기","일정을 눌러 끈 채로 원하는 날짜 칸에 놓으면 그날로 정해져요. 앞뒤 기한이 있는 단계도 따라 옮겨지고, 달력 밖에 놓으면 빠져요."],
+    ["details.ckmcal:not(.ckmnx)>summary","날짜 미정 연간 일정","달만 정해진 연간 일정이에요. 제목을 누르면 접고 펼치고, 일정을 끌어 날짜 칸에 놓을 수 있어요."],
+    ["details.ckmnx>summary","예정일을 정하지 않은 다음 단계","진행 중인 업무의 다음 단계예요. 끌어서 날짜 칸에 놓으면 예정일이 정해지고, 제목을 누르면 접어 둘 수 있어요."],
+    ["#ckmonhelp","사용법","이 안내는 여기서 언제든 다시 볼 수 있어요."]
+  ],"kbg.montour");
+}
+function ckTour(S0,sk){
+  var S=(S0||[
     ["#cklvbtn","학교급 고르기","먼저 학교급을 골라요. 교무업무 메뉴와 연간·월간 달력이 고른 학교급에 맞게 바뀌어요."],
     ['[data-cat="__cal"]',"연간 달력","이번 달 할 일과 30일 안에 오는 마감을 한눈에 봐요."],
     ['[data-cat="__mon"]',"월간 달력","진행 중인 업무의 예정일과 연간 일정을 한 달 달력으로 봐요. 일정을 끌어서 날짜를 옮길 수 있어요."],
@@ -2891,21 +2905,21 @@ function ckTour(){
     [".cktop .cksearch","검색","업무 이름이나 단계 낱말(예: 추경, 정정)로 바로 찾아요."],
     ["#ckfavopen","자주 찾는 업무","업무 화면의 별 단추로 모아 둔 업무를 여기서 바로 열어요."],
     ["#ckhelpbtn","사용법","자세한 사용법과 이 튜토리얼은 언제든 여기서 다시 볼 수 있어요."]
-  ].filter(function(x){ var e=document.querySelector(x[0]); return e&&e.offsetParent!==null&&e.getClientRects().length; });
+  ]).filter(function(x){ var e=document.querySelector(x[0]); return e&&e.offsetParent!==null&&e.getClientRects().length; });
   if(!S.length) return;
   var old=document.getElementById("cktour"); if(old) old.remove();
   var w=document.createElement("div"); w.id="cktour"; w.setAttribute("role","dialog"); w.setAttribute("aria-modal","true"); w.setAttribute("aria-label","처음 사용 안내");
   w.innerHTML='<div class="tdim"></div><div class="tdim"></div><div class="tdim"></div><div class="tdim"></div><div class="tspot"></div><div class="tcard"><h3></h3><p></p><div class="tfoot"><span class="tn"></span><button type="button" class="skip">건너뛰기</button><button type="button" class="prev">이전</button><button type="button" class="pri next">다음</button></div></div>';
   document.body.appendChild(w);
   var sp=w.querySelector(".tspot"), cd=w.querySelector(".tcard"), i=0, nx=w.querySelector(".next"), pv=w.querySelector(".prev");
-  function done(){ try{ localStorage.setItem("kbg.tour","done"); localStorage.setItem("kbg.help","off"); }catch(e){} w.remove(); window.removeEventListener("resize",place); window.removeEventListener("scroll",place,true); document.removeEventListener("keydown",key); }
+  function done(){ try{ if(sk) localStorage.setItem(sk,"done"); else { localStorage.setItem("kbg.tour","done"); localStorage.setItem("kbg.help","off"); } }catch(e){} w.remove(); window.removeEventListener("resize",place); window.removeEventListener("scroll",place,true); document.removeEventListener("keydown",key); }
   function place(){ var e=document.querySelector(S[i][0]); if(!e) return; var r=e.getBoundingClientRect(), pad=6, vw=document.documentElement.clientWidth, vh=window.innerHeight;
     var L=r.left-pad, T=r.top-pad, R=r.right+pad, B=r.bottom+pad, dm=w.querySelectorAll(".tdim");   /* 강조 상자 둘레 4장 */
     [[0,0,vw,T],[0,B,vw,Math.max(0,vh-B)],[0,T,L,B-T],[R,T,Math.max(0,vw-R),B-T]].forEach(function(q,j){ var x=dm[j].style; x.left=q[0]+"px"; x.top=q[1]+"px"; x.width=Math.max(0,q[2])+"px"; x.height=Math.max(0,q[3])+"px"; });
     sp.style.left=(r.left-pad)+"px"; sp.style.top=(r.top-pad)+"px"; sp.style.width=(r.width+pad*2)+"px"; sp.style.height=(r.height+pad*2)+"px";
     var ch=cd.offsetHeight, cw=cd.offsetWidth, top=r.bottom+14; if(top+ch>vh-8) top=Math.max(8,r.top-ch-14);
     cd.style.top=top+"px"; cd.style.left=Math.max(12,Math.min(r.left+r.width/2-cw/2,vw-cw-12))+"px"; }
-  function show(k){ i=k; var e=document.querySelector(S[i][0]); if(e&&e.scrollIntoView){ var r=e.getBoundingClientRect(); if(r.top<0||r.bottom>window.innerHeight) e.scrollIntoView({block:"center"}); }
+  function show(k){ i=k; var e=document.querySelector(S[i][0]); if(e&&e.scrollIntoView){ var r=e.getBoundingClientRect(); if(r.top<(sk?150:0)||r.bottom>window.innerHeight) e.scrollIntoView({block:"center"}); }
     cd.querySelector("h3").textContent=S[i][1]; cd.querySelector("p").textContent=S[i][2]; cd.querySelector(".tn").textContent=(i+1)+" / "+S.length;
     pv.hidden=i===0; nx.textContent=i===S.length-1?"시작하기":"다음"; place(); nx.focus(); }
   function key(e){ if(e.key==="Escape") done(); else if(e.key==="ArrowRight") nx.click(); else if(e.key==="ArrowLeft"&&i>0) show(i-1); }
@@ -2915,7 +2929,7 @@ function ckTour(){
   w.addEventListener("click",function(e){ if(e.target===w||e.target.classList.contains("tdim")) nx.click(); });   /* 어두운 곳을 눌러도 다음으로 */
   window.addEventListener("resize",place); window.addEventListener("scroll",place,true); document.addEventListener("keydown",key);
   show(0);
-  try{ localStorage.setItem("kbg.tour","done"); localStorage.setItem("kbg.help","off"); }catch(e){}   /* 뜨는 순간 봤음: 도중에 닫아도 다시 자동으로 안 뜸(최초 1회) */
+  try{ if(sk) localStorage.setItem(sk,"done"); else { localStorage.setItem("kbg.tour","done"); localStorage.setItem("kbg.help","off"); } }catch(e){}   /* 뜨는 순간 봤음: 도중에 닫아도 다시 자동으로 안 뜸(최초 1회) */
 }
 if(window.CKTOURFIRST) setTimeout(ckTour,400);
 </script>

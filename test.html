@@ -2515,7 +2515,7 @@ var rel;
 function relHeads(srv){   /* 서버가 찾아 준 자료의 제목 줄(=== [c..] 제목 › 소제목)만 */
   var h=[]; String(srv||"").replace(/^=== \[c\d+\] (?:📌 )?(.+)$/gm,function(_,t){ h.push(t.replace(/\s*·\s*없는 낱말:.*$/,"")); return _; }); return h.slice(0,6).join(" ");
 }
-function relFind(q,srv){
+function relFind(q,srv,loose){
   var vis=typeof ckVis==="function"?ckVis:null;   /* 고른 학교급의 업무만 */
   var STOP=/공무|무직|교원|교사|사립|공립|학교$|^학교|사무직|^교육$|^직원$|^경남|^경상남도|^교육청|^규정|^지침|^기준|^관련|^정리|^노트|^핵심|^규칙|^사례/;
   var ts=toks(q).filter(function(t){ return t.length>=2&&!/^\d+$/.test(t)&&!STOP.test(t); });
@@ -2533,12 +2533,13 @@ function relFind(q,srv){
     o.st.forEach(function(x,k){ var v=0; ts.concat(hs).forEach(function(w){ if(df[w]&&x.n.indexOf(w)>=0) v+=Math.log((N+1)/df[w]); }); if(v>bs){ bs=v; best=k; } });
     return {t:o.t,s:sc,k:best}; }).filter(function(x){ return x.s>0; }).sort(function(a,b){ return b.s-a.s; });
   if(!out.length) return [];
+  if(loose) return out.slice(0,10);
   var top=out[0].s; if(top<12) return [];
   return out.filter(function(x){ return x.s>=Math.max(top*0.6,2.5); }).slice(0,3);
 }
-function relShow(q,srv){
+function relShow(q,srv,picked){
   rel.body.textContent="";
-  var L=relFind(q,srv);
+  var L=picked||relFind(q,srv);
   rel.body.appendChild(el("p","note","‘"+(q.length>40?q.slice(0,40)+"…":q)+"’ 관련"));
   if(!L.length){ rel.body.appendChild(el("p","note","맞는 체크리스트 업무를 찾지 못했어요.")); return; }
   L.forEach(function(x){
@@ -2582,9 +2583,13 @@ function doAsk(ta,go,stopB,notice){
   function say(m){ if(th) th.lastChild.textContent=" "+m; }
   function callAnswer(extra){
     var input=turns.slice(-4).map(function(t){ return t.role==="assistant"&&t.content.length>600?{role:t.role,content:t.content.slice(0,600)+"…"}:t; }).concat([{role:"user",
-      content:RULES+SRVRULE+extra+"\n\n[자료]\n"+ctx+"\n[질문]\n"+q}]);
+      content:RULES+SRVRULE+extra+"\n\n[자료]\n"+ctx+"\n[질문]\n"+q+relAsk()}]);
     return sampleFn(input,{signal:ctl.signal});
   }
+  var CAND=[];   /* 관련 업무 후보(낱말 점수 상위 10개) — AI가 답 끝에 번호로 고른다 */
+  function relAsk(){ if(!CAND.length) return "";
+    return "\n\n[체크리스트 업무 후보]\n"+CAND.map(function(x,i){ return (i+1)+". "+x.t.title+" ("+(x.t.cat||"")+")"; }).join("\n")+
+      "\n\n답변을 다 쓴 뒤 맨 끝에 한 줄을 더 적어라: 이 질문을 한 담당자가 바로 열어 볼 만한 업무를 위 후보에서 관련 높은 순으로 최대 3개 — 질문한 일의 절차·흐름을 직접 다루는 업무만, 낱말만 겹치는 업무는 빼고, 맞는 것이 없으면 비운다. 형식: [관련 업무: 번호, 번호] (없으면 [관련 업무: ]). 이 줄은 화면에 보이지 않으니 답변 본문에서 이 목록을 언급하지 마라."; }
   ctl=new AbortController();
   say("질문을 정리하는 중");
   standaloneQ(q,prevQ,ctl.signal).then(function(aq){
@@ -2595,6 +2600,7 @@ function doAsk(ta,go,stopB,notice){
     var lw=two[0]; mc=two[1];
     if(mc&&!mc.nohit&&mc.text){ ctx="[경남 자료 — 📌는 원문을 정리한 노트, 수치는 원문·법령으로 확인]\n"+mc.text.slice(0,ROOM-(lw?lw.text.length:0))+"\n\n"; refs=mc.refs; }
     if(lw){ ctx+=lw.text; refs=refs.concat(lw.refs); }
+    CAND=relFind(askQ,mc&&mc.text,1);
     if(!ctx&&MCPLIM) throw {code:"limit"};
     say("답변을 만드는 중");
     return callAnswer(MORE_RULE);
@@ -2609,6 +2615,7 @@ function doAsk(ta,go,stopB,notice){
       return callAnswer("");
     });
   }).then(function(res){
+    var PICK=null; res.text=String(res.text||"").replace(/\n?[ \t]*\[관련 업무\s*[:：]\s*([^\]\n]*)\][ \t]*/g,function(_,v){ PICK=[]; (v.match(/\d+/g)||[]).forEach(function(n){ var x=CAND[+n-1]; if(x&&PICK.indexOf(x)<0&&PICK.length<3) PICK.push(x); }); return ""; });
     res.text=fixCalc(res.text).replace(/\s*\[?\b[cd]\d{3,6}\]?(?=[\s,.)·\]]|$)/g,"").replace(/📌\s*/g,"");   /* 노트 표시·자료 번호는 화면에 안 보이게 */   /* 답이 쓴 계산식 검산 */
     mdRender(body,res.text);
     if(res.model!==HAIKU){ var fm=el("div","note","기본 모델이 혼잡하거나 오늘 사용량을 다 써서 "+res.model+" 모델로 바꿔 답했습니다."); fm.style.marginTop="6px"; box.appendChild(fm); }
@@ -2633,7 +2640,7 @@ function doAsk(ta,go,stopB,notice){
     cp.onclick=function(){ var t=body.innerText, done=function(){ cp.textContent="복사했습니다"; setTimeout(function(){ cp.textContent="답변 복사"; },1500); };
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,function(){}); };
     bar.appendChild(cp); box.appendChild(bar); box.appendChild(det); toAns(box);
-    relShow(askQ,mc&&mc.text);
+    relShow(askQ,mc&&mc.text,PICK);
   }).catch(function(e){
     if(e&&(e.name==="AbortError"||(ctl&&ctl.signal.aborted))){ box.remove(); return; }
     body.textContent="";

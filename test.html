@@ -2512,23 +2512,33 @@ function toAns(b){ var r=b.getBoundingClientRect(), ask=root.querySelector(".ask
 /* 관련 업무 바로가기: 질문 낱말이 업무 이름·단계에 얼마나 들었는지로 체크리스트 업무를 고른다(AI 안 씀).
    여러 업무에 흔한 낱말(학교·교사 등)은 무게를 낮춘다 */
 var rel;
-function relFind(q){
-  var ts=toks(q).filter(function(t){ return t.length>=2&&!/^\d+$/.test(t)&&!/공무|무직|교원|교사|사립|공립|학교$|^학교|사무직|^교육$|^직원$/.test(t); });   /* 신분·학교급 낱말만으로는 고르지 않음 */ if(!ts.length) return [];
-  var N=CKL.length, df={}, txt=CKL.map(function(t){ return {t:t,ti:(t.title+" "+(t.cat||"")).toLowerCase(),st:t.steps.map(function(x){ return {n:(x.n||"").toLowerCase(),b:((x.w||"")+" "+(x.s||"")).toLowerCase()}; })}; });
-  ts.forEach(function(w){ df[w]=txt.filter(function(o){ return o.ti.indexOf(w)>=0||o.st.some(function(x){ return x.n.indexOf(w)>=0||x.b.indexOf(w)>=0; }); }).length; });
-  var out=txt.map(function(o){ var sc=0, best=-1, bs=0;
-    ts.forEach(function(w){ if(!df[w]) return; var idf=Math.log((N+1)/df[w]);
-      if(o.ti.indexOf(w)>=0) sc+=3*idf;
+function relHeads(srv){   /* 서버가 찾아 준 자료의 제목 줄(=== [c..] 제목 › 소제목)만 */
+  var h=[]; String(srv||"").replace(/^=== \[c\d+\] (?:📌 )?(.+)$/gm,function(_,t){ h.push(t.replace(/\s*·\s*없는 낱말:.*$/,"")); return _; }); return h.slice(0,6).join(" ");
+}
+function relFind(q,srv){
+  var vis=typeof ckVis==="function"?ckVis:null;   /* 고른 학교급의 업무만 */
+  var STOP=/공무|무직|교원|교사|사립|공립|학교$|^학교|사무직|^교육$|^직원$|^경남|^경상남도|^교육청|^규정|^지침|^기준|^관련|^정리|^노트|^핵심|^규칙|^사례/;
+  var ts=toks(q).filter(function(t){ return t.length>=2&&!/^\d+$/.test(t)&&!STOP.test(t); });
+  var hs=toks(relHeads(srv)).filter(function(t){ return t.length>=2&&!/^\d+$/.test(t)&&!STOP.test(t)&&ts.indexOf(t)<0; });
+  if(!ts.length&&!hs.length) return [];
+  var pool=vis?CKL.filter(vis):CKL, N=CKL.length, df={}, txt=pool.map(function(t){ return {t:t,ti:(t.title+" "+(t.cat||"")).toLowerCase(),st:t.steps.map(function(x){ return {n:(x.n||"").toLowerCase(),b:((x.w||"")+" "+(x.s||"")).toLowerCase()}; })}; });
+  var all=CKL.map(function(t){ return (t.title+" "+(t.cat||"")+" "+t.steps.map(function(x){ return (x.n||"")+" "+(x.w||"")+" "+(x.s||""); }).join(" ")).toLowerCase(); });
+  ts.concat(hs).forEach(function(w){ if(df[w]==null) df[w]=all.filter(function(o){ return o.indexOf(w)>=0; }).length; });
+  function sc1(o,w,m){ if(!df[w]) return 0; var idf=Math.log((N+1)/df[w]), s=0;
+      if(o.ti.indexOf(w)>=0) s+=3*idf;
       var hitN=o.st.some(function(x){ return x.n.indexOf(w)>=0; }), hitB=!hitN&&o.st.some(function(x){ return x.b.indexOf(w)>=0; });
-      sc+=(hitN?1:hitB?0.4:0)*idf; });
-    o.st.forEach(function(x,k){ var v=0; ts.forEach(function(w){ if(df[w]&&x.n.indexOf(w)>=0) v+=Math.log((N+1)/df[w]); }); if(v>bs){ bs=v; best=k; } });
+      return (s+(hitN?1:hitB?0.4:0)*idf)*m; }
+  var out=txt.map(function(o){ var sc=0, best=-1, bs=0;
+    ts.forEach(function(w){ sc+=sc1(o,w,1); }); hs.forEach(function(w){ sc+=sc1(o,w,0.3); });
+    o.st.forEach(function(x,k){ var v=0; ts.concat(hs).forEach(function(w){ if(df[w]&&x.n.indexOf(w)>=0) v+=Math.log((N+1)/df[w]); }); if(v>bs){ bs=v; best=k; } });
     return {t:o.t,s:sc,k:best}; }).filter(function(x){ return x.s>0; }).sort(function(a,b){ return b.s-a.s; });
   if(!out.length) return [];
-  var top=out[0].s; return out.filter(function(x){ return x.s>=Math.max(top*0.45,2.5); }).slice(0,5);
+  var top=out[0].s; if(top<12) return [];
+  return out.filter(function(x){ return x.s>=Math.max(top*0.6,2.5); }).slice(0,3);
 }
-function relShow(q){
+function relShow(q,srv){
   rel.body.textContent="";
-  var L=relFind(q);
+  var L=relFind(q,srv);
   rel.body.appendChild(el("p","note","‘"+(q.length>40?q.slice(0,40)+"…":q)+"’ 관련"));
   if(!L.length){ rel.body.appendChild(el("p","note","맞는 체크리스트 업무를 찾지 못했어요.")); return; }
   L.forEach(function(x){
@@ -2623,7 +2633,7 @@ function doAsk(ta,go,stopB,notice){
     cp.onclick=function(){ var t=body.innerText, done=function(){ cp.textContent="복사했습니다"; setTimeout(function(){ cp.textContent="답변 복사"; },1500); };
       if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,function(){}); };
     bar.appendChild(cp); box.appendChild(bar); box.appendChild(det); toAns(box);
-    relShow(askQ);
+    relShow(askQ,mc&&mc.text);
   }).catch(function(e){
     if(e&&(e.name==="AbortError"||(ctl&&ctl.signal.aborted))){ box.remove(); return; }
     body.textContent="";

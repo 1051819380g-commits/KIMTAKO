@@ -1085,16 +1085,30 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 <style>
 .ckflow>summary{font-weight:700}
 .ckflin{padding:6px 2px}
-.ckfltip{font-size:.88rem;color:var(--muted,#666);margin:4px 0 8px}
-.ckflpic{overflow:auto;max-height:80vh;border:1px solid var(--line,#ddd);border-radius:10px;padding:10px;background:var(--surface,#fff);text-align:center}
-.ckflpic svg{max-width:none}
+.ckfltip{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .ckflzoom{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.ckflzoom .pill{padding:4px 12px}
-.ckflpic g.node.ckon rect,.ckflpic g.node.ckon polygon,.ckflpic g.node.ckon path{stroke-width:3px!important;stroke:#DC2626!important}
-.ckflinfo:not(:empty){margin-top:8px;padding:10px;border:1px solid var(--line-strong,#ccc);border-radius:10px;background:var(--surface-2,#f6f6f8)}
-.ckflinfo b{display:block;margin-bottom:4px}
-.ckflinfo div{font-size:.9rem}
-.ckfcite{border:0;background:none;color:var(--accent,#4F46E5);font-size:.85rem;padding:4px 8px 0 0;cursor:pointer;text-decoration:underline}
-.ckfsrc{white-space:pre-wrap;font-size:.8rem;max-height:260px;overflow:auto;background:var(--surface,#fff);border:1px solid var(--line,#ddd);border-radius:8px;padding:8px;margin-top:6px}
+.ckflpic{overflow:auto;max-height:80vh;background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;color:var(--muted)}
+.ckflpic svg{max-width:none;background:transparent!important}
+.ckflpic .node rect,.ckflpic .node polygon,.ckflpic .node path{fill:var(--surface)!important;stroke:var(--line-strong)!important;stroke-width:1.5px!important}
+.ckflpic .node rect{rx:6px;ry:6px}
+.ckflpic .node.kstep rect{stroke:var(--accent)!important}
+.ckflpic .node.kask rect{fill:var(--warn-bg)!important;stroke:var(--warn)!important}
+.ckflpic .node.kend rect,.ckflpic .node.kend path{fill:var(--pos-bg)!important;stroke:var(--pos)!important}
+.ckflpic .nodeLabel,.ckflpic .nodeLabel p{color:var(--ink)!important}
+.ckflpic .nodeLabel small{color:var(--muted)}
+.ckflpic .node.kask .nodeLabel{color:var(--warn)!important}
+.ckflpic .node.kend .nodeLabel{color:var(--pos)!important}
+.ckflpic .node{cursor:pointer}
+.ckflpic .node:hover rect,.ckflpic .node:hover polygon{filter:drop-shadow(0 4px 6px rgba(22,35,59,.25))}
+.ckflpic .node.ckon rect,.ckflpic .node.ckon polygon,.ckflpic .node.ckon path{stroke:var(--accent-ink)!important;stroke-width:3px!important}
+.ckflpic .flowchart-link{stroke:#8A9AB2!important;stroke-width:1.5px!important}
+.ckflpic marker path,.ckflpic .marker{fill:#8A9AB2!important;stroke:#8A9AB2!important}
+.ckflpic .edgeLabel,.ckflpic .edgeLabel p,.ckflpic .edgeLabel span,.ckflpic .labelBkg{background:var(--ground)!important;background-color:var(--ground)!important;color:var(--ink-2)!important}
+.ckflinfo:not(:empty){margin-top:8px;padding:10px 12px;background:var(--surface);border:1.5px solid var(--accent);border-radius:6px}
+.ckflinfo b{display:block;margin-bottom:4px;color:var(--ink)}
+.ckflinfo div{font-size:13px;color:var(--ink-2)}
+.ckfcite{border:0;background:none;color:var(--accent-ink);font-size:13px;padding:4px 8px 0 0;cursor:pointer;text-decoration:underline}
+.ckfsrc{white-space:pre-wrap;font-size:12px;max-height:260px;overflow:auto;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:6px;color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -1543,7 +1557,7 @@ function ckSide(){
 /* 분기형 업무흐름도(MCP 흐름도 자료). 펼칠 때 Mermaid를 불러 그림으로 그린다. 상자를 누르면 담당·기한·근거 */
 var CKFLOW={"bid":{"start":"s1","nodes":[{"id":"s1","t":"step","n":"예산집행 품의(발의)·기초금액 산정·공고문 작성","who":"담당 부서·행정실","cite":"c34495"},{"id":"d1","t":"ask","n":"공사 계약인가?","cite":"c34495"},{"id":"d2","t":"ask","n":"추정가격이 종합 4억·전문 2억·전기 등 1억6천만원 이하인가?","cite":"c34495 c34487"},{"id":"d3","t":"ask","n":"물품·용역 추정가격이 1억원 이하인가?","cite":"c34495 c34487"},{"id":"s2","t":"step","n":"2인 이상 견적 공고·기초금액 입력 (공사 낙찰하한율 89.745%, 물품·용역 88%)","w":"견적공고 3일 이상 · 게시 5일 이상 · 2천만원 이하 물품·용역 90%","who":"행정실","cite":"c34495"},{"id":"s3","t":"step","n":"입찰 공고·기초금액 입력","w":"마감일 전날부터 7일 전 공고(공사 규모에 따라 15~40일) · 정정공고 시 잔여일수에 5일 이상 가산","who":"행정실","cite":"c93870 c34496"},{"id":"s4","t":"step","n":"견적서 접수·개찰","who":"행정실","cite":"c34496"},{"id":"d4","t":"ask","n":"견적서를 낸 업체가 1개뿐인가?","cite":"c92953"},{"id":"d5","t":"ask","n":"다시 받아도 1인뿐일 것이 명백한가? (시·군 지역제한 건은 제외)","cite":"c92953"},{"id":"e1","t":"end","n":"1인 견적 수의계약으로 진행(수의계약 1인 견적 절차)"},{"id":"s5","t":"step","n":"지역 등을 넓혀 견적 재공고","who":"행정실","cite":"c92953"},{"id":"s6","t":"step","n":"낙찰하한율 이상 업체 중 최저가 업체를 계약상대자로 결정","who":"행정실","cite":"c92947"},{"id":"s7","t":"step","n":"복수예가 작성","who":"행정실","cite":"c34496"},{"id":"d6","t":"ask","n":"공사 입찰인가? (현장설명)","cite":"c34496"},{"id":"s8","t":"step","n":"현장설명 (공사 300억 이상 의무, 100억 미만 임의, 불필요하면 생략)","who":"행정실","cite":"c34496"},{"id":"s9","t":"step","n":"개찰·입찰참가자격(부정당업자 제재 등) 확인","who":"행정실","cite":"c34496"},{"id":"d7","t":"ask","n":"입찰이 성립했는가? (낙찰자가 있는가)","cite":"c3238"},{"id":"d8","t":"ask","n":"이미 재공고입찰을 했는가?","cite":"c3238"},{"id":"s10","t":"step","n":"재공고입찰","w":"마감일 전날부터 5일 전 공고","who":"행정실","cite":"c93870"},{"id":"e2","t":"end","n":"재공고에도 불성립 → 수의계약 전환(보증금·기한 외 가격·조건 변경 불가)"},{"id":"s11","t":"step","n":"적격심사 서류 제출 요청·접수","w":"서류 제출 3~15일 이내","who":"외부(업체·기관)","cite":"c34490"},{"id":"s12","t":"step","n":"적격심사 (예정가격 이하 최저가부터 순서대로)","who":"행정실","cite":"c34490"},{"id":"d9","t":"ask","n":"적격으로 심사되었는가?","cite":"c34490"},{"id":"s13","t":"step","n":"낙찰자 결정·낙찰 통지","who":"행정실","cite":"c34490"},{"id":"d10","t":"ask","n":"계약금액이 5천만원 이하인가? (계약서 작성 생략 가능)","cite":"c34491"},{"id":"s14","t":"step","n":"계약서 작성·전자계약 체결, 계약보증서 접수","w":"낙찰통지 후 10일 이내","who":"행정실","cite":"c34491"},{"id":"s15","t":"step","n":"계약서 작성 생략(청구서·각서·승낙사항 등 증거서류는 받는다)","who":"행정실","cite":"c34491"},{"id":"s16","t":"step","n":"착공·착수계 접수 (공사는 착공신고서류, 용역은 착수서류)","who":"외부(업체·기관)","cite":"c34492"},{"id":"d11","t":"ask","n":"물품 구매 계약인가? (선금은 물품구매 계약 제외)","cite":"c34492"},{"id":"s17","t":"step","n":"선금 지급 (요청 시, 계약금액 70% 초과 안 되게)","who":"행정실","cite":"c34492"},{"id":"s18","t":"step","n":"공사·납품 이행","who":"외부(업체·기관)"},{"id":"s19","t":"step","n":"준공(납품)계 접수·검사·검수","w":"이행 완료 통지 후 14일 이내 검사","who":"담당 부서","cite":"c34492"},{"id":"d12","t":"ask","n":"계약 내용대로 이행되었는가? (검사 결과)","cite":"c34492"},{"id":"s20","t":"step","n":"시정조치 요구 후 시정 완료 통지 접수","w":"시정 완료 통지일부터 14일 이내 재검사","who":"담당 부서","cite":"c34492"},{"id":"s21","t":"step","n":"대가 청구서 접수","who":"행정실"},{"id":"d13","t":"ask","n":"하자보수보증금 납부 대상인가? (공사 3천만원 이하는 면제)","cite":"c34453"},{"id":"s22","t":"step","n":"하자보수보증금(또는 지급각서) 받기","w":"대가 지급 전","who":"행정실","cite":"c34453"},{"id":"s23","t":"step","n":"대가 지급","w":"청구받은 날부터 5일 이내","who":"행정실","cite":"c34493"},{"id":"s24","t":"step","n":"하자보수보증금 관리·하자검사","w":"하자검사 연 2회 이상","who":"행정실","cite":"c34494"},{"id":"s25","t":"step","n":"담보책임 만료 전 최종검사·하자보수완료확인서 발급","w":"만료 14일 전부터 만료일까지","who":"행정실","cite":"c34494"},{"id":"e3","t":"end","n":"계약 종결(하자보수완료확인서 발급)"}],"edges":[{"f":"s1","to":"d1"},{"f":"d1","to":"d2","if":"예 — 공사"},{"f":"d1","to":"d3","if":"아니오 — 물품·용역"},{"f":"d2","to":"s2","if":"예 — 견적 대상"},{"f":"d3","to":"s2","if":"예 — 견적 대상"},{"f":"d2","to":"s3","if":"아니오 — 입찰 대상"},{"f":"d3","to":"s3","if":"아니오 — 입찰 대상"},{"f":"s2","to":"s4"},{"f":"s4","to":"d4"},{"f":"d4","to":"d5","if":"예 — 1개뿐"},{"f":"d5","to":"e1","if":"예 — 명백함"},{"f":"d5","to":"s5","if":"아니오"},{"f":"s5","to":"s4"},{"f":"d4","to":"s6","if":"아니오 — 2개 이상"},{"f":"s3","to":"s7"},{"f":"s7","to":"d6"},{"f":"d6","to":"s8","if":"예 — 공사"},{"f":"d6","to":"s9","if":"아니오 — 물품·용역"},{"f":"s8","to":"s9"},{"f":"s9","to":"d7"},{"f":"d7","to":"d8","if":"아니오 — 유찰"},{"f":"d8","to":"s10","if":"아니오 — 첫 유찰"},{"f":"s10","to":"s9"},{"f":"d8","to":"e2","if":"예 — 재공고도 불성립"},{"f":"d7","to":"s11","if":"예 — 성립"},{"f":"s11","to":"s12"},{"f":"s12","to":"d9"},{"f":"d9","to":"s12","if":"아니오 — 부적격·포기 → 다음 순위자 심사"},{"f":"d9","to":"s13","if":"예 — 적격"},{"f":"d10","to":"s15","if":"예 — 5천만원 이하"},{"f":"d10","to":"s14","if":"아니오 — 5천만원 초과"},{"f":"s14","to":"s16"},{"f":"s15","to":"s16"},{"f":"s16","to":"d11"},{"f":"d11","to":"s18","if":"예 — 물품 구매"},{"f":"d11","to":"s17","if":"아니오 — 공사·용역"},{"f":"s17","to":"s18"},{"f":"s18","to":"s19"},{"f":"s19","to":"d12"},{"f":"d12","to":"s20","if":"아니오 — 위반·부당"},{"f":"s20","to":"s19"},{"f":"d12","to":"s21","if":"예 — 적합"},{"f":"s21","to":"d13"},{"f":"d13","to":"s22","if":"예 — 납부 대상"},{"f":"d13","to":"s23","if":"아니오 — 면제·해당 없음"},{"f":"s22","to":"s23"},{"f":"s23","to":"s24"},{"f":"s24","to":"s25"},{"f":"s25","to":"e3"},{"f":"s6","to":"d10"},{"f":"s13","to":"d10"}]}}, CKMMD=null;
 function ckMermaid(){
-  if(!CKMMD) CKMMD=new Promise(function(ok,no){ var s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js";
+  if(!CKMMD) CKMMD=new Promise(function(ok,no){ var s=document.createElement("script"); s.src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js";
     s.onload=function(){ ok(window.mermaid); }; s.onerror=function(){ CKMMD=null; no(); }; document.head.appendChild(s); });
   return CKMMD;
 }
@@ -1551,13 +1565,14 @@ function ckFlowSrc(F){
   function q(x){ return '"'+String(x).replace(/"/g,"#quot;")+'"'; }
   var L=["flowchart TD"], k=0;
   F.nodes.forEach(function(n){
-    var tx=n.n+(n.t==="step"&&n.who?"<br><small>"+n.who+"</small>":"");
     if(n.t==="step") k++;
-    L.push("  "+n.id+(n.t==="ask"?"{"+q(n.n)+"}":n.t==="end"?"(["+q(n.n)+"])":"["+q(k+" · "+tx)+"]"));
+    var tx="<small>"+k+"단계"+(n.who?" · "+n.who:"")+"</small>"+n.n;
+    if(n.t==="ask") tx="<small>◇ 갈림</small>"+n.n; if(n.t==="end") tx="<small>끝</small>"+n.n;
+    L.push("  "+n.id+(n.t==="end"?"(["+q(tx)+"])":"["+q(tx)+"]"));   /* 갈림도 네모(마름모는 글이 길면 너무 커짐), 색으로 구분 */
     L.push("  class "+n.id+" k"+n.t);   /* end는 Mermaid 예약어라 앞에 k */
   });
   F.edges.forEach(function(e){ L.push("  "+e.f+(e.if?" -->|"+q(e.if)+"| ":" --> ")+e.to); });
-  L.push("  classDef kask fill:#FEF3C7,stroke:#F59E0B,color:#92400E","  classDef kend fill:#DCFCE7,stroke:#16A34A,color:#14532D","  classDef kstep fill:#EEF2FF,stroke:#6366F1,color:#1E1B4B");
+  /* 색은 CSS(.ckflpic)에서 기존 담당별 흐름도와 같은 변수로 */
   return L.join("\n");
 }
 var CKFLN=0;
@@ -1567,7 +1582,7 @@ function ckFlow(t){
   var asks=F.nodes.filter(function(n){ return n.t==="ask"; }).length;
   var d=el("details","ckorig ckflow"); d.appendChild(el("summary",null,"업무흐름도 (갈림 "+asks+"곳 · 시험)"));
   var box=el("div","ckflin"); d.appendChild(box);
-  box.appendChild(el("p","ckfltip","◇ 마름모는 갈림이에요. 화살표 위 글자가 갈래 조건이에요. 상자를 누르면 담당·기한·근거가 나와요."));
+  box.appendChild(el("p","ckfltip","노란 상자는 갈림이에요. 화살표 위 글자가 갈래 조건이에요. 상자를 누르면 담당·기한·근거가 나와요."));
   var zb=el("div","ckflzoom"), pic=el("div","ckflpic","흐름도를 그리는 중…"), info=el("div","ckflinfo"); box.appendChild(zb); box.appendChild(pic); box.appendChild(info);
   function show(id){ var n=by[id]; if(!n) return; info.innerHTML="";
     info.appendChild(el("b",null,n.n));
@@ -1580,8 +1595,7 @@ function ckFlow(t){
     info.scrollIntoView({block:"nearest",behavior:"smooth"}); }
   var drawn=false; d.ontoggle=function(){ if(!d.open||drawn) return; drawn=true;
     ckMermaid().then(function(M){
-      var dark=matchMedia("(prefers-color-scheme: dark)").matches&&document.documentElement.dataset.theme!=="light";
-      M.initialize({startOnLoad:false,securityLevel:"strict",theme:dark?"dark":"default",themeVariables:{fontSize:"13px"},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:22,rankSpacing:32,padding:8}});
+      M.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:"stepAfter"}});
       return M.render("ckfl"+(++CKFLN),ckFlowSrc(F));
     }).then(function(r){ pic.innerHTML=r.svg;
       var sv=pic.querySelector("svg"), W=parseFloat(sv.getAttribute("width"))||sv.getBBox().width, H=W*sv.viewBox.baseVal.height/sv.viewBox.baseVal.width, z=1;

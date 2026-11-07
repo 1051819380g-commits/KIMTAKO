@@ -1083,7 +1083,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 </script>
 <style>.ckhits{font-size:.8rem;color:#fff;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 10px;margin-left:8px;vertical-align:middle;white-space:nowrap}</style>
 <style>
-.ckflow>summary{font-weight:700}
+.ckfswbar{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
+:root:root .ckfswbar .pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent-ink);font-weight:700}
+.ckfsw [hidden]{display:none!important}
 .ckflin{padding:6px 2px}
 .ckfltip{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .ckflzoom{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.ckflzoom .pill{padding:4px 12px}
@@ -1583,11 +1585,25 @@ function ckFlowSrc(F){
   return L.join("\n");
 }
 var CKFLN=0;
+/* 담당별 흐름도 ↔ 갈림 흐름도 전환. 고른 쪽은 기억(처음엔 갈림 흐름도) */
+function ckFlowSwitch(t,cs){
+  var w=el("div","ckfsw"), bar=el("div","ckfswbar"), lane=el("div"), fl=ckFlow(t), bs={};
+  lane.appendChild(ckChart(t,cs)); lane.appendChild(el("p","note",t.chart?"같은 줄 = 동시에 진행 · 칸 = 담당":"담당 구분 없이 순서만 보여요"));
+  var asks=CKFLOW[t.id].nodes.filter(function(n){ return n.t==="ask"; }).length;
+  function go(v){ try{ localStorage.setItem("kbg.flowview",v); }catch(e){}
+    lane.hidden=v!=="lane"; fl.hidden=v!=="br"; if(v==="br") fl.go();
+    Object.keys(bs).forEach(function(k){ bs[k].setAttribute("aria-pressed",String(k===v)); }); }
+  [["br","갈림 흐름도 ("+asks+"곳)"],["lane","담당별 흐름도"]].forEach(function(a){ var b=el("button","pill",a[1]); b.type="button"; b.onclick=function(){ go(a[0]); }; bs[a[0]]=b; bar.appendChild(b); });
+  w.appendChild(bar); w.appendChild(fl); w.appendChild(lane);
+  var v="br"; try{ v=localStorage.getItem("kbg.flowview")||"br"; }catch(e){}
+  setTimeout(function(){ go(v); },0);   /* 화면에 붙은 뒤 그려야 너비를 잰다 */
+  return w;
+}
 function ckFlow(t){
   var F=CKFLOW[t.id], by={};
   F.nodes.forEach(function(n){ by[n.id]=n; });
   var asks=F.nodes.filter(function(n){ return n.t==="ask"; }).length;
-  var d=el("details","ckorig ckflow"); d.appendChild(el("summary",null,"업무흐름도 (갈림 "+asks+"곳 · 시험)"));
+  var d=el("div","ckflow");
   var box=el("div","ckflin"); d.appendChild(box);
   box.appendChild(el("p","ckfltip","노란 상자는 갈림이고, 화살표 위 글자가 갈래 조건이에요. "+(CKHOVER?"상자에 마우스를 올리면 근거 요약이 나오고, 누르면 근거 원문까지 나와요.":"상자를 누르면 근거 요약과 원문이 나와요.")));
   var zb=el("div","ckflzoom"), pic=el("div","ckflpic","흐름도를 그리는 중…"), info=el("div","ckflinfo"); box.appendChild(zb); box.appendChild(pic); box.appendChild(info);
@@ -1610,7 +1626,7 @@ function ckFlow(t){
     if(x+w>innerWidth-8) x=r.left-w-10; if(x<8) x=Math.max(8,Math.min(innerWidth-w-8,r.left));
     if(x===r.left||x<r.left&&x+w>r.left) y=r.bottom+8; if(y+h>innerHeight-8) y=Math.max(8,innerHeight-h-8);
     tipEl.style.left=x+"px"; tipEl.style.top=y+"px"; }
-  var drawn=false; d.ontoggle=function(){ if(!d.open||drawn) return; drawn=true;
+  var drawn=false; d.go=function(){ if(drawn) return; drawn=true;   /* 처음 보일 때 그린다(숨은 채로 그리면 너비를 못 잼) */
     ckMermaid().then(function(M){
       M.initialize({startOnLoad:false,securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:"stepAfter"}});
       return M.render("ckfl"+(++CKFLN),ckFlowSrc(F));
@@ -1742,15 +1758,14 @@ function ckMain(){
   }
   d.appendChild(tl);
   if(t.note) d.appendChild(el("p","note",t.note));
-  d.appendChild(ckChart(t,cs));
-  if(CKFLOW[t.id]) d.appendChild(ckFlow(t));
+  d.appendChild(CKFLOW[t.id]?ckFlowSwitch(t,cs):ckChart(t,cs));
   var og=ckOrig(t,"원문 전체 보기 (업무흐름도 "+ckB0(t.l2)+")"); if(og) d.appendChild(og);
   if(t.dr&&t.dr.length){   /* 이 업무의 기안문 예시 모음 */
     var dd=el("details","ckorig"), ds=el("summary",null,"이 업무의 기안문 예시 ("+t.dr.length+"건)"); dd.appendChild(ds);
     var dn=false; dd.ontoggle=function(){ if(!dd.open||dn) return; dn=true; t.dr.forEach(function(x){ var f=ckDraft(x); if(f) dd.appendChild(f); }); };
     d.appendChild(dd);
   }
-  d.appendChild(el("p","note",t.chart?"같은 줄 = 동시에 진행 · 칸 = 담당":"담당 구분 없이 순서만 보여요"));
+  if(!CKFLOW[t.id]) d.appendChild(el("p","note",t.chart?"같은 줄 = 동시에 진행 · 칸 = 담당":"담당 구분 없이 순서만 보여요"));   /* 전환형은 담당별 쪽 안에 */
   if(t.intro&&t.intro.length){ var ib=el("details"), is=el("summary",null,"개요 보기"); ib.appendChild(is); renderBlocks(ib,ckClean(t.intro)); d.appendChild(ib); }
   d.appendChild(el("h3","ckh",cs?"단계별 체크":"단계별 설명"));
   if(t.rel&&t.rel.A){ var ab=el("label","ckplan star ckab"), ai=el("input"); ai.type="date"; ai.setAttribute("aria-label",t.rel.A);

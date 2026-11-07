@@ -1592,11 +1592,10 @@ var CKFLN=0;
 function ckFlowSwitch(t,cs){
   var w=el("div","ckfsw"), bar=el("div","ckfswbar"), lane=el("div"), fl=ckFlow(t), bs={};
   lane.appendChild(ckChart(t,cs)); lane.appendChild(el("p","note",t.chart?"같은 줄 = 동시에 진행 · 칸 = 담당":"담당 구분 없이 순서만 보여요"));
-  var asks=CKFLOW[t.id].nodes.filter(function(n){ return n.t==="ask"; }).length;
   function go(v){ try{ localStorage.setItem("kbg.flowview2",v); }catch(e){}
     lane.hidden=v!=="lane"; fl.hidden=v!=="br"; if(v==="br") fl.go();
     Object.keys(bs).forEach(function(k){ bs[k].setAttribute("aria-pressed",String(k===v)); }); }
-  [["lane","담당별 흐름도"],["br","상세 흐름도 (갈림 "+asks+"곳)"]].forEach(function(a){ var b=el("button","pill",a[1]); b.type="button"; b.onclick=function(){ go(a[0]); }; bs[a[0]]=b; bar.appendChild(b); });
+  [["lane","담당별 흐름도"],["br","상세 흐름도"]].forEach(function(a){ var b=el("button","pill",a[1]); b.type="button"; b.onclick=function(){ go(a[0]); }; bs[a[0]]=b; bar.appendChild(b); });
   w.appendChild(bar); w.appendChild(fl); w.appendChild(lane);
   var v="lane"; try{ v=localStorage.getItem("kbg.flowview2")||"lane"; }catch(e){}
   setTimeout(function(){ go(v); },0);   /* 화면에 붙은 뒤 그려야 너비를 잰다 */

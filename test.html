@@ -1108,7 +1108,9 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .ckflpic .edgeLabel,.ckflpic .edgeLabel p,.ckflpic .edgeLabel span,.ckflpic .labelBkg{background:var(--ground)!important;background-color:var(--ground)!important;color:var(--ink-2)!important}
 .ckflinfo:not(:empty){margin-top:8px;padding:10px 12px;background:var(--surface);border:1.5px solid var(--accent);border-radius:6px}
 .ckflinfo b{display:block;margin-bottom:4px;color:var(--ink)}
-.ckflinfo .ckfsrc b{display:inline;margin:0}
+.ckfsrc b{display:inline;margin:0}
+.ckfz .ckfsrc,.ckfz .cksubin{max-height:none!important;overflow:visible!important}
+.ckfz .cksum{margin:0 0 10px}
 .ckflinfo div{font-size:13px;color:var(--ink-2)}
 .ckftip{position:fixed;z-index:60;max-width:340px;background:var(--surface);border:1.5px solid var(--accent);border-radius:8px;padding:10px 12px;box-shadow:0 10px 24px -10px rgba(22,35,59,.45);pointer-events:none;font-size:13px;line-height:1.5;color:var(--ink)}
 .ckftip b{display:block;font-weight:700}
@@ -1605,15 +1607,34 @@ function ckFlow(t){
   var asks=F.nodes.filter(function(n){ return n.t==="ask"; }).length;
   var d=el("div","ckflow");
   var box=el("div","ckflin"); d.appendChild(box);
-  box.appendChild(el("p","ckfltip","노란 상자는 갈림이고, 화살표 위 글자가 갈래 조건이에요. "+(CKHOVER?"상자에 마우스를 올리면 근거 요약이 나오고, 누르면 근거 원문까지 나와요.":"상자를 누르면 근거 요약과 원문이 나와요.")));
-  var zb=el("div","ckflzoom"), pic=el("div","ckflpic","흐름도를 그리는 중…"), info=el("div","ckflinfo"); box.appendChild(zb); box.appendChild(pic); box.appendChild(info);
-  function show(id){ var n=by[id]; if(!n) return; info.innerHTML="";
-    info.appendChild(el("b",null,n.n));
-    [["담당",n.who],["기한·기준",n.w]].forEach(function(r){ if(r[1]) info.appendChild(el("div",null,r[0]+": "+r[1])); });
-    if(n.sum){ var sm=el("div","cksum"); sm.appendChild(el("b",null,"근거 요약")); sm.appendChild(el("p",null,n.sum)); info.appendChild(sm); }
-    (n.cite||"").split(/\s+/).filter(Boolean).forEach(function(c){ var C=CKFCITE[c]; if(!C) return;   /* 원문은 페이지 안에 들어 있다(서버 안 부름) */
-      info.appendChild(ckFold("cksub ckref","근거 원문 · "+C.t,function(bx){ var o=el("div","ckfsrc"); o.innerHTML=C.x.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\*\*/g,""); bx.appendChild(o);   /* 정리 노트의 **굵게** 표시를 굵은 글씨로 */ })); });
-    info.scrollIntoView({block:"nearest",behavior:"smooth"}); }
+  box.appendChild(el("p","ckfltip","노란 상자는 갈림이고, 화살표 위 글자가 갈래 조건이에요. "+(CKHOVER?"상자에 마우스를 올리면 근거 요약이 나오고, 누르면 근거 원문이 팝업으로 떠요.":"상자를 누르면 근거 요약과 원문이 팝업으로 떠요.")));
+  var zb=el("div","ckflzoom"), pic=el("div","ckflpic","흐름도를 그리는 중…"); box.appendChild(zb); box.appendChild(pic);
+  var num={}, sn=0; F.nodes.forEach(function(n){ if(n.t==="step") num[n.id]=++sn; });
+  /* 상자를 누르면 담당별 흐름도와 같은 팝업(ckzbg·ckzc): 이름 → 담당·기한 → 근거 요약 → 근거 원문(펼친 채) */
+  function show(id,node){ var n=by[id]; if(!n) return;
+    var bg=el("div","ckzbg"), c=el("div","ckzc ckfz"); c.setAttribute("role","dialog"); c.setAttribute("aria-modal","true"); c.setAttribute("aria-label",n.n);
+    var still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var hd=el("div","ckzh"); hd.appendChild(el("span","ckzk",n.t==="ask"?"◇ 갈림":n.t==="end"?"끝":num[id]+"단계"+(n.who?" · "+n.who:"")));
+    var x=el("button","ckzx","×"); x.type="button"; x.setAttribute("aria-label","닫기"); hd.appendChild(x); c.appendChild(hd);
+    c.appendChild(el("h3","ckzt",n.n)); if(n.w) c.appendChild(el("span","ckw",n.w));
+    var body=el("div","ckzb");
+    if(n.sum){ var sm=el("div","cksum"); sm.appendChild(el("b",null,"근거 요약")); sm.appendChild(el("p",null,n.sum)); body.appendChild(sm); }
+    (n.cite||"").split(/\s+/).filter(Boolean).forEach(function(cid){ var C=CKFCITE[cid]; if(!C) return;   /* 원문은 페이지 안에 들어 있다(서버 안 부름) */
+      var f=ckFold("cksub ckref","근거 원문 · "+C.t,function(bx){ var o=el("div","ckfsrc"); o.innerHTML=C.x.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\*\*/g,""); bx.appendChild(o);   /* 정리 노트의 **굵게** 표시를 굵은 글씨로 */ });
+      body.appendChild(f); f.open=true; });
+    if(!body.children.length) body.appendChild(el("p","note","이 상자에는 근거 조각이 없어요."));
+    c.appendChild(body);
+    document.body.appendChild(bg); document.body.appendChild(c);
+    function from(){ var r=node&&node.isConnected?node.getBoundingClientRect():null, R=c.getBoundingClientRect();
+      return r?"translate("+(r.left-R.left)+"px,"+(r.top-R.top)+"px) scale("+(r.width/R.width)+","+(r.height/R.height)+")":"scale(.85)"; }
+    if(!still){ c.style.transform=from(); c.style.opacity="0.3"; c.getBoundingClientRect(); c.classList.add("anim"); }
+    bg.getBoundingClientRect(); bg.classList.add("on"); c.style.transform=""; c.style.opacity="";
+    var shut=false;
+    function close(){ if(shut) return; shut=true; document.removeEventListener("keydown",key); bg.classList.remove("on");
+      var end=function(){ bg.remove(); c.remove(); if(node) node.classList.remove("ckon"); };
+      if(still){ end(); return; } c.style.transform=from(); c.style.opacity="0"; setTimeout(end,260); }
+    function key(e){ if(e.key==="Escape") close(); }
+    x.onclick=close; bg.onclick=close; document.addEventListener("keydown",key); x.focus(); }
   var tipEl=el("div","ckftip"); tipEl.hidden=true; document.body.appendChild(tipEl);
   function tip(id,g){ var n=by[id]; if(!n||(!n.sum&&!n.w&&!n.who)) return; tipEl.innerHTML="";
     tipEl.appendChild(el("b",null,n.n));
@@ -1638,7 +1659,7 @@ function ckFlow(t){
       zoom(Math.max(fit(),.6));
       pic.querySelectorAll("g.node").forEach(function(g){ var m=/flowchart-(.+)-\d+$/.exec(g.id||""); if(!m) return; g.style.cursor="pointer";
         if(CKHOVER){ g.addEventListener("mouseenter",function(){ tip(m[1],g); }); g.addEventListener("mouseleave",function(){ tipEl.hidden=true; }); }
-        g.addEventListener("click",function(){ tipEl.hidden=true; pic.querySelectorAll("g.node.ckon").forEach(function(x){ x.classList.remove("ckon"); }); g.classList.add("ckon"); show(m[1]); }); });
+        g.addEventListener("click",function(){ tipEl.hidden=true; pic.querySelectorAll("g.node.ckon").forEach(function(x){ x.classList.remove("ckon"); }); g.classList.add("ckon"); show(m[1],g); }); });
     },function(){ drawn=false; pic.textContent="흐름도를 그리지 못했어요. 인터넷 연결을 확인하고 다시 펼쳐 주세요."; });
   };
   return d;

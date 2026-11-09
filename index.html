@@ -1086,7 +1086,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 .ckfsw [hidden]{display:none!important}
 .ckflin{padding:6px 2px}
 .ckfltip{font-size:13px;color:var(--muted);margin:4px 0 8px}
-.ckflzoom{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.ckflzoom .pill{padding:4px 12px}
+#ckdetail{min-width:0}.ckflzoom{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}.ckflzoom .pill{padding:4px 12px}
 .ckflpic{overflow:auto;max-height:80vh;background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;color:var(--muted)}
 .ckflpic svg{max-width:none;background:transparent!important}
 .ckflpic .node rect,.ckflpic .node polygon,.ckflpic .node path{fill:var(--surface)!important;stroke:var(--line-strong)!important;stroke-width:1.5px!important}
@@ -1672,14 +1672,14 @@ function ckFlow(t){
     tipEl.style.left=x+"px"; tipEl.style.top=y+"px"; }
   var drawn=false; d.go=function(){ if(drawn) return; drawn=true;   /* 처음 보일 때 그린다(숨은 채로 그리면 너비를 못 잼) */
     ckMermaid().then(function(M){
-      M.initialize({startOnLoad:false,layout:M.ckElk?"elk":"dagre",elk:{mergeEdges:false,nodePlacementStrategy:"NETWORK_SIMPLEX"},securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:M.ckElk?"linear":"stepAfter"}});
+      M.initialize({startOnLoad:false,layout:M.ckElk?"elk":"dagre",elk:{mergeEdges:false,nodePlacementStrategy:"NETWORK_SIMPLEX",cycleBreakingStrategy:"DEPTH_FIRST"},securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:M.ckElk?"linear":"stepAfter"}});
       return M.render("ckfl"+(++CKFLN),ckFlowSrc(F));
     }).then(function(r){ pic.innerHTML=r.svg;
       var sv=pic.querySelector("svg"), W=parseFloat(sv.getAttribute("width"))||sv.getBBox().width, H=W*sv.viewBox.baseVal.height/sv.viewBox.baseVal.width, z=1;
       function zoom(v){ z=Math.max(.2,Math.min(2,v)); sv.style.width=W*z+"px"; sv.style.height=H*z+"px"; sv.style.maxWidth="none"; }
       var fit=function(){ return (pic.clientWidth-24)/W; };
       [["−",function(){ zoom(z/1.25); }],["+",function(){ zoom(z*1.25); }],["화면 너비에 맞추기",function(){ zoom(fit()); }],["원래 크기",function(){ zoom(1); }]].forEach(function(a){ var b=el("button","pill",a[0]); b.type="button"; b.onclick=a[1]; zb.appendChild(b); });
-      zoom(Math.max(fit(),.6));
+      zoom(Math.min(1,fit()));
       pic.querySelectorAll("g.node").forEach(function(g){ var m=/flowchart-(.+)-\d+$/.exec(g.id||""); if(!m) return; g.style.cursor="pointer";
         if(CKHOVER){ g.addEventListener("mouseenter",function(){ tip(m[1],g); }); g.addEventListener("mouseleave",function(){ tipEl.hidden=true; }); }
         g.addEventListener("click",function(){ tipEl.hidden=true; pic.querySelectorAll("g.node.ckon").forEach(function(x){ x.classList.remove("ckon"); }); g.classList.add("ckon"); show(m[1],g); }); });

@@ -1674,7 +1674,7 @@ function ckFlow(t){
     tipEl.style.left=x+"px"; tipEl.style.top=y+"px"; }
   var drawn=false; d.go=function(){ if(drawn) return; drawn=true;   /* 처음 보일 때 그린다(숨은 채로 그리면 너비를 못 잼) */
     ckMermaid().then(function(M){
-      M.initialize({startOnLoad:false,layout:M.ckElk?"elk":"dagre",elk:{mergeEdges:false,nodePlacementStrategy:"NETWORK_SIMPLEX"},securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:M.ckElk?"linear":"stepAfter"}});
+      M.initialize({startOnLoad:false,layout:M.ckElk?"elk":"dagre",elk:{mergeEdges:false,nodePlacementStrategy:"NETWORK_SIMPLEX",cycleBreakingStrategy:"DEPTH_FIRST"},securityLevel:"strict",theme:"base",themeCSS:".nodeLabel,.nodeLabel p{font-weight:600;line-height:1.32;word-break:keep-all}.nodeLabel small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.02em}.edgeLabel,.edgeLabel p{font-size:11.5px;font-weight:700}",themeVariables:{fontSize:"13px",fontFamily:getComputedStyle(document.body).fontFamily},flowchart:{htmlLabels:true,useMaxWidth:false,wrappingWidth:150,nodeSpacing:24,rankSpacing:34,padding:10,curve:M.ckElk?"linear":"stepAfter"}});
       return M.render("ckfl"+(++CKFLN),ckFlowSrc(F));
     }).then(function(r){ pic.innerHTML=r.svg;
       var sv=pic.querySelector("svg"), W=parseFloat(sv.getAttribute("width"))||sv.getBBox().width, H=W*sv.viewBox.baseVal.height/sv.viewBox.baseVal.width, z=1;

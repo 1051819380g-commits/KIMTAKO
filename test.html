@@ -1175,6 +1175,14 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
 <dialog id="cknews" aria-labelledby="cknewst">
   <div class="hb">
     <h2 id="cknewst">업데이트 내역</h2>
+    <p class="lead">2026. 11. 12.</p>
+    <ol>
+      <li><b>기안문 모음 추가</b>
+        <ul><li>위쪽 <b>기안문</b> 단추로 경남 업무 자료의 기안문 예시 600여 건을 모아 볼 수 있어요.</li>
+        <li>하려는 일로 찾고, 구분·분야로 좁혀요. 펼치면 바로 고쳐 쓰고 제목·본문을 복사할 수 있어요.</li></ul></li>
+      <li><b>뒤로가기 개선</b>
+        <ul><li>달력·업무·질문 화면을 오가다 뒤로가기를 눌러도 페이지를 떠나지 않고 앞 화면으로 돌아가요.</li></ul></li>
+    </ol>
     <p class="lead">2026. 11. 9.</p>
     <ol>
       <li><b>상세 흐름도 추가</b>
@@ -1200,6 +1208,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
       <li>회의일·개교일 같은 <b>★ 중심 일정</b>을 넣으면 공고 7일 전 같은 앞뒤 기한이 자동으로 잡혀요.</li>
       <li><b>월간 달력</b>에서 일정을 끌어 날짜를 옮기고, 달력 밖으로 끌면 빼요. '+ 일정 추가'로 내 일정도 넣을 수 있어요.</li>
       <li>단계 안의 <b>기안문 예시</b>는 고쳐 쓰고 복사해 업무관리시스템에 붙여 넣어요. 계약 단계에는 <b>계약방법 찾기</b>가 있어요.</li>
+      <li>위쪽 <b>기안문</b> 단추를 누르면 기안문 예시 600여 건을 모아 볼 수 있어요. '노트북 구입', '품의'처럼 하려는 일을 적거나 구분·분야를 골라 찾고, 펼쳐서 고쳐 쓴 뒤 제목·본문을 복사해요.</li>
       <li>끝난 업무는 <b>엑셀로 받기</b>로 기록을 남겨요.</li>
       <li>궁금한 건 <b>질문하기</b>에 물어보면 경남교육청 업무 자료를 찾아 AI가 답해요.</li>
     </ol>
@@ -1215,7 +1224,7 @@ hr.sep{border:0;border-top:1px solid var(--line);margin:26px 0 18px}
   document.getElementById("ckhelpbtn").onclick=function(){ d.showModal(); };
   document.getElementById("ckhelpnews").onclick=function(){ var n=document.getElementById("cknews"); d.close(); if(n&&n.showModal) n.showModal(); };   document.getElementById("ckhelptour").onclick=function(){ d.close(); if(window.ckTour) ckTour(); };
   var off=false, tour=false; try{ off=localStorage.getItem(k)==="off"; tour=localStorage.getItem("kbg.tour")==="done"; }catch(e){}
-  var nd=document.getElementById("cknews"), seen=true; try{ seen=localStorage.getItem("kbg.news")==="2026-11-09"; localStorage.setItem("kbg.news","2026-11-09"); }catch(e){} if(nd) document.getElementById("cknewsok").onclick=function(){ nd.close(); }; if(!tour) window.CKTOURFIRST=1; else if(!seen&&nd.showModal) nd.showModal(); else if(!off) d.showModal(); })();   /* 처음이면 사용법 대신 튜토리얼 */</script>
+  var nd=document.getElementById("cknews"), seen=true; try{ seen=localStorage.getItem("kbg.news")==="2026-11-12"; localStorage.setItem("kbg.news","2026-11-12"); }catch(e){} if(nd) document.getElementById("cknewsok").onclick=function(){ nd.close(); }; if(!tour) window.CKTOURFIRST=1; else if(!seen&&nd.showModal) nd.showModal(); else if(!off) d.showModal(); })();   /* 처음이면 사용법 대신 튜토리얼 */</script>
 <button type="button" id="cktop" class="cktopbtn" aria-label="맨 위로" title="맨 위로" hidden>↑</button>
 <script>/* 위로 가기: 조금 내려가면 오른쪽 아래에 나타난다 */
 (function(){ var b=document.getElementById("cktop"); b.onclick=function(){ window.scrollTo({top:0,behavior:"smooth"}); };
@@ -3200,6 +3209,7 @@ function ckTour(S0,sk){
     ['[data-cat="__mon"]',"월간 달력","진행 중인 업무의 예정일과 연간 일정을 한 달 달력으로 봐요. 일정을 끌어서 날짜를 옮길 수 있어요."],
     ['[data-grp="행정"]',"행정업무","회계·계약·급여·인사 같은 행정실 업무를 분야별로 골라요. 고르면 흐름도와 단계 설명·원문이 나와요."],
     ['[data-grp="교무"]',"교무업무","교무·연구·정보 같은 교무 업무예요. 고른 학교급의 업무만 보여요."],
+    ['[data-cat="__gian"]',"기안문 모음","기안문 예시를 모아 봐요. 하려는 일(예: 노트북 구입, 품의)로 찾아 고쳐 쓰고 복사해요."],
     ['[data-cat="__ask"]',"질문하기","궁금한 걸 물어보면 경남교육청 업무 자료와 법령을 찾아 AI가 답해요."],
     [".cktop .cksearch","검색","업무 이름이나 단계 낱말(예: 추경, 정정)로 바로 찾아요."],
     ["#ckfavopen","자주 찾는 업무","업무 화면의 별 단추로 모아 둔 업무를 여기서 바로 열어요."],

@@ -1969,7 +1969,24 @@ function ckCal(){
   });
   d.appendChild(grid);
 }
-function ckRender(){ if(!CKL.length) return; document.body.classList.toggle("ckasking",CK.mode==="ask"); var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"||CK.mode==="ask"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else if(CK.mode==="ask") ckAsk(); else ckMain(); ckCats(); }
+
+function ckView(){ return {m:CK.mode, c:CK.mode==="flow"?(CK.cur||""):"", p:CK.mode==="flow"?(CK.pv||""):""}; }
+function ckHist(){
+  if(!window.history||!history.pushState) return;
+  var v=ckView(), o=history.state&&history.state.ck;
+  if(!o){ history.replaceState({ck:v},""); return; }
+  if(o.m===v.m&&o.c===v.c&&o.p===v.p) return;
+  var oc=o.c&&ckCase(o.c), nc=v.c&&ckCase(v.c);
+  /* 같은 업무를 미리 보다가 '시작'한 것은 한 화면으로 친다 */
+  if(o.m==="flow"&&v.m==="flow"&&!o.c&&nc&&nc.t===o.p){ history.replaceState({ck:v},""); return; }
+  history.pushState({ck:v},"");
+}
+window.addEventListener("popstate",function(e){
+  var v=e.state&&e.state.ck; if(!v) return;
+  CK.mode=v.m; if(v.m==="flow"){ CK.cur=v.c&&ckCase(v.c)?v.c:""; CK.pv=v.p||CK.pv; }
+  ckSave(); ckRender(); window.scrollTo(0,0);
+});
+function ckRender(){ if(!CKL.length) return; ckHist(); document.body.classList.toggle("ckasking",CK.mode==="ask"); var sp=document.querySelector("#v-chk .split"); if(sp) sp.classList.toggle("ckcalmode",CK.mode==="cal"||CK.mode==="mon"||CK.mode==="ask"); ckSide(); if(CK.mode==="cal") ckCal(); else if(CK.mode==="mon") ckMon(); else if(CK.mode==="ask") ckAsk(); else ckMain(); ckCats(); }
 /* 업무 메뉴 3단: [연간 달력][행정][교무] → (마우스를 올리면) 분야 리본 → (분야에 올리면) 업무 목록. 모바일은 누르면 열고 다시 누르면 닫기.
    교무 분야는 경남교육청 학교업무 도움자료(중고등학교) 분류를 따른다 */
 var CKGROUPS=[["행정",["회계","계약","급여","인사","학운위","행정","시설·물품","급식","기록물","신설학교"]],["교무",["담임업무","교무","교육과정·평가","연구","정보","과학·수학","인성","체육·안전","교감업무","돌봄·방과후","안전·보건","특수교육과정","개별화교육","특수 학적","관련서비스","지원센터","대회·행사","교무행정"]]];

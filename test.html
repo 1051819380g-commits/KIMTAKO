@@ -2941,7 +2941,7 @@ function doAsk(ta,go,stopB,notice){
     res.text=fixCalc(res.text).replace(/\s*\[?\b[cd]\d{3,6}\]?(?=[\s,.)·\]]|$)/g,"").replace(/📌\s*/g,"");   /* 노트 표시·자료 번호는 화면에 안 보이게 */   /* 답이 쓴 계산식 검산 */
     mdRender(body,res.text);
     if(res.model!==HAIKU){ var fm=el("div","note","기본 모델이 혼잡하거나 오늘 사용량을 다 써서 "+res.model+" 모델로 바꿔 답했습니다."); fm.style.marginTop="6px"; box.appendChild(fm); }
-    if(MCPLIM){ var lm=el("div","note","오늘 이 인터넷 주소(같은 학교 등)에서 쓸 수 있는 경남 자료 조회(하루 500번)를 다 써서 일부 자료 없이 답했습니다. 한국 시간 자정에 다시 열립니다."); lm.style.marginTop="6px"; box.appendChild(lm); }
+    if(MCPLIM){ var lm=el("div","note","오늘 이 인터넷 주소(같은 학교 등)에서 쓸 수 있는 경남 자료 조회(하루 300번)를 다 써서 일부 자료 없이 답했습니다. 한국 시간 자정에 다시 열립니다."); lm.style.marginTop="6px"; box.appendChild(lm); }
     turns.push({role:"user",content:q}); turns.push({role:"assistant",content:res.text});
     var sr=sortRefs(refs,res.text), det=el("details","src");
     var A0=String(res.text||"").replace(/\s/g,""), REL=(mc&&mc.laws||[]).filter(function(f){ return !sr.dir.some(function(d){ return d.doc.replace(/[\s·ㆍ]/g,"")===f.doc.replace(/[\s·ㆍ]/g,"")&&d.t.indexOf(f.parts[0])>=0; }); })
@@ -2966,7 +2966,7 @@ function doAsk(ta,go,stopB,notice){
   }).catch(function(e){
     if(e&&(e.name==="AbortError"||(ctl&&ctl.signal.aborted))){ box.remove(); return; }
     body.textContent="";
-    var msg=e&&e.code==="limit"?"오늘 이 인터넷 주소(같은 학교 등)에서 쓸 수 있는 경남 자료 조회(하루 500번)를 다 써서 자료를 찾지 못했습니다. 한국 시간 자정에 다시 열립니다.":errCopy(e&&e.code);
+    var msg=e&&e.code==="limit"?"오늘 이 인터넷 주소(같은 학교 등)에서 쓸 수 있는 경남 자료 조회(하루 300번)를 다 써서 자료를 찾지 못했습니다. 한국 시간 자정에 다시 열립니다.":errCopy(e&&e.code);
     body.appendChild(el("div","warnbox",msg));
     if(e&&e.message){ var dt=el("div","note","서버 응답: "+String(e.message).slice(0,300)); dt.style.marginTop="6px"; body.appendChild(dt); }
     toEnd();
@@ -3188,7 +3188,7 @@ function refPop(title,pr,link,draw){
   function esc(e){ if(e.key==="Escape") close(); }
   x.onclick=close; ov.onclick=function(e){ if(e.target===ov) close(); }; document.addEventListener("keydown",esc);
   Promise.resolve(pr).then(function(t){ t=String(t||"").trim(); if(draw&&t){ bd.style.whiteSpace="normal"; bd.textContent=""; try{ draw(bd,t); return; }catch(e){ bd.style.whiteSpace=""; } } bd.textContent=t.replace(/\*\*/g,"")||"내용이 없습니다."; },
-    function(e){ bd.textContent=/limit/.test(e&&e.message)?"오늘 자료 조회 횟수(하루 500번)를 다 써서 열 수 없습니다. 한국 시간 자정에 다시 열립니다.":"자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 보세요(자료는 답변을 받은 뒤 1시간 안에만 열립니다)."; });
+    function(e){ bd.textContent=/limit/.test(e&&e.message)?"오늘 자료 조회 횟수(하루 300번)를 다 써서 열 수 없습니다. 한국 시간 자정에 다시 열립니다.":"자료를 불러오지 못했습니다. 잠시 뒤 다시 눌러 보세요(자료는 답변을 받은 뒤 1시간 안에만 열립니다)."; });
 }
 </script>
 <style>

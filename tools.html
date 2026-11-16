@@ -1756,13 +1756,15 @@ function build(root){
       .then(function(){ return np; }).then(function(r){ if(r.e) notes.push(r.e.message); else if(r.d){ var s=r.d.b_stt_cd; if(s==="01"){ notes.push("국세청: 계속사업자"); c.ok.nts=true; } else { notes.unshift("⚠ 국세청 기준 "+(s==="02"?"휴업자":s==="03"?"폐업자":"미등록 번호")+"예요. 계약하면 안 돼요."); c.ok.nts=false; } }
         put(); view.open="vendor"; draw(); var mm=app.querySelector(".cv-st.cur .tkmsg, .cv-sb .tkmsg"); if(mm) msg(mm,notes.join("\n"),/⚠/.test(notes.join(""))?"bad":"ok"); }); };
 
-    b.appendChild(el("div","cv-sub","계약 전에 확인해요"));
-    var items=[["san","부정당업자 제재 중이 아니에요","나라장터에서 확인 (조회하면 자동으로 체크돼요)"],["nts","휴업·폐업 사업자가 아니에요","홈택스 사업자 상태 조회"],["lic","면허·등록 등 자격요건을 갖췄어요",t==="공사"?"공사업 등록증·업종":"업종 등록, 필요한 허가"],["lim","수의계약 체결제한 대상이 아니에요","업체에 받는 '수의계약 체결제한 여부 확인서'로 확인"]];
-    var has=function(k){ return c.st.indexOf(k)>=0; };
-    if(has("k")||(two&&t!=="공사")) items.push(["sme","소기업·소상공인 확인서를 받았어요","계약체결일까지 유효한 중소기업 확인서"]);
-    if(has("w")||has("d")||has("s")||has("y")) items.push(["sp","여성·장애인·사회적기업·청년창업 확인서를 받았어요","특례 금액을 쓸 때"]);
-    ticks(b,items,c.ok);
-    nextBar(b,c,"vendor",state,"업체 정했어요",function(){ if(!c.biz.bizname) return "업체명을 넣어 주세요."; var miss=items.filter(function(x){ return !c.ok[x[0]]; }); return miss.length?"아직 확인 안 한 것: "+miss.map(function(x){return x[1]}).join(", "):""; });
+    /* 체크박스 대신: 조회로 알 수 있는 것은 결과로, 나머지는 받는 서류로 확인된다는 안내만 */
+    var stx=el("div","cv-meta"); b.appendChild(stx);
+    var tag=function(k,label){ var v=c.ok[k], s=el("span",null,label+(v===true?" ✓ 이상 없음":v===false?" ✕ 계약 불가":" · 조회하면 나와요")); if(v===true){ s.style.background="var(--pos-bg)"; s.style.color="var(--pos)"; } if(v===false){ s.style.background="var(--neg-bg)"; s.style.color="var(--neg)"; } stx.appendChild(s); };
+    tag("san","부정당제재"); tag("nts","휴·폐업");
+    var has=function(k){ return c.st.indexOf(k)>=0; }, more=[];
+    if(has("k")||(two&&t!=="공사")) more.push("소기업·소상공인 확인서");
+    if(has("w")||has("d")||has("s")||has("y")) more.push("여성·장애인·사회적기업·청년창업 확인서");
+    b.appendChild(el("p","cv-law","키 없이 쓰면 부정당제재는 나라장터, 휴·폐업은 홈택스에서 확인해요. 면허·등록과 수의계약 체결제한 여부는 다음 단계 서류(체결제한 여부 확인서)로 받아요."+(more.length?" 이 계약은 "+more.join("·")+"도 받아 둬요.":"")));
+    nextBar(b,c,"vendor",state,"업체 정했어요",function(){ if(!c.biz.bizname) return "업체명을 넣어 주세요."; if(c.ok.san===false||c.ok.nts===false) return "조회 결과 계약할 수 없는 업체예요. 다른 업체를 정해 주세요."; return ""; });
   };
   /* 3. 계약 맺기 */
   STAGE.sign=function(c,b,state){

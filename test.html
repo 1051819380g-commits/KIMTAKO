@@ -2495,7 +2495,7 @@ var PII=[
 ];
 function piiCheck(q){ for(var k=0;k<PII.length;k++){ if(PII[k][1].test(q)) return PII[k][0]; } return ""; }
 var FOLLOW=/^\s*(그럼|그러면|그렇다면|그건|그거|그것|그게|그 경우|그런 경우|그런데|근데|그래도|그때|그렇게|그러니까|아니면|이 경우|이럴 때|이때|그리고|또는)/;
-var STANDALONE="아래 [이번 질문]은 [앞 질문]에 이어지는 질문이다. 앞 질문의 주제어(대상·기관·사람·업무 이름)를 넣어, 혼자 읽어도 뜻이 통하는 한 문장의 질문으로 다시 써라.\n"+
+var STANDALONE="아래 [이번 질문]이 [앞 질문]에 이어지는 질문이면, 앞 질문의 주제어(대상·기관·사람·업무 이름)를 넣어 혼자 읽어도 뜻이 통하는 한 문장의 질문으로 다시 써라. [이번 질문]이 앞 질문과 다른 주제를 혼자서 묻는 질문이면(예: 계약을 묻다가 '출장 일비 얼마?') 앞 질문 낱말을 넣지 말고 이번 질문을 그대로 써라.\n"+
   "- 이번 질문의 뜻은 그대로. 앞 질문에도 이번 질문에도 없는 낱말은 덧붙이지 마라. '그럼·그건' 같은 이음말은 뺀다.\n- 질문 한 문장만 써라. 설명·따옴표 없이.\n\n[앞 질문]\n";
 function isFollow(q,prev){ return !!prev&&(q.length<15||FOLLOW.test(q)); }
 function standaloneQ(q,prev,signal){
@@ -2572,12 +2572,12 @@ var SRVRULE="";
   }).catch(function(){});
 })();
 function fixCalc(t){
-  var N="\\d[\\d,]*(?:\\.\\d+)?\\s*(?:원|일|회|시간|명|개월|월|박|%)?", L="(?:[가-힣·()]+\\s*)?", re=new RegExp("("+N+"(?:\\s*[×xX*+\\-]\\s*"+L+N+")+)\\s*=\\s*(\\d[\\d,]*)(\\s*원)","g");
+  var N="\\d[\\d,]*(?:\\.\\d+)?\\s*(?:원|일|회|시간|명|개월|월|박|%)?", L="(?:[가-힣·()]+\\s*)?", re=new RegExp("("+N+"(?:\\s*[×xX*÷/+\\-]\\s*"+L+N+")+)\\s*=\\s*(\\d[\\d,]*)(\\s*원)","g");
   t=String(t||"");
   return t.replace(re,function(all,ex,val,won,at){
-    if(/[×xX*+\-]\s*(?:[가-힣·()]+\s*)?$/.test(t.slice(Math.max(0,at-20),at))) return all;   /* 식 일부만 잡혔으면 건드리지 않음 */
+    if(/[×xX*÷/+\-]\s*(?:[가-힣·()]+\s*)?$/.test(t.slice(Math.max(0,at-20),at))) return all;   /* 식 일부만 잡혔으면 건드리지 않음 */
     var js=ex.replace(/(\d[\d,]*(?:\.\d+)?)\s*%/g,function(_,n){ return "("+n.replace(/,/g,"")+"/100)"; })
-      .replace(/(\d),(?=\d{3})/g,"$1").replace(/[가-힣·\s]/g,"").replace(/[×xX]/g,"*");
+      .replace(/(\d),(?=\d{3})/g,"$1").replace(/[가-힣·\s]/g,"").replace(/[×xX]/g,"*").replace(/÷/g,"/");
     if(!/^[\d.()*+\-\/]+$/.test(js)) return all;
     var v; try{ v=Function("return ("+js+")")(); }catch(e){ return all; }
     if(!isFinite(v)) return all; v=Math.round(v);

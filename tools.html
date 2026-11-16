@@ -1366,10 +1366,17 @@ function fillBook(b64,rep,cells,keep,fname){
       wb=wb.replace(/activeTab="\d+"/,"activeTab=\""+first+"\"").replace(/firstSheet="\d+"/,"firstSheet=\""+first+"\"");
       put("xl/workbook.xml",wb);
       var f1=list[first].file; put(f1,txt(f1).replace(/<sheetView /,"<sheetView tabSelected=\"1\" ")); }
-    var blob=zipStore(files.map(function(f){ return F[f.name]; }));
-    var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fname.replace(/[\\/:*?"<>|]/g,"_"); document.body.appendChild(a); a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },2000);
+    return saveFile(zipStore(files.map(function(f){ return F[f.name]; })), fname.replace(/[\\/:*?"<>|]/g,"_"));
   });
+}
+
+/* 파일 내려받기: claude.ai 미리보기 안에서는 downloads 기능(확인 창), 누리집에서는 보통 내려받기 */
+function saveFile(blob,name){
+  if(window.claude&&window.claude.use) return window.claude.use("downloads").then(function(dl){
+    if(!dl) throw new Error("이 화면에서는 파일을 내려받을 수 없어요.");
+    return dl.save({filename:name,data:blob}).catch(function(e){ throw new Error(e&&e.code==="declined"?"내려받기를 취소했어요.":(e&&e.message)||"내려받지 못했어요."); }); });
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },2000); return Promise.resolve();
 }
 
 /* ---------- 업체 조회(조달청 나라장터 사용자정보 · 국세청 사업자 상태) — 공공데이터 인증키는 설정에 ---------- */
@@ -1638,7 +1645,7 @@ function build(root){
   key.autocomplete="off"; key.onchange=function(){ LS.set("key",key.value.trim()); };
   var br=el("div","tkrow"), bk=el("button","btn ghost","업체·계약 기록 내보내기"); bk.type="button"; var rl2=el("label","btn ghost","기록 불러오기"); var rf=el("input"); rf.type="file"; rf.accept=".json"; rf.hidden=true; rl2.appendChild(rf);
   br.appendChild(bk); br.appendChild(rl2); b7.appendChild(br); var bm=el("div","tkmsg"); b7.appendChild(bm);
-  bk.onclick=function(){ var blob=new Blob([JSON.stringify({biz:LS.get("biz",{}),hist:LS.get("hist",[]),school:LS.get("school","")},null,1)],{type:"application/json"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="수의계약_기록_"+iso(new Date())+".json"; document.body.appendChild(a); a.click(); a.remove(); };
+  bk.onclick=function(){ var blob=new Blob([JSON.stringify({biz:LS.get("biz",{}),hist:LS.get("hist",[]),school:LS.get("school","")},null,1)],{type:"application/json"}); saveFile(blob,"수의계약_기록_"+iso(new Date())+".json").then(function(){ msg(bm,"내보냈어요.","ok"); },function(e){ msg(bm,e.message,"warn"); }); };
   rf.onchange=function(){ var f=rf.files[0]; if(!f) return; f.text().then(function(t){ var j=JSON.parse(t); if(j.biz) LS.set("biz",Object.assign(LS.get("biz",{}),j.biz));
     if(j.hist){ var h=LS.get("hist",[]), ids={}; h.forEach(function(x){ ids[x.id]=1; }); LS.set("hist",h.concat(j.hist.filter(function(x){ return !ids[x.id]; }))); }
     if(j.school&&!LS.get("school","")) LS.set("school",j.school); drawPast(); drawHaja(); msg(bm,"불러왔어요.","ok"); }).catch(function(){ msg(bm,"JSON 파일을 읽지 못했어요.","bad"); }); };

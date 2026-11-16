@@ -1754,7 +1754,7 @@ function build(root){
           if(act.length){ notes.unshift("⚠ 지금 부정당제재 중인 업체예요 ("+act[0].rsttBgnDate+" ~ "+act[0].rsttEndDate+"). 계약할 수 없어요."); c.ok.san=false; } else { notes.push("부정당제재: 없음"); c.ok.san=true; } },function(){ notes.push("부정당제재 조회 실패 — 나라장터에서 확인해요."); }); })
       .catch(function(e){ notes.push(e.message); })
       .then(function(){ return np; }).then(function(r){ if(r.e) notes.push(r.e.message); else if(r.d){ var s=r.d.b_stt_cd; if(s==="01"){ notes.push("국세청: 계속사업자"); c.ok.nts=true; } else { notes.unshift("⚠ 국세청 기준 "+(s==="02"?"휴업자":s==="03"?"폐업자":"미등록 번호")+"예요. 계약하면 안 돼요."); c.ok.nts=false; } }
-        put(); view.open="vendor"; draw(); var mm=app.querySelector(".cv-st.cur .tkmsg, .cv-sb .tkmsg"); if(mm) msg(mm,notes.join("\n"),/⚠/.test(notes.join(""))?"bad":"ok"); }); };
+        put(); view.open="vendor"; draw(); var mm=app.querySelector(".cv-st.cur .tkmsg, .cv-sb .tkmsg"); if(mm) msg(mm,notes.join("\n"),/⚠/.test(notes.join(""))?"bad":/문제|실패|못|없어요|맞지 않/.test(notes.join(""))?"warn":"ok"); }); };
 
     /* 체크박스 대신: 조회로 알 수 있는 것은 결과로, 나머지는 받는 서류로 확인된다는 안내만 */
     var stx=el("div","cv-meta"); b.appendChild(stx);

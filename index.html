@@ -1553,14 +1553,39 @@ function ckGenAdd(box,bar,body,ti){   /* 기안문 모음 편집 상자: 빈칸 
   var rb=[].slice.call(bar.querySelectorAll("button")).filter(function(b){ return b.textContent==="원래대로"; })[0];
   if(rb) rb.addEventListener("click",function(){ setTimeout(T.upd,0); });
 }
+/* '붙임' 첨부 표시: 줄 중간이면 새 줄로, '붙임'만 있는 줄은 다음 '1.' 줄과 합치고, 뒤는 두 칸(복사해도 두 칸) */
+function ckAtt(root){
+  var NOT=/^\s*(과|와|을|를|의|에|으로|로|[”"']|[\d\s\]\)]*(참조|참고|관련))/, RE=/붙\s*임/g;
+  var leaf=function(e){ return !!e&&e.nodeType===1&&!e.querySelector("div,p,li,tr,table")&&!e.closest("table"); };
+  function txtAfter(L,t,i){ var s=t.nodeValue.slice(i), n=t; while(n&&n!==L){ var x=n.nextSibling; while(x){ s+=x.textContent; x=x.nextSibling; } n=n.parentNode; } return s; }
+  function split(L,t,i){ var nl=document.createElement(L.tagName.toLowerCase()); nl.className=L.className; nl.style.cssText=L.style.cssText; nl.style.paddingLeft="";
+    var rest=document.createTextNode(t.nodeValue.slice(i)); t.nodeValue=t.nodeValue.slice(0,i).replace(/[ \t ]+$/,""); nl.appendChild(rest);
+    var n=t; while(n&&n!==L){ while(n.nextSibling) nl.appendChild(n.nextSibling); n=n.parentNode; }
+    L.parentNode.insertBefore(nl,L.nextSibling); return nl; }
+  var Q=[].slice.call(root.querySelectorAll("div,p,li")).filter(leaf);
+  for(var q=0;q<Q.length;q++){ var L=Q[q], w=document.createTreeWalker(L,NodeFilter.SHOW_TEXT,null), t, seen="";
+    while((t=w.nextNode())){ if(t.parentNode.closest("span.ckatt")){ seen+=t.nodeValue; continue; } RE.lastIndex=0; var m;
+      while((m=RE.exec(t.nodeValue))){ var before=seen+t.nodeValue.slice(0,m.index), after=txtAfter(L,t,m.index+m[0].length);
+        if(before.trim()&&!NOT.test(after)){ Q.push(split(L,t,m.index)); break; } }
+      seen+=t.nodeValue; } }
+  [].slice.call(root.querySelectorAll("div,p,li")).forEach(function(L){ if(!leaf(L)||L.querySelector("span.ckatt")) return;
+    var tx=L.textContent;
+    if(/^\s*붙\s*임\s*$/.test(tx)&&!(L.nextElementSibling&&L.nextElementSibling.textContent.trim())){ L.remove(); return; }   /* 맨 끝에 '붙임'만 남은 줄(옮겨 적을 때 생긴 찌꺼기) */ if(!/^\s*붙\s*임/.test(tx)||NOT.test(tx.replace(/^\s*붙\s*임/,""))) return;
+    var nx=L.nextElementSibling; if(!tx.replace(/^\s*붙\s*임/,"").trim()&&leaf(nx)&&/^\s*1\s*[.)]/.test(nx.textContent)){ while(nx.firstChild) L.appendChild(nx.firstChild); nx.remove(); }   /* '붙임' 혼자인 줄 + 다음 '1.' 줄 */
+    var w=document.createTreeWalker(L,NodeFilter.SHOW_TEXT,null), t; while((t=w.nextNode())&&!/붙\s*임/.test(t.nodeValue)){}
+    if(!t) return; var m=/^[\s\S]*?붙\s*임[ \t ]*/.exec(t.nodeValue); t.nodeValue=t.nodeValue.slice(m[0].length);
+    var s=document.createElement("span"); s.className="ckatt"; s.style.whiteSpace="pre-wrap"; s.textContent="붙임  "; t.parentNode.insertBefore(s,t); });
+}
 /* '끝.' 앞 두 칸: 혼자 있는 '끝.' 줄은 앞줄 끝으로, 같은 줄이면 앞 띄어쓰기를 두 칸으로(복사해도 두 칸) */
 function ckEnd2(root){
+  ckAtt(root);
   var leaf=function(e){ return !!e&&e.nodeType===1&&!e.querySelector("div,p,li,tr,table")&&!e.closest("table"); };
   [].slice.call(root.querySelectorAll("div,p,li")).forEach(function(e){ if(!leaf(e)||e.textContent.replace(/\s/g,"")!=="끝.") return;
     var p=e.previousElementSibling; if(p&&leaf(p)&&p.textContent.trim()){ p.appendChild(document.createTextNode(" 끝.")); e.remove(); } });
   var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), ns=[], n;
-  while((n=w.nextNode())) if(!n.parentNode.closest("span.ckend")&&/끝\s*\.\s*$/.test(n.nodeValue)) ns.push(n);
-  ns.forEach(function(t){ var m=/[ \t ]*끝\s*\.\s*$/.exec(t.nodeValue), before=t.nodeValue.slice(0,m.index);
+  var last=null; while((n=w.nextNode())){ if(n.nodeValue.trim()) last=n; if(!n.parentNode.closest("span.ckend")&&/끝\s*\.\s*$/.test(n.nodeValue)) ns.push(n); }
+  if(last&&ns.indexOf(last)<0&&!last.parentNode.closest("span.ckend")&&/\s끝\s*$/.test(last.nodeValue)) ns.push(last);   /* 본문 맨 끝 '끝'(마침표 없음) */
+  ns.forEach(function(t){ var m=/[ \t ]*끝\s*\.?\s*$/.exec(t.nodeValue), before=t.nodeValue.slice(0,m.index);
     if(!before.trim()&&!t.previousSibling) return;   /* 줄 맨 앞의 '끝.'은 그대로 */
     t.nodeValue=before.replace(/[ \t ]+$/,""); var s=document.createElement("span"); s.className="ckend"; s.style.whiteSpace="pre-wrap"; s.textContent="  끝.";
     t.parentNode.insertBefore(s,t.nextSibling); });

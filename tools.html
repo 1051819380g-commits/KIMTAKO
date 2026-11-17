@@ -1491,6 +1491,7 @@ var CSS=[
 ".cv-school{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1 1 320px}",
 ".cv-school input{font:inherit;font-size:15px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);flex:1 1 220px;max-width:340px;min-width:0}",
 ".cv-school .cv-chips{margin:0}",
+".cv-school input.cv-tel{flex:0 1 170px;max-width:190px}",
 ".cv-idx{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));margin:14px 0 0;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:12px 12px 0 0;padding:10px 6px 0}",
 ".cv-ix{font:inherit;background:none;border:0;border-bottom:3px solid transparent;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:2px 2px 9px;position:relative;color:var(--muted);min-width:0}",
 ".cv-ix:disabled{cursor:default;opacity:.55}",
@@ -1657,7 +1658,7 @@ function noticeDoc(c){
     H("7. 기타"),
     L("가. 이 공고에 없는 사항은 지방계약법령, 「지방자치단체 입찰 및 계약 집행기준」, 「지방자치단체 입찰시 낙찰자 결정기준」을 따릅니다."),
     L("나. 나라장터 게시 내용과 이 공고문이 다르면 이 공고문이 우선합니다."),
-    L("다. 문의: "+sc+" 행정실 (055-○○○-○○○○)")
+    L("다. 문의: "+sc+" 행정실 ("+(LS.get("tel","")||"055-○○○-○○○○")+")")
   ]);
 }
 
@@ -1698,7 +1699,7 @@ function quoteDoc(c){
     L("다. 결정된 자는 수의계약 각서, 청렴계약 이행서약서 등 계약 서류를 내야 합니다."), BL,
     H("6. 기타"),
     L("가. 이 공고에 없는 사항은 지방계약법령과 「지방자치단체 입찰 및 계약 집행기준」을 따릅니다."),
-    L("나. 문의: "+sc+" 행정실 (055-○○○-○○○○)")
+    L("나. 문의: "+sc+" 행정실 ("+(LS.get("tel","")||"055-○○○-○○○○")+")")
   ]);
 }
 function build(root){
@@ -1715,6 +1716,7 @@ function build(root){
   function drawList(){
     var hero=el("div","cv-hero"), sch=el("div","cv-school");
     var si=el("input"); si.value=LS.get("school",""); si.placeholder="학교명 (예: ○○초등학교)"; si.setAttribute("aria-label","학교명"); si.oninput=function(){ LS.set("school",si.value.trim()); }; sch.appendChild(si);
+    var ti=el("input"); ti.value=LS.get("tel",""); ti.placeholder="행정실 전화 (055-…)"; ti.inputMode="tel"; ti.setAttribute("aria-label","행정실 전화번호"); ti.className="cv-tel"; ti.oninput=function(){ LS.set("tel",ti.value.trim()); }; sch.appendChild(ti);
     var pv=el("div","cv-chips"); [[false,"공립"],[true,"사립"]].forEach(function(o){ var p=btn(o[1],"pill",function(){ LS.set("priv",o[0]); pv.querySelectorAll(".pill").forEach(function(x){ x.setAttribute("aria-pressed",x===p?"true":"false"); }); }); p.setAttribute("aria-pressed",!!LS.get("priv",false)===o[0]?"true":"false"); pv.appendChild(p); }); sch.appendChild(pv);
     hero.appendChild(sch); var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 계약","btn",function(){ go({v:"new"}); }));
     var sb=btn("장부 옮기기","btn ghost"); bs.appendChild(sb); hero.appendChild(bs); app.appendChild(hero);
@@ -1754,10 +1756,10 @@ function build(root){
     box.textContent=""; var s=el("div","cv-set"); box.appendChild(s);
     s.appendChild(el("div","cv-sub","장부를 다른 PC로 옮기기"));
     var r=el("div","cv-btns"); s.appendChild(r); var m=el("div","tkmsg"); s.appendChild(m);
-    r.appendChild(btn("장부 내보내기","btn ghost",function(){ saveFile(new Blob([JSON.stringify({cases:C,biz:LS.get("biz",{}),school:LS.get("school","")},null,1)],{type:"application/json"}),"계약장부_"+today()+".json").then(function(){ msg(m,"내보냈어요.","ok"); },function(e){ msg(m,e.message,"warn"); }); }));
+    r.appendChild(btn("장부 내보내기","btn ghost",function(){ saveFile(new Blob([JSON.stringify({cases:C,biz:LS.get("biz",{}),school:LS.get("school",""),tel:LS.get("tel","")},null,1)],{type:"application/json"}),"계약장부_"+today()+".json").then(function(){ msg(m,"내보냈어요.","ok"); },function(e){ msg(m,e.message,"warn"); }); }));
     var lb=el("label","btn ghost","장부 불러오기"), fi=el("input"); fi.type="file"; fi.accept=".json"; fi.hidden=true; lb.appendChild(fi); r.appendChild(lb);
     fi.onchange=function(){ var f=fi.files[0]; if(!f) return; f.text().then(function(t){ var j=JSON.parse(t), ids={}; C.forEach(function(c){ ids[c.id]=1; });
-      (j.cases||[]).forEach(function(c){ if(!ids[c.id]) C.push(c); }); if(j.biz) LS.set("biz",Object.assign(LS.get("biz",{}),j.biz)); put(); draw(); }).catch(function(){ msg(m,"장부 파일을 읽지 못했어요.","bad"); }); };
+      (j.cases||[]).forEach(function(c){ if(!ids[c.id]) C.push(c); }); if(j.biz) LS.set("biz",Object.assign(LS.get("biz",{}),j.biz)); if(j.tel&&!LS.get("tel","")) LS.set("tel",j.tel); put(); draw(); }).catch(function(){ msg(m,"장부 파일을 읽지 못했어요.","bad"); }); };
   }
   /* 공고문에 들어갈 업종·제한·시각 — 입찰 공고, 2인 견적 업체 단계에서 같이 씀 */
   function noticeFields(c,b,bid){ var g=el("div","tkgridf"); b.appendChild(g);

@@ -1928,8 +1928,9 @@ function build(root){
       :"업체 한 곳에서 견적서를 받아요. 신용도·기술능력·경험을 보고 예정가격 이하로 금액을 협의해 정해요.");
     b.appendChild(el("p","cv-say",say));
     if(two){ var qg=el("div","tkgridf"); b.appendChild(qg); var qc=el("div","cv-calc");
-      fld(qg,"안내공고 올린 날",c.qd,function(v){ c.qd=v; put(); qre(); },{type:"date"});
-      fld(qg,"견적 마감·개찰일",c.qe,function(v){ c.qe=v; put(); qre(); },{type:"date"});
+      var qauto=function(){ if(!c.qd||(c.qe&&!c.qeAuto)) return; c.qe=quoteOpen(c); c.qeAuto=true; if(qi) qi.value=c.qe; };
+      fld(qg,"안내공고 올린 날",c.qd,function(v){ c.qd=v; qauto(); put(); qre(); },{type:"date"});
+      var qi=fld(qg,"견적 마감·개찰일",c.qe,function(v){ c.qe=v; c.qeAuto=!v; qauto(); put(); qre(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
       b.appendChild(qc);
       var qre=function(){ var e=quoteOpen(c), bad=c.qe&&e&&c.qe<e;
         nums(qc,[{l:"공고기간",v:"3일 이상",s:"토·공휴일 빼고 · 게시부터 개찰까지 5일 이상"},
@@ -1950,10 +1951,12 @@ function build(root){
     if(c.fails&&c.fails.length) b.appendChild(el("p","cv-say","재공고 "+c.fails.length+"번째예요 (지난 개찰 "+c.fails.map(function(f){ return f.od?kdate(f.od):"-"; }).join(", ")+" 유찰). 예정가격·참가자격은 바꿀 수 없고, 바꾸려면 새로운 입찰로 해요."));
     b.appendChild(el("p","cv-say",(s2bOk(c)?"나라장터(G2B)나 학교장터(S2B)":"나라장터(G2B)")+"에 입찰공고를 올리고 기초금액을 넣어요. 공고일과 마감일을 넣으면 공고기간이 모자라지 않은지 바로 봐요."));
     var g=el("div","tkgridf"); b.appendChild(g); var calc=el("div","cv-calc");
-    fld(g,"공고일",c.nd,function(v){ c.nd=v; put(); re(); },{type:"date"});
-    fld(g,"입찰 마감·개찰일",c.od,function(v){ c.od=v; put(); re(); },{type:"date"});
+    /* 마감·개찰일은 가장 빠른 날로 자동으로 채운다(직접 고치면 그 날을 지킨다) */
+    var auto=function(){ if(!c.nd||(c.od&&!c.odAuto)) return; c.od=workDays(addDays(bidEarliest(c),-1),1); c.odAuto=true; if(oi) oi.value=c.od; };
+    fld(g,"공고일",c.nd,function(v){ c.nd=v; auto(); put(); re(); },{type:"date"});
+    var oi=fld(g,"입찰 마감·개찰일",c.od,function(v){ c.od=v; c.odAuto=!v; auto(); put(); re(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
     var uw=el("label","tkf"), ub=el("input"); ub.type="checkbox"; ub.checked=!!c.urg; ub.style.width="auto"; uw.appendChild(el("span","tkfl","긴급·재공고")); var us=el("span"); us.style.display="flex"; us.style.gap="6px"; us.style.alignItems="center"; us.appendChild(ub); us.appendChild(document.createTextNode("5일로 줄여요")); uw.appendChild(us); g.appendChild(uw);
-    ub.onchange=function(){ c.urg=ub.checked; put(); re(); };
+    ub.onchange=function(){ c.urg=ub.checked; auto(); put(); re(); };
     b.appendChild(calc); b.appendChild(el("div","cv-sub","공고문에 넣을 것")); noticeFields(c,b,true);
     function re(){ var n=bidDays(c,c.urg), e=bidEarliest(c), bad=c.od&&e&&c.od<e;
       nums(calc,[{l:"공고기간",v:n+"일 이상",s:c.urg?"긴급·재공고":t==="공사"?"공사 추정가격 "+(est<1e9?"10억 원 미만":est<5e9?"10억~50억 원":"50억 원 이상"):"물품·용역"},

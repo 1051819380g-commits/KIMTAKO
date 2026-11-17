@@ -1,6 +1,6 @@
 # gn_tools — 경남 학교행정 도구 원본
 
-업무체크리스트(KIMTAKO) 시험판 `test.html`의 '도구 모음' 9개 도구를 만드는 원본과 빌드 스크립트예요.
+업무체크리스트(KIMTAKO) 시험판 `test.html`의 '도구 모음' 10개 도구를 만드는 원본과 빌드 스크립트예요.
 이 브랜치(`gn-tools-src`)는 GitHub Pages에 올라가지 않아요. 빌드 결과물만 `main`에 둬요.
 
 ## 고치는 순서
@@ -45,6 +45,7 @@
 | `native/pri.js` | 본예산 편성 | `parts/pri_ui.js` 고친 뒤 `python3 make_pri.py` (자료: `src/pri.html`, 붙임은 `prifiles/`로 풀림) |
 | `native/sg.js` | 송금내역서 생성기 | `make_sg.py`의 `JSFIX`·`BODYFIX`에 고칠 곳 추가 후 `python3 make_sg.py` (원본: `src/sg.html`) |
 | `native/tb.js` | 교과서 선정 | `parts/tb_ui.js`, `parts/tb_src.json` 고친 뒤 `python3 make_tb.py` |
+| `native/bus.js` | 통학차량 노선도(Tmap 지도·길찾기, 키는 사용자 발급 브라우저용 키라 파일에 그대로 둠) | 직접 |
 | `make_sg_native.py`, `parts/sg_ui.js` | 쓰지 않는 예전 송금내역서 화면 | — |
 | `gbfiles/`, `tbfiles/`, `prifiles/` | 내려받기 서식·자료 | 그대로 복사됨 |
 | `reports/` | 검토·수정 기록 | — |

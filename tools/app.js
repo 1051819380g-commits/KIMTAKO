@@ -606,7 +606,7 @@ function build(root,ver){
     hin("school","sch","학교명 (예: ○○고등학교)","학교명"); if(PRI) hin("corp","corp","법인명 (예: 학교법인 ○○학원)","법인명");
     var yl=el("label"), yi=el("input","yr"); yi.type="number"; yi.min="2026"; yi.max="2035"; yi.value=String(Y()); yl.appendChild(yi); yl.appendChild(document.createTextNode("학년도 예산")); hero.appendChild(yl);
     yi.onchange=function(){ F.year=yi.value; put(); draw(); };
-    hero.appendChild(el("span","sp")); var mb=btn("자료 옮기기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
+    hero.appendChild(el("span","sp")); var mb=btn("자료 내보내기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
     var setBox=el("div"); app.appendChild(setBox); mb.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } settings(setBox); };
     var cur=curStage(), sel=view.open==null?Math.min(cur,STG.length-1):view.open;
     var now=el("div","pr-now");
@@ -955,7 +955,7 @@ function build(root,ver){
       if(i===2){ g=grid(pn); fld(c,g,"fix","성립전예산 확정일",{type:"date",live:function(){ up2(); }}); x=calc(pn);
         var up2=function(){ tiles(x,[{l:"확정",v:V(c,"fix")?dot(V(c,"fix")):"-",s:"에듀파인 [예산운영]→[성립전예산관리] 결재"},{l:"집행",v:"확정 뒤",s:"목적에 맞게"},{l:"주의",v:"'등록' 상태로 두지 않기",s:"미확정 건이 있으면 추경이 진행되지 않아요(Q7)"}]); }; up2(); }
       if(i===3){ var nx=cases().filter(function(o){ return o.k==="ch"&&!o.done[stgOf(o).length-1]; });
-        x=calc(pn); tiles(x,[{l:"차기 추경",v:nx.length?"제"+O(V(nx[0],"no"),"○")+"회 추경":"아직 없어요",s:nx.length?"이 장부의 추경 사안":"추경 사안을 만들면 이어져요"},{l:"반영",v:"따로 조정 안 해요",s:"확정된 성립전은 차기 추경에 들어가요"},{l:"감액",v:"성립전으로는 못 줄여요",s:"추경 때 조정(창원 멘토링 Q2)"}]); } }
+        x=calc(pn); tiles(x,[{l:"차기 추경",v:nx.length?"제"+O(V(nx[0],"no"),"○")+"회 추경":"아직 없어요",s:nx.length?"올해 추경 사안":"추경 사안을 만들면 이어져요"},{l:"반영",v:"따로 조정 안 해요",s:"확정된 성립전은 차기 추경에 들어가요"},{l:"감액",v:"성립전으로는 못 줄여요",s:"추경 때 조정(창원 멘토링 Q2)"}]); } }
     if(k==="ch"){
       if(i===0){ g=grid(pn); fld(c,g,"no","회차",{ph:"1",redraw:1}); fld(c,g,"eduNo","교육 기안 문서번호",{ph:"○○○"}); fld(c,g,"edu","교직원 교육",{type:"date"}); fld(c,g,"eduT","시각",{type:"time"}); fld(c,g,"eduP","장소",{ph:"본교 ○○실"}); fld(c,g,"aud","참석대상",{ph:"본교 교직원 전원"}); fld(c,g,"reqD","요구서 제출 기한",{type:"date",live:function(){ up0(); }});
         x=calc(pn); var sj=cases().filter(function(o){ return o.k==="sj"&&o.done[2]&&!o.done[3]; });
@@ -1042,7 +1042,7 @@ function build(root,ver){
     var si=el("input","sch"); si.placeholder="학교명 (예: ○○고등학교)"; si.setAttribute("aria-label","학교명"); si.value=P.f.school||""; si.oninput=function(){ P.f.school=si.value.trim(); put(); }; si.onchange=function(){ draw(); }; h.appendChild(si);
     var yl=el("label"), yi=el("input","yr"); yi.type="number"; yi.min="2025"; yi.max="2035"; yi.value=String(Y()); yl.appendChild(yi); yl.appendChild(document.createTextNode("학년도")); h.appendChild(yl);
     yi.onchange=function(){ P.f.year=yi.value; put(); view.c=null; draw(); };
-    h.appendChild(el("span","sp")); var mb=btn("자료 옮기기","btn ghost"); h.appendChild(mb); app.appendChild(h);
+    h.appendChild(el("span","sp")); var mb=btn("자료 내보내기","btn ghost"); h.appendChild(mb); app.appendChild(h);
     var setBox=el("div"); app.appendChild(setBox); mb.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } settings(setBox); }; }
   function home(){ var cs=cases(), live=cs.filter(function(c){ return curStage(c)<stgOf(c).length; }), ij=cs.filter(function(c){ return c.k==="iy"||c.k==="jy"; }), yb=cs.filter(function(c){ return c.k==="yb"; }),
       sjw=cs.filter(function(c){ return c.k==="sj"&&c.done[2]&&!c.done[3]; });
@@ -1059,7 +1059,7 @@ function build(root,ver){
         b.onclick=function(){ var c={id:"c"+Date.now().toString(36),k:k,y:Y(),f:{},done:{},rows:[],tk:{},made:today()};
           if(k==="ch") c.f.no=String(cs.filter(function(o){ return o.k==="ch"; }).length+1);
           P.cases.push(c); put(); view.pick=false; view.c=c.id; view.open=0; draw(); top(); }; tl.appendChild(b); }); }
-    app.appendChild(el("div","cv-h",Y()+"학년도 예산 변경 장부"));
+    app.appendChild(el("div","cv-h",Y()+"학년도 예산 변경 사안"));
     if(!cs.length){ app.appendChild(el("div","cv-empty","아직 사안이 없어요. '+ 새 사안'을 눌러 시작해요.")); return; }
     var w=el("div","cv-cases"); app.appendChild(w);
     cs.slice().sort(function(a,b){ var x=curStage(a)>=stgOf(a).length, y=curStage(b)>=stgOf(b).length; return x===y?(a.made<b.made?1:-1):x?1:-1; }).forEach(function(c){ var t=TY(c.k,PRI), n=stgOf(c).length, cur=curStage(c), b=btn("","cv-case");
@@ -1069,7 +1069,7 @@ function build(root,ver){
       b.onclick=function(){ view.c=c.id; view.open=null; draw(); top(); }; if(U().delX) U().delX(b,title(c),function(){ P.cases=P.cases.filter(function(o){ return o!==c; }); put(); draw(); }); w.appendChild(b); }); }
   function title(c){ var t=TY(c.k,PRI); return c.title||(c.k==="ch"?"제"+O(V(c,"no"),"1")+"회 추경":c.k==="iw"?(V(c,"kind")||"")+"이월"+(used(c)[0]&&used(c)[0].biz?" · "+used(c)[0].biz:""):(V(c,"name")||t.n)); }
   function one(c){ var t=TY(c.k,PRI), stg=t.stg; if(prefill(c)) put();
-    var bk=btn("← 예산 변경 장부","cv-back",function(){ view.c=null; draw(); top(); }); app.appendChild(bk);
+    var bk=btn("← 사안 목록","cv-back",function(){ view.c=null; draw(); top(); }); app.appendChild(bk);
     var tt=el("div","bc-tt"); app.appendChild(tt); tt.appendChild(el("span","bc-kind",t.n)); var ti=el("input"); ti.value=title(c); ti.setAttribute("aria-label","사안 이름"); ti.onchange=function(){ c.title=ti.value.trim(); put(); }; tt.appendChild(ti);
     tt.appendChild(btn("지우기","cv-x",function(){ if(!confirm("이 사안을 지울까요?")) return; P.cases=P.cases.filter(function(o){ return o!==c; }); put(); view.c=null; draw(); }));
     var cur=curStage(c), sel=view.open==null?Math.min(cur,stg.length-1):Math.min(view.open,stg.length-1);
@@ -1608,7 +1608,7 @@ function build(root){
     var ti=el("input"); ti.value=LS.get("tel",""); ti.placeholder="행정실 전화 (055-…)"; ti.inputMode="tel"; ti.setAttribute("aria-label","행정실 전화번호"); ti.className="cv-tel"; ti.oninput=function(){ LS.set("tel",ti.value.trim()); }; sch.appendChild(ti);
     var pv=el("div","cv-chips"); [[false,"공립"],[true,"사립"]].forEach(function(o){ var p=btn(o[1],"pill",function(){ LS.set("priv",o[0]); pv.querySelectorAll(".pill").forEach(function(x){ x.setAttribute("aria-pressed",x===p?"true":"false"); }); }); p.setAttribute("aria-pressed",!!LS.get("priv",false)===o[0]?"true":"false"); pv.appendChild(p); }); sch.appendChild(pv);
     hero.appendChild(sch); var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 계약","btn",function(){ go({v:"new"}); }));
-    var sb=btn("장부 옮기기","btn ghost"); bs.appendChild(sb); hero.appendChild(bs); app.appendChild(hero);
+    var sb=btn("자료 내보내기","btn ghost"); bs.appendChild(sb); hero.appendChild(bs); app.appendChild(hero);
     var setBox=el("div"); app.appendChild(setBox); sb.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } drawSettings(setBox); };
 
     var open=C.filter(function(c){ return curStage(c)<STAGES(c).length&&!c.closed; }), haja=open.filter(function(c){ return STAGES(c)[curStage(c)][0]==="haja"; });
@@ -1644,12 +1644,12 @@ function build(root){
 
   function drawSettings(box,first){
     box.textContent=""; var s=el("div","cv-set"); box.appendChild(s);
-    s.appendChild(el("div","cv-sub","장부를 다른 PC로 옮기기"));
+    s.appendChild(el("div","cv-sub","다른 PC로 옮기기"));
     var r=el("div","cv-btns"); s.appendChild(r); var m=el("div","tkmsg"); s.appendChild(m);
-    r.appendChild(btn("장부 내보내기","btn ghost",function(){ saveFile(new Blob([JSON.stringify({cases:C,biz:LS.get("biz",{}),school:LS.get("school",""),tel:LS.get("tel","")},null,1)],{type:"application/json"}),"계약장부_"+today()+".json").then(function(){ msg(m,"내보냈어요.","ok"); },function(e){ msg(m,e.message,"warn"); }); }));
-    var lb=el("label","btn ghost","장부 불러오기"), fi=el("input"); fi.type="file"; fi.accept=".json"; fi.hidden=true; lb.appendChild(fi); r.appendChild(lb);
+    r.appendChild(btn("파일로 내보내기","btn ghost",function(){ saveFile(new Blob([JSON.stringify({cases:C,biz:LS.get("biz",{}),school:LS.get("school",""),tel:LS.get("tel","")},null,1)],{type:"application/json"}),"계약목록_"+today()+".json").then(function(){ msg(m,"내보냈어요.","ok"); },function(e){ msg(m,e.message,"warn"); }); }));
+    var lb=el("label","btn ghost","파일 불러오기"), fi=el("input"); fi.type="file"; fi.accept=".json"; fi.hidden=true; lb.appendChild(fi); r.appendChild(lb);
     fi.onchange=function(){ var f=fi.files[0]; if(!f) return; f.text().then(function(t){ var j=JSON.parse(t), ids={}; C.forEach(function(c){ ids[c.id]=1; });
-      (j.cases||[]).forEach(function(c){ if(!ids[c.id]) C.push(c); }); if(j.biz) LS.set("biz",Object.assign(LS.get("biz",{}),j.biz)); if(j.tel&&!LS.get("tel","")) LS.set("tel",j.tel); put(); draw(); }).catch(function(){ msg(m,"장부 파일을 읽지 못했어요.","bad"); }); };
+      (j.cases||[]).forEach(function(c){ if(!ids[c.id]) C.push(c); }); if(j.biz) LS.set("biz",Object.assign(LS.get("biz",{}),j.biz)); if(j.tel&&!LS.get("tel","")) LS.set("tel",j.tel); put(); draw(); }).catch(function(){ msg(m,"내보낸 파일을 읽지 못했어요.","bad"); }); };
   }
   /* 공고문에 들어갈 업종·제한·시각 — 입찰 공고, 2인 견적 업체 단계에서 같이 씀 */
   function noticeFields(c,b,bid){ var g=el("div","tkgridf"); b.appendChild(g);
@@ -1699,7 +1699,7 @@ function build(root){
       p.setAttribute("aria-pressed",W.st.indexOf(s[0])>=0?"true":"false"); if(s[2]) p.title=s[2]; c3.appendChild(p); }); }
     /* 4 계약방법 */
     var b4=row(5,"계약방법"), rbox=el("div"); b4.appendChild(rbox);
-    var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("장부에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
+    var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("목록에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
     var R=[];
     function res(){
       var a=amount(W.est), ok=!!W.est&&!isNaN(a); ah.textContent=ok?"= "+won(a):"";
@@ -1738,7 +1738,7 @@ function build(root){
     STAGE[s[0]](c,pn,state);
     pager(pn,sel>0?[SH[S[sel-1][0]],function(){ view.open=S[sel-1][0]; draw(); }]:null,sel<S.length-1?[SH[S[sel+1][0]],function(){ view.open=S[sel+1][0]; draw(); }]:null);
     var dz=el("div","cv-next"); dz.style.marginTop="24px"; app.appendChild(dz);
-    dz.appendChild(btn("이 계약 지우기","cv-x",function(){ if(!confirm("'"+c.name+"' 계약을 장부에서 지울까요?")) return; C=C.filter(function(x){ return x!==c; }); put(); go({v:"list"}); }));
+    dz.appendChild(btn("이 계약 지우기","cv-x",function(){ if(!confirm("'"+c.name+"' 계약을 목록에서 지울까요?")) return; C=C.filter(function(x){ return x!==c; }); put(); go({v:"list"}); }));
   }
   function finish(c,k){ c.done[k]=today(); view.open=null; put(); draw(); var r=root.getBoundingClientRect(); if(r.top<0) window.scrollTo({top:window.scrollY+r.top-80}); }
   function reopen(c,k){ var S=STAGES(c), on=false; S.forEach(function(s){ if(s[0]===k) on=true; if(on) delete c.done[s[0]]; }); view.open=null; put(); draw(); }
@@ -1931,7 +1931,7 @@ function build(root){
     dl();
     var mr=el("div","cv-next"); b.appendChild(mr); var mm=el("div","tkmsg"); b.appendChild(mm);
     mr.appendChild(btn(c.docs?"서류 다시 만들기":"서류 엑셀 만들기",c.docs?"btn ghost":"btn",function(){
-      var sc=LS.get("school",""), why=!sc?"장부 맨 위에 학교명을 먼저 넣어 주세요.":!c.biz.bizname?(bid?"'낙찰'에서 낙찰자를 먼저 정해 주세요.":"2단계에서 업체를 먼저 정해 주세요."):!c.amount?"계약금액을 넣어 주세요.":(!c.d1||!c.d2||!c.d3)?"계약일과 기간을 모두 넣어 주세요.":c.d3<c.d2?"기한이 시작일보다 빨라요.":"";
+      var sc=LS.get("school",""), why=!sc?"목록 맨 위에 학교명을 먼저 넣어 주세요.":!c.biz.bizname?(bid?"'낙찰'에서 낙찰자를 먼저 정해 주세요.":"2단계에서 업체를 먼저 정해 주세요."):!c.amount?"계약금액을 넣어 주세요.":(!c.d1||!c.d2||!c.d3)?"계약일과 기간을 모두 넣어 주세요.":c.d3<c.d2?"기한이 시작일보다 빨라요.":"";
       if(why){ msg(mm,why,"warn"); return; }
       var law=c.m&&c.m.law||"「지방자치단체를 당사자로 하는 계약에 관한 법률 시행령」 제25조", z=c.biz, o=z.officeType||officeOf(z.bizno)||"개인";
       var rep={"[[계약건명]":c.name,"[사업자등록번호]":bizfmt(z.bizno),"[biznum2]":bizfmt(z.bizno),"[업체명]":z.bizname,"[주소]":z.bizaddr||"","[전화번호]":z.biztel||"","[대표자]":z.bizceo||"","[학교명]":sc,
@@ -2029,7 +2029,7 @@ window.TKNATIVE=window.TKNATIVE||{}; window.TKNATIVE.ct=build;
 /* 다른 도구(교복 등)가 같이 쓰는 부품 */
 /* 장부 카드 오른쪽 위 X: 누르면 묻고 지움 */
 function delX(card,name,fn){ var x=document.createElement("span"); x.className="cv-del"; x.textContent="\u00d7"; x.setAttribute("role","button"); x.tabIndex=0; x.title="지우기"; x.setAttribute("aria-label","'"+name+"' 지우기");
-  function go(e){ e.stopPropagation(); e.preventDefault(); if(confirm("'"+name+"'을(를) 장부에서 지울까요?")) fn(); }
+  function go(e){ e.stopPropagation(); e.preventDefault(); if(confirm("'"+name+"'을(를) 목록에서 지울까요?")) fn(); }
   x.onclick=go; x.onkeydown=function(e){ if(e.key==="Enter"||e.key===" ") go(e); }; card.classList.add("hasdel"); card.appendChild(x); return x; }
 window.TKCV={CSS:CSS,delX:delX,unzip:unzip,zipStore:zipStore,saveFile:saveFile,workDays:workDays,addDays:addDays,hanNum:hanNum};
 })();
@@ -2704,7 +2704,7 @@ function build(root){
     var yl=el("label"), yi=el("input","yr"); yi.type="number"; yi.min="2026"; yi.max="2035"; yi.value=V("year"); yl.appendChild(yi); yl.appendChild(document.createTextNode("학년도 신입생")); hero.appendChild(yl);
     yi.onchange=function(){ F.year=yi.value; put(); draw(); };
     hero.appendChild(el("span","sp"));
-    var mb=btn("자료 옮기기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
+    var mb=btn("자료 내보내기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
     var setBox=el("div"); app.appendChild(setBox); mb.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } settings(setBox); };
 
     var cur=curStage(), sel=-1; STAGES.forEach(function(s,i){ if(s[0]===view.open) sel=i; }); if(sel<0) sel=Math.min(cur,STAGES.length-1);
@@ -3074,7 +3074,7 @@ function build(root){
     lv.onchange=function(){ F.level=lv.value; put(); draw(); }; hero.appendChild(lv);
     var yl=el("label"), yi=el("input","yr"); yi.type="number"; yi.min="2026"; yi.max="2035"; yi.value=V("year"); yl.appendChild(yi); yl.appendChild(document.createTextNode("학년도에 쓸 책")); hero.appendChild(yl);
     yi.onchange=function(){ F.year=yi.value; put(); draw(); };
-    hero.appendChild(el("span","sp")); var mb=btn("자료 옮기기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
+    hero.appendChild(el("span","sp")); var mb=btn("자료 내보내기","btn ghost"); hero.appendChild(mb); app.appendChild(hero);
     var setBox=el("div"); app.appendChild(setBox); mb.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } settings(setBox); };
     var cur=curStage(), sel=-1; STG.forEach(function(s,i){ if(s[0]===view.open) sel=i; }); if(sel<0) sel=Math.min(cur,STG.length-1); view.cur=STG[sel][0];
     var now=el("div","tb-now");
@@ -4458,7 +4458,7 @@ HK.printRoot=function(){ var r=document.getElementById("hkPrint"); if(!r){ r=doc
 
 function el(t,c,x){ var e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; }
 function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
-function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ HK.toast&&HK.toast("브라우저 저장 공간이 부족해요. '자료 옮기기 → 내보내기'로 보관해 주세요."); } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){ HK.toast&&HK.toast("브라우저 저장 공간이 부족해요. '자료 내보내기'로 보관해 주세요."); } }
 function today(){ return iso(new Date()); }
 function dd(s){ var n=daysBetween(today(),s); return n; }
 function ddTxt(n){ return n==null?"":n===0?"오늘":n>0?"D-"+n:(-n)+"일 지남"; }
@@ -4602,13 +4602,13 @@ function build(root){
 
   /* ================= 장부 ================= */
   function drawList(){
-    var hero=el("div","cv-hero"); var h=el("div"); h.appendChild(el("h3",null,MEET.length?(trim(MEET[0].s.school.name)||"우리 학교")+" 운영위원회":"학교운영위원회 회의 장부")); hero.appendChild(h);
-    var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 회의","btn",function(){ go({v:"new"}); })); var mv=btn("자료 옮기기","btn ghost"); bs.appendChild(mv); hero.appendChild(bs); app.appendChild(hero);
+    var hero=el("div","cv-hero"); var h=el("div"); h.appendChild(el("h3",null,MEET.length?(trim(MEET[0].s.school.name)||"우리 학교")+" 운영위원회":"학교운영위원회 회의")); hero.appendChild(h);
+    var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 회의","btn",function(){ go({v:"new"}); })); var mv=btn("자료 내보내기","btn ghost"); bs.appendChild(mv); hero.appendChild(bs); app.appendChild(hero);
     var setBox=el("div"); app.appendChild(setBox); mv.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } moveBox(setBox); };
     var y=String(new Date().getFullYear()), open=MEET.filter(function(m){ return curIdx(m)<STG.length; });
     var up=open.map(function(m){ return m.s.meet.date; }).filter(function(d){ return d&&d>=today(); }).sort()[0];
     var sm=el("div","cv-sum"); [["올해 회의",MEET.filter(function(m){ return m.s.meet.year===y; }).length+"번"],["진행 중",open.length+"건"],["다음 회의",up?ddTxt(dd(up)):"-"],["끝남",(MEET.length-open.length)+"건"]].forEach(function(p){ var d=el("div"); d.appendChild(el("span",null,p[0])); d.appendChild(el("b",null,p[1])); sm.appendChild(d); }); app.appendChild(sm);
-    if(!MEET.length){ var e=el("div","cv-empty"); e.appendChild(el("p",null,"아직 올린 회의가 없어요.")); e.appendChild(el("p",null,"'+ 새 회의'로 회차와 날짜를 넣으면 소집 공고 기한부터 학교장 이송까지 순서대로 따라가요. 예전 학운위 문서 도구 엑셀이 있으면 '자료 옮기기'에서 불러오세요."));
+    if(!MEET.length){ var e=el("div","cv-empty"); e.appendChild(el("p",null,"아직 올린 회의가 없어요.")); e.appendChild(el("p",null,"'+ 새 회의'로 회차와 날짜를 넣으면 소집 공고 기한부터 학교장 이송까지 순서대로 따라가요. 예전 학운위 문서 도구 엑셀이 있으면 '자료 내보내기' 안의 불러오기로 가져오세요."));
       e.appendChild(btn("+ 새 회의","btn",function(){ go({v:"new"}); })); app.appendChild(e); return; }
     app.appendChild(el("div","cv-h","해야 할 일")); var tl=el("div","cv-todo"); app.appendChild(tl);
     var todos=open.map(function(m){ var n=nextTodo(m); return n?{m:m,n:n,d:n.due?dd(n.due):null}:null; }).filter(Boolean).sort(function(a,b){ return (a.d==null?9e9:a.d)-(b.d==null?9e9:b.d); });
@@ -4628,13 +4628,13 @@ function build(root){
       fin.forEach(function(m){ var b=btn("","cv-case",function(){ openMeeting(m); go({v:"m"}); }); b.appendChild(el("h4",null,mTitle(m.s))); b.appendChild(el("p",null,m.s.meet.date?fmtDotW(m.s.meet.date):"")); kill(b,m); g.appendChild(b); }); }
   }
   function moveBox(box){ box.textContent=""; var s=el("div","cv-set"); box.appendChild(s); var r=el("div","cv-btns"); s.appendChild(r); var m=el("div","tkmsg"); s.appendChild(m);
-    r.appendChild(btn("장부 내보내기","btn ghost",function(){ HK.save(new Blob([JSON.stringify({hk:1,meetings:MEET},null,1)],{type:"application/json"}),"학운위장부_"+today()+".json").then(function(){ msg(m,"내보냈어요. 안건 한글파일 원문은 이 브라우저에만 남아요.","ok"); }); }));
-    var lb=el("label","btn ghost","장부 불러오기"), fi=el("input"); fi.type="file"; fi.accept=".json"; fi.hidden=true; lb.appendChild(fi); r.appendChild(lb);
+    r.appendChild(btn("파일로 내보내기","btn ghost",function(){ HK.save(new Blob([JSON.stringify({hk:1,meetings:MEET},null,1)],{type:"application/json"}),"학운위회의_"+today()+".json").then(function(){ msg(m,"내보냈어요. 안건 한글파일 원문은 이 브라우저에만 남아요.","ok"); }); }));
+    var lb=el("label","btn ghost","파일 불러오기"), fi=el("input"); fi.type="file"; fi.accept=".json"; fi.hidden=true; lb.appendChild(fi); r.appendChild(lb);
     fi.onchange=function(){ var f=fi.files[0]; if(!f) return; f.text().then(function(t){ var j=JSON.parse(t), ids={}; MEET.forEach(function(x){ ids[x.id]=1; }); var n=0;
-      (j.meetings||[]).forEach(function(x){ if(!ids[x.id]&&x.s){ x.attKey="hk."+x.id; delete x.legacy; MEET.push(x); n++; } }); lsSet("hk.meetings",MEET); draw(); HK.toast(n+"건을 장부에 더했어요."); }).catch(function(){ msg(m,"장부 파일을 읽지 못했어요.","bad"); }); };
+      (j.meetings||[]).forEach(function(x){ if(!ids[x.id]&&x.s){ x.attKey="hk."+x.id; delete x.legacy; MEET.push(x); n++; } }); lsSet("hk.meetings",MEET); draw(); HK.toast(n+"건을 목록에 더했어요."); }).catch(function(){ msg(m,"내보낸 파일을 읽지 못했어요.","bad"); }); };
     var lx=el("label","btn ghost","예전 엑셀 불러오기"), fx=el("input"); fx.type="file"; fx.accept=".xlsx,.xlsm"; fx.hidden=true; lx.appendChild(fx); r.appendChild(lx);
     fx.onchange=function(){ var f=fx.files[0]; if(!f) return; f.arrayBuffer().then(function(b){ var res=xlsxToState(new Uint8Array(b)), ns=res.state; delete ns.attach; var id=Date.now();
-      MEET.push({id:id,attKey:"hk."+id,s:ns,done:{}}); lsSet("hk.meetings",MEET); draw(); HK.toast(mTitle(ns)+"를 장부에 올렸어요."); }).catch(function(e){ msg(m,"엑셀을 읽지 못했어요: "+(e.message||e),"bad"); }); };
+      MEET.push({id:id,attKey:"hk."+id,s:ns,done:{}}); lsSet("hk.meetings",MEET); draw(); HK.toast(mTitle(ns)+"를 목록에 올렸어요."); }).catch(function(e){ msg(m,"엑셀을 읽지 못했어요: "+(e.message||e),"bad"); }); };
     s.appendChild(el("p","cv-law","예전 엑셀 = 길잡이 학운위 문서 도구에서 저장한 엑셀, 또는 학교운영위원회 자동화 엑셀(.xlsm)"));
   }
 
@@ -4644,7 +4644,7 @@ function build(root){
     var W=view.w||(view.w=(function(){ var ns=last?mergeState(JSON.parse(JSON.stringify(last.s))):DEF();
       if(last){ ns.meet.no=/^\d+$/.test(trim(last.s.meet.no))?String(+last.s.meet.no+1):""; ns.meet.date=""; ns.agendas=[]; ns.docs=DEF().docs; var nx=nextNums(last.s,ns); Object.keys(nx).forEach(function(k){ ns.docs[k]=nx[k]; }); ns.minutes=DEF().minutes; ns.done=DEF().done; members(ns).forEach(function(x){ x.attend=true; }); }
       ns.meet.year=ns.meet.year||String(new Date().getFullYear()); delete ns.attach; return ns; })());
-    app.appendChild(btn("← 장부","cv-back",function(){ go({v:"list"}); }));
+    app.appendChild(btn("← 회의 목록","cv-back",function(){ go({v:"list"}); }));
     var tp=el("div","cv-top"); tp.appendChild(el("h3",null,"새 회의")); app.appendChild(tp);
     var pn=el("section","cv-pane cv-one"); app.appendChild(pn);
     function row(n,label){ var r=el("div","cv-orow"), h=el("div","cv-olab"); h.appendChild(el("span","qn",String(n))); h.appendChild(document.createTextNode(label)); r.appendChild(h); var b=el("div","cv-obody"); r.appendChild(b); pn.appendChild(r); return b; }
@@ -4657,7 +4657,7 @@ function build(root){
     ["정기회","임시회"].forEach(function(k){ var p=btn(k,"pill",function(){ W.meet.kind=k; c2.querySelectorAll(".pill").forEach(function(x){ x.setAttribute("aria-pressed",x===p?"true":"false"); }); }); p.setAttribute("aria-pressed",(W.meet.kind||"정기회")===k?"true":"false"); c2.appendChild(p); });
     var b3=row(3,"일시·장소"), r3=el("div","hk-bar"); b3.appendChild(r3); inp(r3,"date",{type:"date",w:"170px"}); inp(r3,"time",{type:"time",w:"130px"}); inp(r3,"place",{ph:"장소 (예: 1층 회의실)",w:"240px"});
     var b4=row(4,"기한"), rb=el("div"); b4.appendChild(rb);
-    var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("장부에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
+    var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("목록에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
     function res(){ rb.textContent=""; var d=W.meet.date; if(!d){ rb.appendChild(el("p","cv-law","회의 날짜를 넣으면 공고·통지 기한이 나와요.")); return; }
       var c=el("div","cv-calc"); rb.appendChild(c); var nd=addDays(d,-7);
       tiles(c,[{l:"소집 공고·통지",v:kd(nd)+"까지",s:"회의 7일 전 · "+ddTxt(dd(nd)),c:dd(nd)<0?"bad":""},{l:"회의",v:fmtDotW(d)+(W.meet.time?" "+fmtTime(W.meet.time):""),s:ddTxt(dd(d))}]); }
@@ -4677,7 +4677,7 @@ function build(root){
   function drawMeet(){
     if(hkPrefill()) save();
     var m=CUR; m.done=m.done||{};
-    app.appendChild(btn("← 장부","cv-back",function(){ save(); CUR=null; go({v:"list"}); }));
+    app.appendChild(btn("← 회의 목록","cv-back",function(){ save(); CUR=null; go({v:"list"}); }));
     var tp=el("div","cv-top"); tp.appendChild(el("h3",null,mTitle(S))); app.appendChild(tp);
     var mt=el("div","cv-meta"); [committee(),S.meet.date?fmtDotW(S.meet.date)+(S.meet.time?" "+fmtTime(S.meet.time):"")+" ("+ddTxt(dd(S.meet.date))+")":"날짜 미정",trim(S.meet.place),agendaList().length?"안건 "+agendaList().length+"건":"",memberCount()?"위원 "+memberCount()+"명":""].filter(Boolean).forEach(function(t){ mt.appendChild(el("span",null,t)); }); app.appendChild(mt);
     var cur=curIdx(m), sel=-1; STG.forEach(function(s,i){ if(s[0]===view.open) sel=i; }); if(sel<0) sel=Math.min(cur,STG.length-1);
@@ -4695,7 +4695,7 @@ function build(root){
     pr.appendChild(sel>0?btn("← "+STG[sel-1][1],"cv-back",function(){ view.open=STG[sel-1][0]; draw(); top(); }):el("span"));
     if(sel<STG.length-1) pr.appendChild(btn(STG[sel+1][1]+" →","cv-back",function(){ view.open=STG[sel+1][0]; draw(); top(); }));
     var dz=el("div","cv-next"); dz.style.marginTop="24px"; app.appendChild(dz);
-    dz.appendChild(btn("이 회의 지우기","cv-x",function(){ if(!confirm("'"+mTitle(S)+"'를 장부에서 지울까요?")) return; MEET=MEET.filter(function(x){ return x!==m; }); lsSet("hk.meetings",MEET); CUR=null; go({v:"list"}); }));
+    dz.appendChild(btn("이 회의 지우기","cv-x",function(){ if(!confirm("'"+mTitle(S)+"'를 목록에서 지울까요?")) return; MEET=MEET.filter(function(x){ return x!==m; }); lsSet("hk.meetings",MEET); CUR=null; go({v:"list"}); }));
   }
   function headLine(k){ var d=S.meet.date;
     if(k==="call") return d?"공고·통지 "+kd(addDays(d,-7))+"까지 ("+ddTxt(dd(addDays(d,-7)))+")":"";
@@ -5475,7 +5475,7 @@ function build(root){
   root.textContent=""; var app=el("div","cv hbv"); root.appendChild(app);
   function btn(t,cls,fn){ var x=el("button",cls||"btn",t); x.type="button"; if(fn) x.onclick=fn; return x; }
   function msg(box,t,kind){ box.textContent=t||""; box.className="tkmsg"+(t?" on "+(kind||"ok"):""); }
-  function save(){ if(C){ C.at=today(); } if(!lsSet("hb.cases",CASES)) toast("브라우저 저장 공간이 부족해요. 끝난 사람은 장부에서 지워 주세요."); }
+  function save(){ if(C){ C.at=today(); } if(!lsSet("hb.cases",CASES)) toast("브라우저 저장 공간이 부족해요. 끝난 사람은 목록에서 지워 주세요."); }
   var toastEl=el("div","hk-toast"); toastEl.style.cssText="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-size:14px;z-index:9999;max-width:min(560px,calc(100vw - 32px));opacity:0;pointer-events:none;transition:opacity .2s";
   document.body.appendChild(toastEl); var tT; function toast(m){ toastEl.textContent=m; toastEl.style.opacity="1"; clearTimeout(tT); tT=setTimeout(function(){ toastEl.style.opacity="0"; },3200); }
   function go(v){ view=v; draw(); top(); }
@@ -5494,7 +5494,7 @@ function build(root){
 
   /* ================= 장부 ================= */
   function drawList(){
-    var hero=el("div","cv-hero"), h=el("div"); h.appendChild(el("h3",null,"호봉 장부")); hero.appendChild(h);
+    var hero=el("div","cv-hero"), h=el("div"); h.appendChild(el("h3",null,"호봉 획정·정산")); hero.appendChild(h);
     var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 사람","btn",function(){ C=newCase(); CASES.unshift(C); save(); go({v:"c"}); })); hero.appendChild(bs); app.appendChild(hero);
     var open=CASES.filter(function(c){ return curIdx(c)<STG.length; });
     var sm=el("div","cv-sum"); [["진행 중",open.length+"명"],["끝남",(CASES.length-open.length)+"명"],["정산 중",CASES.filter(function(c){ return Object.keys(c.pay.files).length&&!c.done.pay; }).length+"명"]].forEach(function(p){ var d=el("div"); d.appendChild(el("span",null,p[0])); d.appendChild(el("b",null,p[1])); sm.appendChild(d); }); app.appendChild(sm);
@@ -5514,7 +5514,7 @@ function build(root){
 
   /* ================= 한 사람 ================= */
   function drawCase(){
-    var c=C; app.appendChild(btn("← 장부","cv-back",function(){ C=null; go({v:"list"}); }));
+    var c=C; app.appendChild(btn("← 목록","cv-back",function(){ C=null; go({v:"list"}); }));
     var tp=el("div","cv-top"); tp.appendChild(el("h3",null,cTitle(c))); app.appendChild(tp);
     var r=calc(c), mt=el("div","cv-meta"); [r&&r.유효?r.호봉+"호봉 · 잔여 "+r.잔여.m+"개월 "+r.잔여.d+"일":"",c.asof?"확정일 "+kd(c.asof):"",r&&r.차기승급일?"다음 승급 "+kd(r.차기승급일):"",c.res?"정산 "+wonS(c.res.net)+"원":""].filter(Boolean).forEach(function(t){ mt.appendChild(el("span",null,t)); }); if(mt.firstChild) app.appendChild(mt);
     var cur=curIdx(c), sel=-1; STG.forEach(function(s,i){ if(s[0]===view.open) sel=i; }); if(sel<0) sel=Math.min(cur,STG.length-1);
@@ -5533,7 +5533,7 @@ function build(root){
     pr.appendChild(sel>0?btn("← "+STG[sel-1][1],"cv-back",function(){ view.open=STG[sel-1][0]; draw(); top(); }):el("span"));
     if(sel<STG.length-1) pr.appendChild(btn(STG[sel+1][1]+" →","cv-back",function(){ view.open=STG[sel+1][0]; draw(); top(); }));
     var dz=el("div","cv-next"); dz.style.marginTop="24px"; app.appendChild(dz);
-    dz.appendChild(btn("이 사람 지우기","cv-x",function(){ if(!confirm("'"+cTitle(c)+"'를 장부에서 지울까요?")) return; CASES=CASES.filter(function(x){ return x!==c; }); lsSet("hb.cases",CASES); C=null; go({v:"list"}); }));
+    dz.appendChild(btn("이 사람 지우기","cv-x",function(){ if(!confirm("'"+cTitle(c)+"'를 목록에서 지울까요?")) return; CASES=CASES.filter(function(x){ return x!==c; }); lsSet("hb.cases",CASES); C=null; go({v:"list"}); }));
   }
 
   /* ---------- 서류 읽은 결과 넣기 ---------- */
@@ -5555,7 +5555,7 @@ function build(root){
   /* 1. 서류 */
   ST.doc=function(pn,c){
     pn.appendChild(el("p","hb-say","교원자격증·졸업증명서·경력증명서(전력조회 회보서)·직전 호봉획정표를 한꺼번에 올려요. 무슨 서류인지는 알아서 가려 읽고, 주민등록번호·생년월일·주소는 읽으면서 지워요. 파일은 이 컴퓨터 밖으로 나가지 않아요."));
-    var g=grid(pn); fld(g,"성명 (장부에만 표시)",c.name,function(v){ c.name=v; },{ph:"안 써도 돼요"});
+    var g=grid(pn); fld(g,"성명 (목록에만 표시)",c.name,function(v){ c.name=v; },{ph:"안 써도 돼요"});
     var dr=el("div","hb-drop"), fi=el("input"); fi.type="file"; fi.multiple=true; fi.accept=".pdf,image/*,.xlsx,.xls"; fi.hidden=true;
     dr.appendChild(el("b",null,"서류 올리기")); dr.appendChild(el("small",null,"PDF·사진·엑셀 여러 개를 한 번에 · 끌어다 놓아도 돼요")); pn.appendChild(dr); pn.appendChild(fi);
     var pg=el("div","hb-prog"), bar=el("i"); pg.appendChild(bar); pg.hidden=true; pn.appendChild(pg); var rd=el("div","hb-read"); pn.appendChild(rd); var gotBox=el("div","hb-got"); pn.appendChild(gotBox);

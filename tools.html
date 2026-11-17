@@ -4007,6 +4007,14 @@ function openMeeting(m){
   if(m.legacy){ try{ var at=localStorage.getItem(STORE_KEY+"_at"); if(at) S.attach=mergeState({attach:JSON.parse(at)}).attach; }catch(e){} }
   idbLoadAttach();
 }
+/* 문서번호 이어 매기기: 공고번호는 같은 학년도면 +1, 운영위 문서번호 "113-1" 꼴은 앞 번호 +1 */
+function nextNums(prev,ns){ var d=prev.docs, o={}, n=parseInt(trim(d.noticeNo),10);
+  if(n>0&&String(prev.meet.year)===String(ns.meet.year)) o.noticeNo=String(n+1);
+  var base=null; ["no1","no2","no3","no4"].forEach(function(k){ var m=/^(.*?)(\d+)-(\d+)$/.exec(trim(d[k])); if(m&&base==null) base={p:m[1],n:+m[2]}; });
+  if(base) ["no1","no2","no3","no4"].forEach(function(k,i){ o[k]=base.p+(base.n+1)+"-"+(i+1); });
+  return o; }
+function prevMeeting(m){ var d=m&&m.s.meet.date||"9999"; return MEET.filter(function(x){ return x!==m&&(x.s.meet.date||"")<d; }).sort(function(a,b){ return String(b.s.meet.date||"").localeCompare(String(a.s.meet.date||"")); })[0]; }
+function maskName(n){ n=trim(n); return n?n.charAt(0)+"○○":n; }
 function mTitle(st){ return (st.meet.year||"")+"학년도 제"+(st.meet.no||"?")+"회 "+(st.meet.kind||"정기회"); }
 function members(st){ return [].concat(st.members.parent,st.members.teacher,st.members.local); }
 function curIdx(m){ m.done=m.done||{}; for(var i=0;i<STG.length;i++) if(!m.done[STG[i][0]]) return i; return STG.length; }
@@ -4155,7 +4163,7 @@ function build(root){
   function drawNew(){
     var last=MEET.slice().sort(function(a,b){ return String(b.s.meet.date||"").localeCompare(String(a.s.meet.date||"")); })[0];
     var W=view.w||(view.w=(function(){ var ns=last?mergeState(JSON.parse(JSON.stringify(last.s))):DEF();
-      if(last){ ns.meet.no=/^\d+$/.test(trim(last.s.meet.no))?String(+last.s.meet.no+1):""; ns.meet.date=""; ns.agendas=[]; ns.docs=DEF().docs; ns.minutes=DEF().minutes; ns.done=DEF().done; members(ns).forEach(function(x){ x.attend=true; }); }
+      if(last){ ns.meet.no=/^\d+$/.test(trim(last.s.meet.no))?String(+last.s.meet.no+1):""; ns.meet.date=""; ns.agendas=[]; ns.docs=DEF().docs; var nx=nextNums(last.s,ns); Object.keys(nx).forEach(function(k){ ns.docs[k]=nx[k]; }); ns.minutes=DEF().minutes; ns.done=DEF().done; members(ns).forEach(function(x){ x.attend=true; }); }
       ns.meet.year=ns.meet.year||String(new Date().getFullYear()); delete ns.attach; return ns; })());
     app.appendChild(btn("← 장부","cv-back",function(){ go({v:"list"}); }));
     var tp=el("div","cv-top"); tp.appendChild(el("h3",null,"새 회의")); app.appendChild(tp);
@@ -4312,6 +4320,11 @@ function build(root){
     fld(g0,"meet.date","회의 날짜",{type:"date",live:upd,redraw:true}); fld(g0,"meet.time","시간",{type:"time"}); fld(g0,"meet.place","장소",{ph:"1층 회의실 (\"우리학교\" 뒤에 붙어요)"});
     var g=grid(pn); var ndI=fld(g,"docs.noticeDate","공고일",{type:"date",live:upd});
     fld(g,"docs.noticeNo","공고번호",{ph:"예: 10"}); fld(g,"docs.no1","소집 내부기안 문서번호"); fld(g,"docs.no2","참석요청 기안 문서번호"); fld(g,"docs.no4","소집공고 기안 문서번호",{hint:"필요한 학교만"});
+    var pv=prevMeeting(CUR), nb=el("div","hk-bar"); pn.appendChild(nb);
+    nb.appendChild(btn("문서번호 이어 매기기","btn ghost",function(){ var o=pv?nextNums(pv.s,S):{};
+      if(!pv||!Object.keys(o).length){ var b=prompt("이번 회의 운영위 문서번호의 앞 번호를 넣어 주세요 (예: 113 → 113-1, 113-2 …)",""); b=trim(b||""); if(!/^\d+$/.test(b)) return; ["no1","no2","no3","no4"].forEach(function(k,i){ o[k]=b+"-"+(i+1); }); }
+      Object.keys(o).forEach(function(k){ S.docs[k]=o[k]; }); save(); draw(); HK.toast("문서번호를 "+(pv?mTitle(pv.s)+"에서 ":"")+"이어 매겼어요."); }));
+    nb.appendChild(el("small","cv-law",pv?"지난 회의("+mTitle(pv.s)+") 번호 다음으로: 공고번호 +1(같은 학년도), 운영위 문서번호 앞 번호 +1":"지난 회의가 없으면 앞 번호를 물어봐요"));
     if(!S.docs.noticeDate&&S.meet.date){ var b0=btn("공고일을 회의 7일 전으로","btn ghost",function(){ S.docs.noticeDate=addDays(S.meet.date,-7); if(!S.docs.proposeDate) S.docs.proposeDate=S.docs.noticeDate; save(); draw(); }); pn.appendChild(b0); }
     upd();
     sub(pn,"근거 문구","소집 기안문·공고문에 들어가요");
@@ -4351,6 +4364,14 @@ function build(root){
     sub(pn,"회의록에 넣을 말","비우면 기본 문구");
     var g2=grid(pn); fld(g2,"minutes.openRemark","위원장 개회사 요지",{wide:true}); fld(g2,"minutes.principalRemark","학교장 인사말씀 요지",{wide:true}); fld(g2,"minutes.others","기타 협의 내용",{wide:true});
     docs(pn,6,"결과 문서");
+    sub(pn,"누리집 공개용 회의록","위원·교직원 이름을 김○○처럼 가려요");
+    var pb=el("div","hk-bar"); pn.appendChild(pb);
+    function masked(fn){ var keep={m:JSON.stringify(S.members),st:JSON.stringify(S.staff),sa:S.minutes.staffAttend};
+      members(S).forEach(function(x){ x.name=maskName(x.name); }); ["chair","vice","principal","manager","secretary"].forEach(function(k){ S.staff[k]=maskName(S.staff[k]); });
+      S.minutes.staffAttend=String(S.minutes.staffAttend||"").replace(/([가-힣])[가-힣]{1,3}(?=\s*(,|$))/g,"$1○○");
+      try{ fn(); } finally { S.members=JSON.parse(keep.m); S.staff=JSON.parse(keep.st); S.minutes.staffAttend=keep.sa; } }
+    pb.appendChild(btn("공개용 한글 저장","btn ghost",function(){ var d=docById("c1"); masked(function(){ saveHwpx(["c1"],docFileName(d)+"_공개용"); }); }));
+    pb.appendChild(btn("공개용 인쇄·PDF","btn ghost",function(){ masked(function(){ printDocs(["c1"]); }); }));
     law(pn,"근거: 경상남도립학교 운영위원회 운영 조례 — 심의 결과 학교장 이송, 회의록 공개");
   };
 

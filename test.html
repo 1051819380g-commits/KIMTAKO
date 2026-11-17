@@ -431,7 +431,7 @@ footer details summary{cursor:pointer;color:var(--ink-2);font-weight:500}
 .ckdocb:focus{border-color:#3772FF;border-style:solid}
 .ckdocb .gp,.ckdocb .gl{color:#1F2329}
 .ckdocb table td,.ckdocb table th{color:#1F2329}
-.ckatt,.ckatti{display:inline-block;width:3em;white-space:pre;vertical-align:top}   /* 붙임 둘째 줄부터 첫 항목과 같은 선 */
+.ckind{white-space:pre}.ckatt,.ckatti{display:inline-block;width:3em;white-space:pre;vertical-align:top}   /* 붙임 둘째 줄부터 첫 항목과 같은 선 */
 .ckdocb table th{background:#EEF1F6}.ckdocb table td{background:#fff}.ckdocb table,.ckdocb table td,.ckdocb table th{border-color:#D5DAE2}   /* 종이 상자 안 표는 다크 모드에서도 밝게 */
 /* 연간 업무달력 */
 .ckccal{font-weight:700;color:var(--ink)}
@@ -1586,6 +1586,10 @@ function ckAtt(root){
 }
 /* '끝.' 앞 두 칸: 혼자 있는 '끝.' 줄은 앞줄 끝으로, 같은 줄이면 앞 띄어쓰기를 두 칸으로(복사해도 두 칸) */
 function ckEnd2(root){
+  [].slice.call(root.querySelectorAll("div.gl")).forEach(function(d){ var m=d.querySelector(".gm"); if(!m||d.querySelector(".ckind")||d.closest("table")) return;
+    var k=m.textContent.trim(), lv=/^\d{1,2}\.$/.test(k)?0:/^[가-힣]\.$/.test(k)?1:/^\d{1,2}\)$/.test(k)?2:/^[가-힣]\)$/.test(k)?3:/^\(\d{1,2}\)$/.test(k)?4:/^\([가-힣]\)$/.test(k)?5:-1;
+    if(lv<0) return; if(m.nextSibling&&!/^\s/.test(m.nextSibling.textContent)) d.insertBefore(document.createTextNode(" "),m.nextSibling);
+    if(lv){ var s=document.createElement("span"); s.className="ckind"; s.textContent="  ".repeat(lv); d.insertBefore(s,m); } });   /* 공문 항목: 하위 항목은 2타씩 */
   ckAtt(root);
   var leaf=function(e){ return !!e&&e.nodeType===1&&!e.querySelector("div,p,li,tr,table")&&!e.closest("table"); };
   [].slice.call(root.querySelectorAll("div,p,li")).forEach(function(e){ if(!leaf(e)||e.textContent.replace(/\s/g,"")!=="끝.") return;

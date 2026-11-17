@@ -2186,6 +2186,7 @@ var CSS=[
 ".gb-rules li{font-size:13.5px;line-height:1.55;color:var(--ink-2);padding-left:14px;position:relative}",
 ".gb-rules li::before{content:\"\";position:absolute;left:2px;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--accent)}",
 ".gb-gn{margin-top:22px}",
+".gb-ubtn .btn{font-size:14px;line-height:inherit;padding:7px 14px;border-radius:8px;align-self:flex-start;width:auto}",
 ".gb-gn .cv-h{margin-top:0}"
 ].join("\n");
 
@@ -2452,7 +2453,7 @@ function build(root){
     var g2=grid(pn), wi, si;
     wi=fld(g2,"winterPrice","동복 단가",{num:true,live:function(){ upd(); }}); si=fld(g2,"summerPrice","하복 단가",{num:true,live:function(){ upd(); }});
     var use=btn("견적 평균 넣기","btn ghost",function(){ var a=quoteAvg("w"), b=quoteAvg("s"); if(a!=null){ F.winterPrice=String(a); wi.value=comma(a); } if(b!=null){ F.summerPrice=String(b); si.value=comma(b); } put(); upd(); });
-    var ub=el("div","tkf"); ub.appendChild(el("span","tkfl"," ")); ub.appendChild(use); g2.appendChild(ub);
+    var ub=el("div","tkf gb-ubtn"); ub.appendChild(el("span","tkfl","\u00a0")); ub.appendChild(use); g2.appendChild(ub);
     calc=calcBox(pn);
     function upd(){ var w=N("winterPrice"), s=N("summerPrice"), aw=quoteAvg("w"), as=quoteAvg("s"), b=base();
       tiles(calc,[{l:"견적 평균(1벌)",v:aw!=null&&as!=null?won(aw+as):"-",s:aw!=null?"동복 "+comma(aw)+" · 하복 "+(as!=null?comma(as):"-")+(trimmed()?" (최고·최저 빼고, 원 단위 절삭)":" (원 단위 절삭)"):"견적을 넣어 주세요"},

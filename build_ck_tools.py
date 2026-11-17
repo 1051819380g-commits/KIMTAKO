@@ -46,7 +46,7 @@ for k in os.listdir(os.path.join(repo, "tools")):
         os.remove(os.path.join(repo, "tools", k))
 
 # ---- 3) test.html ----
-M = {"src": "tools/app.js?v=" + ver, "tools": [{k: t.get(k, []) for k in ("id", "name", "cat", "sum", "who", "in", "out", "how", "tips", "check", "ck", "steps")} for t in TKD["tools"]]}
+M = {"src": "tools/app.js?v=" + ver, "tools": [{k: t.get(k, []) for k in ("id", "name", "cat", "sum", "who", "in", "out", "how", "check", "ck", "steps")} for t in TKD["tools"]]}
 mjson = json.dumps(M, ensure_ascii=False).replace("</", "<\\/")
 path = os.path.join(repo, "test.html")
 s = open(path, encoding="utf-8").read()
@@ -87,13 +87,11 @@ function ckTool(){ var M=tkMeta(), k=TKALIAS[CK.tool]||CK.tool, t=M.by[k], d=$("
       try{ window.TKNATIVE[k](mount); }catch(e){ mount.appendChild(el("p","tkmsg on bad","도구를 그리지 못했어요: "+e.message)); } },
     function(e){ mount.textContent=""; mount.appendChild(el("p","tkmsg on bad",e.message)); });
 }
-function tkHelp(t){   /* 도구별 사용법 창: 하는 일·쓰는 순서·넣을 것/나오는 것·알아 둘 점·쓰는 업무 */
+function tkHelp(t){   /* 도구별 사용법 창: 하는 일·쓰는 순서·쓰는 업무 */
   var dg=document.getElementById("tkhelp"); if(dg) dg.remove(); dg=el("dialog"); dg.id="tkhelp"; dg.setAttribute("aria-label",t.name+" 사용법");
   var b=el("div","hb"); b.appendChild(el("h2",null,t.name+" 사용법")); if(t.sum) b.appendChild(el("p","lead",t.sum));
   function sec(h){ b.appendChild(el("h5",null,h)); }
   if((t.how||[]).length){ sec("쓰는 순서"); var ol=el("ol"); t.how.forEach(function(x){ ol.appendChild(el("li",null,x)); }); b.appendChild(ol); }
-  var dl=el("dl"); [["누가",t.who],["넣을 것",t.in],["나오는 것",t.out]].forEach(function(p){ if(!p[1]) return; dl.appendChild(el("dt",null,p[0])); dl.appendChild(el("dd",null,p[1])); }); b.appendChild(dl);
-  var tip=(t.tips||[]).concat(t.check||[]); if(tip.length){ sec("알아 둘 점"); var ul=el("ul"); tip.forEach(function(x){ ul.appendChild(el("li",null,x)); }); b.appendChild(ul); }
   var w=el("div","tkpills"); (t.ck||[]).forEach(function(c){ if(!CKBY[c.id]) return; var p=el("button","pill",c.t); p.type="button"; p.onclick=function(){ dg.close(); CK.mode="flow"; CK.cur=""; CK.pv=c.id; ckSave(); ckRender(); window.scrollTo(0,0); }; w.appendChild(p); });
   if(w.children.length){ sec("이 도구를 쓰는 업무"); b.appendChild(w); }
   var f=el("div","hf"), x=el("button","pri","닫기"); x.type="button"; x.onclick=function(){ dg.close(); }; f.appendChild(x);

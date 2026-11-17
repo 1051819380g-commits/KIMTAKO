@@ -2435,6 +2435,17 @@ function build(root){
     if(a.length>=3) a=a.slice(1,-1);   /* 3곳 이상이면 최고·최저 하나씩 빼고 */
     return Math.floor(a.reduce(function(x,y){ return x+y; },0)/a.length/10)*10; }   /* 평균, 원 단위 절삭 */
   function trimmed(){ return quoteList("w").length>=3||quoteList("s").length>=3; }
+  /* 앞 날짜로 정해지는 날짜 미리 채우기. 직접 고친 값·끝난 단계는 그대로, 실제로 일어난 날은 채우지 않음 */
+  function nextWork(d){ return d?workDays(addDays(d,-1),1):""; }
+  function weekendEnd(a){ if(!a) return ""; var we=false; for(var i=0;i<40;i++){ var x=addDays(a,i), w=pd(x).getDay(); if(w===0||w===6) we=true; if(i>=4&&we) return x; } return ""; }   /* 5일 이상·주말 포함 */
+  function prefill(){ P.autoV=P.autoV||{}; P.done=P.done||{}; var ch=false, td=today();
+    function A(k,v,st){ if(P.done[st]||!v) return; var cur=V(k); if(cur&&cur!==P.autoV[k]) return; if(cur!==v){ F[k]=v; ch=true; } P.autoV[k]=v; }
+    if(needPre()){ A("preStart",td,"bid"); A("preEnd",addDays(V("preStart"),4),"bid"); A("bidStart",nextWork(addDays(V("preEnd"),1)),"bid"); } else A("bidStart",td,"bid");
+    A("bidEnd",nextWork(addDays(V("bidStart"),noticeDays()+1)),"bid"); A("evalDate",nextWork(addDays(V("bidEnd"),1)),"bid"); A("openDate",V("evalDate"),"bid");
+    A("docsDue",V("awardDate")?addDays(V("awardDate"),10):"","con");
+    A("sizeEnd",weekendEnd(V("sizeStart")),"size"); A("winterDue",V("qtyFixDate")?addDays(V("qtyFixDate"),40):"","size");
+    A("surveyStart",V("summerDone")||V("winterDone"),"pay");
+    return ch; }
   function needPre(){ var e=est(); return e!=null&&e>=5e7; }
   function noticeDays(){ var e=est(); return e!=null&&e>=1e8?20:10; }               /* 2단계 입찰: 1억 미만 10일, 1억 이상 20일 */
   function lastNotice(){ return V("bidEnd")?addDays(V("bidEnd"),-(noticeDays()+1)):""; }  /* 마감일 전날부터 기산 */
@@ -2593,7 +2604,7 @@ function build(root){
   function grid(pn){ var g=el("div","tkgridf"); pn.appendChild(g); return g; }
   function fld(g,k,label,o){ o=o||{}; var f=el("label","tkf"+(o.wide?" wide":"")); f.appendChild(el("span","tkfl",label)); var i=el("input"); i.type=o.type||"text";
     if(o.num){ i.inputMode="numeric"; } i.value=o.num&&V(k)?comma(N(k)):V(k); if(o.ph) i.placeholder=o.ph; f.appendChild(i); if(o.hint) f.appendChild(el("small",null,o.hint)); g.appendChild(f);
-    var on=function(){ F[k]=o.num?(num(i.value)==null?"":String(num(i.value))):i.value.trim(); put(); if(o.live) o.live(); };
+    var on=function(){ F[k]=o.num?(num(i.value)==null?"":String(num(i.value))):i.value.trim(); put(); if(o.live) o.live(); if(o.type==="date"&&prefill()){ put(); draw(); } };
     i.addEventListener(o.type==="date"||o.type==="time"?"change":"input",on);
     if(o.num) i.addEventListener("blur",function(){ var n=N(k); i.value=n==null?"":comma(n); });
     if(o.redraw) i.addEventListener("change",function(){ draw(); });
@@ -2804,6 +2815,7 @@ function build(root){
   /* ---- 화면 ---- */
   function curStage(){ for(var i=0;i<STAGES.length;i++) if(!P.done[STAGES[i][0]]) return i; return STAGES.length; }
   function draw(){
+    if(prefill()) LS.set("gb.p",P);
     app.textContent=""; REF=[];
     var hero=el("div","gb-hero"), si=el("input","sch"); si.placeholder="학교명 (예: ○○중학교)"; si.value=V("school"); si.setAttribute("aria-label","학교명");
     si.oninput=function(){ F.school=si.value.trim(); put(); }; si.onchange=function(){ draw(); }; hero.appendChild(si);
@@ -4334,7 +4346,7 @@ function build(root){
     if(o.sel){ i=el("select"); o.sel.forEach(function(v){ var op=el("option",null,v); op.value=v; i.appendChild(op); }); }
     else { i=el("input"); i.type=o.type||"text"; if(o.ph) i.placeholder=o.ph; if(o.list) i.setAttribute("list",o.list); }
     i.value=getPath(path)||""; f.appendChild(i); if(o.hint) f.appendChild(el("small",null,o.hint)); g.appendChild(f);
-    var on=function(){ setPath(path,i.value.trim()); save(); if(o.live) o.live(); };
+    var on=function(){ setPath(path,i.value.trim()); save(); if(o.live) o.live(); if(o.type==="date"&&hkPrefill()){ save(); draw(); } };
     i.addEventListener(o.sel||o.type==="date"||o.type==="time"?"change":"input",on); if(o.redraw) i.addEventListener("change",function(){ draw(); });
     return i; }
   function datalist(id,arr){ if(document.getElementById(id)) return; var d=el("datalist"); d.id=id; arr.forEach(function(v){ var o=el("option"); o.value=v; d.appendChild(o); }); document.body.appendChild(d); }
@@ -4407,7 +4419,14 @@ function build(root){
   }
 
   /* ================= 회의 한 건 ================= */
+  /* 회의 날짜로 정해지는 날짜 미리 채우기(직접 고친 값은 그대로) */
+  function prevWork(d){ var w=TK().workDays; if(!d||!w) return d; for(var i=0;i<10;i++){ if(w(addDays(d,-1),1)===d) return d; d=addDays(d,-1); } return d; }
+  function hkPrefill(){ if(!CUR) return false; var A0=CUR.autoV=CUR.autoV||{}, ch=false;
+    function A(path,v){ if(!v) return; var cur=getPath(path)||""; if(cur&&cur!==A0[path]) return; if(cur!==v){ setPath(path,v); ch=true; } A0[path]=v; }
+    var d=S.meet.date; A("docs.noticeDate",d?prevWork(addDays(d,-7)):"");   /* 회의 7일 전까지 공고 — 토·공휴일이면 앞 근무일 */
+    A("docs.proposeDate",S.docs.noticeDate); A("docs.resultDate",d); return ch; }
   function drawMeet(){
+    if(hkPrefill()) save();
     var m=CUR; m.done=m.done||{};
     app.appendChild(btn("← 장부","cv-back",function(){ save(); CUR=null; go({v:"list"}); }));
     var tp=el("div","cv-top"); tp.appendChild(el("h3",null,mTitle(S))); app.appendChild(tp);
@@ -4543,7 +4562,6 @@ function build(root){
       if(!pv||!Object.keys(o).length){ var b=prompt("이번 회의 운영위 문서번호의 앞 번호를 넣어 주세요 (예: 113 → 113-1, 113-2 …)",""); b=trim(b||""); if(!/^\d+$/.test(b)) return; ["no1","no2","no3","no4"].forEach(function(k,i){ o[k]=b+"-"+(i+1); }); }
       Object.keys(o).forEach(function(k){ S.docs[k]=o[k]; }); save(); draw(); HK.toast("문서번호를 "+(pv?mTitle(pv.s)+"에서 ":"")+"이어 매겼어요."); }));
     nb.appendChild(el("small","cv-law",pv?"지난 회의("+mTitle(pv.s)+") 번호 다음으로: 공고번호 +1(같은 학년도), 운영위 문서번호 앞 번호 +1":"지난 회의가 없으면 앞 번호를 물어봐요"));
-    if(!S.docs.noticeDate&&S.meet.date){ var b0=btn("공고일을 회의 7일 전으로","btn ghost",function(){ S.docs.noticeDate=addDays(S.meet.date,-7); if(!S.docs.proposeDate) S.docs.proposeDate=S.docs.noticeDate; save(); draw(); }); pn.appendChild(b0); }
     upd();
     sub(pn,"근거 문구","소집 기안문·공고문에 들어가요");
     var g2=grid(pn); fld(g2,"opts.ordinance","근거 조례"); fld(g2,"opts.article","소집 근거 조항"); fld(g2,"opts.article2","공고문 근거 조항"); fld(g2,"opts.refLine","참고사항 (공고문·안내장)",{wide:true});
@@ -4570,7 +4588,7 @@ function build(root){
   ST.res=function(pn){
     pn.appendChild(el("p","hk-say","안건마다 처리결과와 표결결과를 확정하면 회의록·처리상황표·이송 기안문에 그대로 들어가요. 처리결과는 학교장에게 이송하고 회의록은 누리집에 공개해요."));
     var g=grid(pn); fld(g,"docs.resultDate","처리(이송)일",{type:"date"}); fld(g,"docs.no3","처리결과 이송 문서번호");
-    if(!S.docs.resultDate&&S.meet.date) pn.appendChild(btn("처리일을 회의일로","btn ghost",function(){ S.docs.resultDate=S.meet.date; save(); draw(); }));
+
     sub(pn,"안건별 결과");
     var rows=el("div","hk-rows"); pn.appendChild(rows);
     agendaList().forEach(function(a){ var r=el("div","hk-row hk-rs"); r.appendChild(el("span","tt",(trim(a.no)?"제"+trim(a.no)+"호 ":"")+trim(a.title)));

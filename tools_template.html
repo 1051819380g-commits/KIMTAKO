@@ -50,6 +50,20 @@
 .tksl{white-space:nowrap;font-weight:700;color:var(--ink)}
 .tkwarn{background:var(--warn-bg);border-radius:8px;padding:8px 12px}
 .tkwarn h5{color:var(--warn)}
+/* 공개판(예전 화면)이 쓰는 기준·근거 칸 — 공개판 반영 뒤 지워도 됨 */
+.tkinfo{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:0 0 12px;font-size:13.5px}
+.tkinfo>summary{cursor:pointer;padding:10px 14px;color:var(--ink-2);list-style:none;display:flex;align-items:center;gap:8px}
+.tkinfo>summary::-webkit-details-marker{display:none}
+.tkinfo>summary::before{content:"▸";color:var(--muted);transition:transform .15s}
+.tkinfo[open]>summary::before{transform:rotate(90deg)}
+.tkinfo .bd{padding:2px 16px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.tkinfo h5{margin:0 0 6px;font-size:13px;color:var(--ink)}
+.tkinfo ul{margin:0;padding-left:18px;color:var(--ink-2);line-height:1.6}
+.tkinfo li+li{margin-top:2px}
+.tkinfo a{color:var(--accent-ink)}
+.tkinfo dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.tkinfo dt{color:var(--muted)}
+.tkinfo dd{margin:0;color:var(--ink-2)}
 #tkhelp{max-width:600px;width:calc(100% - 32px);border:0;border-radius:14px;padding:0;color:var(--ink);background:var(--surface);box-shadow:0 20px 50px rgba(0,0,0,.3)}
 #tkhelp::backdrop{background:rgba(15,23,42,.45)}
 #tkhelp .hb{padding:20px 22px 8px;max-height:72vh;overflow:auto;font-size:14px;line-height:1.65}

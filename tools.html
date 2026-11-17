@@ -1939,6 +1939,7 @@ var CSS=[
 ".bc-hero .sch{flex:1 1 180px;max-width:260px}.bc-hero .yr{width:92px}.bc-hero label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-2)}.bc-hero .sp{flex:1}",
 ".bc-sub{font-size:13.5px;font-weight:700;color:var(--ink);margin:18px 0 8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.bc-sub small{font-weight:400;color:var(--muted);font-size:12.5px}",
 ".bc-say{font-size:13.5px;color:var(--ink-2);margin:10px 0;line-height:1.65}",
+".bc-say a{color:var(--accent-ink);text-decoration:underline}",
 ".bc-rows{display:grid;gap:8px}",
 ".bc-row{position:relative;background:var(--surface-2);border-radius:10px;padding:8px 36px 8px 10px;display:grid;gap:6px}",
 ".bc-ln{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--mw,108px),1fr));gap:6px}",
@@ -2161,14 +2162,14 @@ function build(root,ver){
       bd.appendChild(m); w.appendChild(box); }); }
   function cp(t,m){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ msg(m,"복사했어요.","ok"); },function(){ msg(m,"복사하지 못했어요. 글을 직접 골라 복사해 주세요.","warn"); }); }
   function choose(pn,c,k,label,opts,after){ var h=sub(pn,label), w=el("div","bc-sel"); pn.appendChild(w);
-    opts.forEach(function(o){ var b=btn("",""); b.setAttribute("aria-pressed",String(V(c,k)===o[0])); b.appendChild(document.createTextNode(o[0])); if(o[1]) b.appendChild(el("small",null,o[1]));
+    opts.forEach(function(o){ var b=btn("","bc-opt"); b.setAttribute("aria-pressed",String(V(c,k)===o[0])); b.appendChild(document.createTextNode(o[0])); if(o[1]) b.appendChild(el("small",null,o[1]));
       b.onclick=function(){ c.f[k]=o[0]; put(); draw(); }; w.appendChild(b); }); if(after) after(); return h; }
 
   /* ---- 단계 화면 ---- */
   function stage(pn,c,i){ var k=c.k, g, x, E=fyEnd(Y()), stg=stgOf(c), lim, m;
     var endT={l:"회계연도 끝",v:dot(E),s:"이 날 뒤에는 할 수 없어요 · "+ddTxt(dday(E)),c:ddCls(dday(E))};
     if(k==="sj"){
-      if(i===0){ choose(pn,c,"fund","어떤 돈인가요?",[["목적사업비·보조금 등","용도 지정 + 전액 교부"],["학교발전기금·다른학교회계 전입금·기타지원금","용도 지정 + 전액 교부"],["수익자부담경비(심의 거침)","1인당 징수한도액 등을 학운위가 심의"],["수익자부담경비(심의 전)","—"],["용도가 정해지지 않은 돈","—"]]);
+      if(i===0){ choose(pn,c,"fund","어떤 돈인가요?",[["목적사업비·보조금 등","용도 지정 + 전액 교부"],["학교발전기금·다른학교회계 전입금·기타지원금","용도 지정 + 전액 교부"],["수익자부담경비(심의 거침)","1인당 징수한도액 등을 학운위가 심의"],["수익자부담경비(심의 전)",""],["용도가 정해지지 않은 돈",""]]);
         g=grid(pn); fld(c,g,"name","사업명",{ph:"예: 원어민 원격 화상 강의 지원비",redraw:1}); fld(c,g,"org","교부 기관",{ph:"○○교육지원청 ○○과"}); fld(c,g,"gno","교부 공문 번호",{ph:"○○과-0000"}); fld(c,g,"gd","교부 공문 날짜",{type:"date"}); fld(c,g,"gamt","교부액(원)",{num:1,live:function(){ up(); }});
         x=calc(pn); var up=function(){ var fd=V(c,"fund"), ok=/목적|발전기금|심의 거침/.test(fd), no=/심의 전|정해지지/.test(fd);
           tiles(x,[{l:"성립전 사용",v:!fd?"-":ok?"할 수 있어요":"안 돼요",s:!fd?"돈의 종류를 골라요":ok?"차기 추경에 꼭 반영":/심의 전/.test(fd)?"증액분을 먼저 학운위 심의(묻고 답하기 Q11)":"추경으로 편성해요",c:!fd?"":ok?"ok":"bad"},

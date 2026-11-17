@@ -2069,7 +2069,7 @@ var CARDS=[
   b:"1. 관련: {rel:request|○○학교-○○○(20○○. ○. ○.)}\n2. {year|2027}학년도 {school|○○학교} 교복(동복·하복) 학교주관구매 기초금액 산출을 위해 아래와 같이 견적을 요청하오니 회신하여 주시기 바랍니다.\n  가. 회신기한: {dated:quoteDue|20○○. ○. ○.(○)}\n  나. 요청내용: {year|2027}학년도 교복(동복 4pcs, 하복 2pcs) 견적 및 품목별 단가\n  다. 예정수량: {n:qty|○○○}벌\n  라. 회신방법: 팩스({v:fax|055-000-0000}) 또는 이메일({v:email|○○○@gne.go.kr})\n\n붙임  1. {year|2027}학년도 교복 견적 의뢰서 1부.\n      2. 교복 사양서 1부.  끝.",
   f:["02-2-1","04-1"]},
  {st:"price",who:"행정",key:"price",t:"{year|2027}학년도 교복 기초금액 산출",
-  b:"1. 관련: {rel:request|○○학교-○○○(20○○. ○. ○.)}\n2. {year|2027}학년도 교복 견적서 {qn|○}곳을 받아 거래실례가격(견적가격)으로 아래와 같이 기초금액을 산출하고자 합니다.\n  가. 동복(4pcs): {n:winterPrice|○○○,○○○}원\n  나. 하복(2pcs): {n:summerPrice|○○,○○○}원\n  다. 기초금액(1인 단가): {n:basePrice|○○○,○○○}원\n  ※ 경남교육청 권고 상한가격: 동복 246,020원, 하복 97,605원(체육예술건강과-6509, 2026. 6. 2.) — 상한가격은 기초금액이 아님\n\n붙임  1. 교복 견적서 {qn|○}부.\n      2. 기초금액 산출조서 1부.  끝.",
+  b:"1. 관련: {rel:request|○○학교-○○○(20○○. ○. ○.)}\n2. {year|2027}학년도 교복 견적서 {qn|○}곳을 받아 거래실례가격(견적가격){avgHow|의 평균}으로 아래와 같이 기초금액을 산출하고자 합니다.\n  가. 동복(4pcs): {n:winterPrice|○○○,○○○}원\n  나. 하복(2pcs): {n:summerPrice|○○,○○○}원\n  다. 기초금액(1인 단가): {n:basePrice|○○○,○○○}원\n  ※ 경남교육청 권고 상한가격: 동복 246,020원, 하복 97,605원(체육예술건강과-6509, 2026. 6. 2.) — 상한가격은 기초금액이 아님\n\n붙임  1. 교복 견적서 {qn|○}부.\n      2. 기초금액 산출조서 1부.  끝.",
   f:["02-2-2","xls","02-2-3"]},
  {st:"bid",who:"행정",need:"pre",t:"{year|2027}학년도 학생 교복 구매규격 사전공개",
   b:"1. 관련: 「지방자치단체를 당사자로 하는 계약에 관한 법률」 제9조의2, 같은 법 시행령 제32조의2\n2. {year|2027}학년도 학생 교복(동복·하복) 구매규격(사양서)을 아래와 같이 지정정보처리장치(G2B)로 사전공개하고자 합니다.\n  가. 사업명: {school|○○학교} {year|2027}학년도 학생 교복 구입\n  나. 기초금액: 단가 {n:basePrice|○○○,○○○}원(동복 {n:winterPrice|○○○,○○○}원, 하복 {n:summerPrice|○○,○○○}원)\n  다. 배정예산: {budgetCalc|○○○,○○○원×○○○벌=○○,○○○,○○○원}\n  라. 공개사항: {year|2027}학년도 학생 교복 사양서\n  마. 공개기간: {preRange|20○○. ○. ○. ~ 20○○. ○. ○.(○일간)}\n\n붙임  {year|2027}학년도 학생 교복 사양서 1부.  끝.",
@@ -2213,8 +2213,11 @@ function build(root){
   function base(){ var w=N("winterPrice"), s=N("summerPrice"); return w!=null&&s!=null?w+s:N("basePrice"); }
   function budget(){ var b=base(), q=N("qty"); return b!=null&&q!=null?b*q:null; }
   function est(){ var b=budget(); return b==null?null:Math.round(b/1.1); }        /* 추정가격 = 부가세 뺀 금액 */
-  function quoteAvg(k){ var a=P.quotes.map(function(q){ return num(q[k]); }).filter(function(n){ return n!=null; }); if(!a.length) return null;
+  function quoteList(k){ return P.quotes.map(function(q){ return num(q[k]); }).filter(function(n){ return n!=null; }); }
+  function quoteAvg(k){ var a=quoteList(k).sort(function(x,y){ return x-y; }); if(!a.length) return null;
+    if(a.length>=3) a=a.slice(1,-1);   /* 3곳 이상이면 최고·최저 하나씩 빼고 */
     return Math.floor(a.reduce(function(x,y){ return x+y; },0)/a.length/10)*10; }   /* 평균, 원 단위 절삭 */
+  function trimmed(){ return quoteList("w").length>=3||quoteList("s").length>=3; }
   function needPre(){ var e=est(); return e!=null&&e>=5e7; }
   function noticeDays(){ var e=est(); return e!=null&&e>=1e8?20:10; }               /* 2단계 입찰: 1억 미만 10일, 1억 이상 20일 */
   function lastNotice(){ return V("bidEnd")?addDays(V("bidEnd"),-(noticeDays()+1)):""; }  /* 마감일 전날부터 기산 */
@@ -2247,6 +2250,7 @@ function build(root){
     estCalc:function(){ var e=est(); return e==null?"":comma(e)+"원(부가세 제외)"; },
     contractAmt:function(){ var p=N("bidPrice"), q=N("qty"); return p!=null&&q!=null?comma(p*q):""; },
     rate:function(){ var p=N("bidPrice"), e=N("estPrice"); return p!=null&&e?(p/e*100).toFixed(3):""; },
+    avgHow:function(){ return trimmed()?" 중 최고·최저가를 뺀 평균":"의 평균"; },
     qn:function(){ var n=P.quotes.filter(function(q){ return num(q.w)!=null||num(q.s)!=null; }).length; return n?String(n):""; },
     winnerCeo:function(){ if(V("winnerCeo")) return V("winnerCeo"); var w=bids().filter(function(b){ return b.name.trim()===V("winner"); })[0]; return w&&String(w.ceo||"").trim()?w.ceo.trim():""; },
     rel:function(a){ return rel(a); },
@@ -2451,7 +2455,7 @@ function build(root){
     var ub=el("div","tkf"); ub.appendChild(el("span","tkfl"," ")); ub.appendChild(use); g2.appendChild(ub);
     calc=calcBox(pn);
     function upd(){ var w=N("winterPrice"), s=N("summerPrice"), aw=quoteAvg("w"), as=quoteAvg("s"), b=base();
-      tiles(calc,[{l:"견적 평균(1벌)",v:aw!=null&&as!=null?won(aw+as):"-",s:aw!=null?"동복 "+comma(aw)+" · 하복 "+(as!=null?comma(as):"-")+" (원 단위 절삭)":"견적을 넣어 주세요"},
+      tiles(calc,[{l:"견적 평균(1벌)",v:aw!=null&&as!=null?won(aw+as):"-",s:aw!=null?"동복 "+comma(aw)+" · 하복 "+(as!=null?comma(as):"-")+(trimmed()?" (최고·최저 빼고, 원 단위 절삭)":" (원 단위 절삭)"):"견적을 넣어 주세요"},
         {l:"동복 · 상한 246,020원",v:won(w),s:w!=null?(w<=CAP.w?"상한 이내":"상한보다 "+comma(w-CAP.w)+"원 많음"):"",c:w==null?"":w<=CAP.w?"ok":"bad"},
         {l:"하복 · 상한 97,605원",v:won(s),s:s!=null&&w?"동복의 "+(s/w*100).toFixed(1)+"% (40% 넘지 않게)":"",c:s==null?"":s<=CAP.s&&(!w||s<=w*.4)?"ok":"bad"},
         {l:"기초금액(1인 단가)",v:won(b),s:budget()!=null?"× "+comma(N("qty"))+"벌 = "+man(budget()):"계획 단계에서 인원을 넣으면 예산이 나와요"}]); }

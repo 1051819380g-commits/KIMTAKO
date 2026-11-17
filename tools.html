@@ -1379,7 +1379,7 @@ function saveFile(blob,name){
 
 /* ---------- 업체 조회(조달청 나라장터 사용자정보 · 국세청 사업자 상태) — 공공데이터 인증키는 설정에 ---------- */
 /* 공공데이터 인증키: Junho 님 키를 기본으로 쓴다(누리집 공개 파일이라 키가 보인다 — 사용자 결정 2026-11-17) */
-var KEY0="__KEY0__";
+var KEY0="5d51f7f74241e170702daca3dfec53b4c50f2c8aaea9d9761cde23385262f680";
 function getKey(){ return LS.get("key","")||(KEY0.indexOf("__")===0?"":KEY0); }
 var API="https://apis.data.go.kr/1230000/ao/UsrInfoService02/";
 function keyq(){ var key=getKey(); return /%[0-9A-Fa-f]{2}/.test(key)?key:encodeURIComponent(key); }

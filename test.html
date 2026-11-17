@@ -1510,6 +1510,7 @@ function ckGenPrompt(ti,b,memo){
   "- 줄 나눔은 예시와 똑같이 지킨다. 한 줄에 한 항목만 쓰고, 여러 항목(가. 나. 다. …)을 한 줄로 합치지 않는다.\n"+
   "- 바꾸는 곳은 빈칸(○○, 000, 20○○, 0. 0. 등)과 [우리 상황]에 적힌 내용과 맞닿은 값·문구뿐이다.\n"+
   "- [우리 상황]에 없는 값(금액·날짜·업체·사람·학교 이름 등)은 지어내지 말고 빈칸(○○, 000) 그대로 둔다.\n"+
+  "- [우리 상황]의 값은 그 값이 무엇인지(회의 날짜인지, 발령 날짜인지 등) 뜻이 맞는 자리에만 넣는다. 맞는 자리가 확실하지 않으면 그 자리는 빈칸으로 둔다. 차수·번호도 [우리 상황]에 없으면 빈칸이다.\n"+
   "- '관련' 줄과 「 」 안의 법령·규정 이름, 조문 번호는 한 글자도 바꾸지 않는다.\n"+
   "- 날짜는 2026. 11. 17. 처럼, 시각은 14:00 처럼 쓴다. 금액은 예시와 같은 꼴로 쓴다.\n"+
   "- 마지막은 예시처럼 \"끝.\"으로 맺는다.\n- 설명·마크다운 없이 아래 형식만 쓴다.\n제목: …\n본문:\n…\n\n"+
@@ -1520,12 +1521,15 @@ function ckGenParse(t){
   var n=/^\s*제\s*목\s*[:：]\s*(.*)$/m.exec(t), b=/본\s*문\s*[:：]?\s*\n([\s\S]*)$/.exec(t);
   return {ti:n?n[1].trim():"", b:(b?b[1]:t).trim()};
 }
-function ckGenCheck(o,nw){
+function ckGenCheck(o,nw,memo,t){
   var w=[], L=function(s){ return s.split("\n").map(function(x){ return x.replace(/\s+/g," ").trim(); }).filter(Boolean); }, ol=L(o), nl=L(nw);
   var laws=function(s){ return s.match(/「[^」]+」/g)||[]; }, olw=laws(o).map(function(x){ return x.replace(/\s/g,""); });
   laws(nw).forEach(function(x){ if(olw.indexOf(x.replace(/\s/g,""))<0&&w.indexOf(x)<0) w.push("예시에 없던 법령 이름 "+x); });
   var rel=ol.filter(function(x){ return /관련/.test(x)&&/^(1\s*[.)]|[가-하]\.)/.test(x); });
   if(rel.some(function(x){ return nl.indexOf(x)<0; })) w.push("'관련' 줄이 바뀌었어요");
+  var num=function(x){ return (x.match(/\d+/g)||[]).map(function(v){ return String(+v); }); }, ok=num(o+" "+(memo||"")), nn=[];
+  num(nw+" "+(t||"")).forEach(function(v){ if(ok.indexOf(v)<0&&nn.indexOf(v)<0) nn.push(v); });
+  if(nn.length) w.push("예시·우리 상황에 없던 숫자 "+nn.slice(0,5).join(", ")+"(지어낸 값일 수 있어요)");
   if(!/끝\s*\.\s*$/.test(nw.trim())) w.push("'끝.'이 없어요");
   if(Math.abs(nl.length-ol.length)>Math.max(2,ol.length*.3)) w.push("줄 수가 예시와 많이 달라요("+ol.length+"줄 → "+nl.length+"줄)");
   return w;
@@ -1552,7 +1556,7 @@ function ckGenAdd(box,bar,body,ti,save){
   gb.onclick=function(){ ar.hidden=!ar.hidden; if(!ar.hidden) q.focus(); };
   go.onclick=function(){
     var memo=q.value.trim(); if(!memo){ msg.className="ckgenmsg warn"; msg.textContent="우리 상황을 한 줄이라도 적어 주세요."; q.focus(); return; }
-    var old=body.innerText.trim(); go.disabled=gb.disabled=true; go.textContent="맞추는 중…"; msg.className="ckgenmsg"; msg.textContent="예시 한 건을 바탕으로 고치는 중이에요(10~20초).";
+    var old=body.innerText.trim(), ti0=ti.value; go.disabled=gb.disabled=true; go.textContent="맞추는 중…"; msg.className="ckgenmsg"; msg.textContent="예시 한 건을 바탕으로 고치는 중이에요(10~20초).";
     var ai=window.ckSample; if(!ai){ msg.className="ckgenmsg warn"; msg.textContent="AI를 불러오지 못했어요. 새로고침해 주세요."; go.disabled=gb.disabled=false; go.textContent="맞추기"; return; }
     ai(ckGenPrompt(ti.value,old,memo)).then(function(r){
       var p=ckGenParse(r.text); if(!p.b||p.b.length<20) throw {code:"empty"};
@@ -1562,7 +1566,7 @@ function ckGenAdd(box,bar,body,ti,save){
         e.style.paddingLeft=/^[가-하]\s*\./.test(x)?"1em":/^(\d+\)|[가-하]\)|-|※|·)/.test(x)?"2em":"";
         if(!oldL[x.replace(/\s+/g,"")]) e.classList.add("ckchg"); body.appendChild(e); });
       if(p.ti) ti.value=p.ti; ckBlMark(body); upd(); save();
-      var w=ckGenCheck(old,p.b);
+      var w=ckGenCheck(old+"\n"+ti0,p.b,memo,p.ti);
       msg.className="ckgenmsg"+(w.length?" warn":""); msg.textContent=(w.length?"확인하세요: "+w.join(" · ")+". ":"")+"바뀐 줄은 파란 선으로 표시했어요. 법령·금액·날짜는 원문과 대조한 뒤 쓰세요. 처음 예시는 '원래대로'로 돌아가요.";
     }).catch(function(e){ msg.className="ckgenmsg warn"; msg.textContent=e&&e.code==="rate_limited"?"오늘 AI 사용 한도가 찼어요. 내일 다시 해 보세요.":"AI가 답하지 못했어요. 잠시 뒤 다시 해 보세요."; })
     .then(function(){ go.disabled=gb.disabled=false; go.textContent="맞추기"; });

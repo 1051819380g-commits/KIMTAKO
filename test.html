@@ -397,14 +397,22 @@ footer details summary{cursor:pointer;color:var(--ink-2);font-weight:500}
 .ckdocb mark.ckbl.ckblok{background:none;border-bottom:0;padding:0;cursor:text}
 .ckdocb .ckchg{box-shadow:inset 3px 0 0 #3772FF;background:rgba(55,114,255,.06);padding-left:6px}
 .ckblcnt{font-size:13px;color:var(--muted);align-self:center}
-.ckgen{margin:4px 0 6px}
-.ckgen textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.5;padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
-.ckgen textarea:focus{outline:none;border-color:var(--accent)}
-.ckgenrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
-.ckgenrow .pill.pri{background:var(--accent);border-color:var(--accent);color:#fff}
-.ckgenrow .pill:disabled{opacity:.6;cursor:default}
-.ckgenmsg{font-size:13px;color:var(--muted);flex:1;min-width:200px}
+.ckailbl{display:block;font-weight:700;font-size:14px;margin:14px 0 6px;color:var(--ink)}
+.ckai2>.ckailbl:first-child{margin-top:4px}
+.ckaimemo{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.5;padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+.ckaimemo:focus{outline:none;border-color:var(--accent)}
+.ckaipick{display:flex;flex-direction:column;gap:6px}
+.ckaic{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+.ckaic.on{border-color:var(--accent);background:var(--accent-soft)}
+.ckaic input{margin-top:3px;accent-color:var(--accent)}
+.ckaic b{display:block;font-size:14px;font-weight:600;color:var(--ink)}
+.ckaic small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.ckgenrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.ckgenrow .pill.pri{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.ckgenrow .pill:disabled{opacity:.55;cursor:default}
+.ckgenmsg{font-size:13px;color:var(--muted)}
 .ckgenmsg.warn{color:var(--warn)}
+.ckaiout{margin-top:14px}
 .ckdocb:focus{border-color:#3772FF;border-style:solid}
 .ckdocb .gp,.ckdocb .gl{color:#1F2329}
 .ckdocb table td,.ckdocb table th{color:#1F2329}
@@ -1492,7 +1500,7 @@ function ckDraftOf(bl){
   return {t:ti,b:out};
 }
 
-/* ---- 기안문 생성기(시험판): 모음 기안문 편집 상자 안에서만. 빈칸(○○·000·20○○·0. 0.) 표시 + AI로 예시 한 건을 우리 상황에 맞추기 ---- */
+/* ---- 기안문 빈칸(○○·000·20○○·0. 0.) 표시와 AI 기안문 공용 부품 ---- */
 var CKBLRE=/(?:19|20)[○◯〇]{2}|[○◯〇]+|(?<![A-Za-z])O{2,}(?![A-Za-z])|(?<![\d.])(?:\d{2,4}\.\s?)?0{1,2}\.\s?0{1,2}\.|(?<!\d)0{1,2}(?:월\s?0{1,2}일|월|일)|(?<![\d,:])0{2,}(?![\d,])/g;
 function ckIsBl(s){ CKBLRE.lastIndex=0; var m=CKBLRE.exec(s||""); return !!m&&m[0]===s; }
 function ckBlMark(root){
@@ -1504,13 +1512,31 @@ function ckBlMark(root){
     if(!i) return; if(i<s.length) f.appendChild(document.createTextNode(s.slice(i))); t.parentNode.replaceChild(f,t); });
 }
 function ckBlStrip(h){ return String(h).replace(/<mark class="ckbl[^"]*">|<\/mark>/g,""); }
+/* '다음 빈칸 ›' 단추와 남은 수. 제목 입력칸의 빈칸도 센다 */
+function ckBlTools(body,ti){
+  var cnt=el("span","ckblcnt"), nx=el("button","pill","다음 빈칸 ›"); nx.type="button";
+  function blanks(){ return [].slice.call(body.querySelectorAll("mark.ckbl")).filter(function(k){ var ok=!ckIsBl(k.textContent); k.classList.toggle("ckblok",ok); return !ok; }); }
+  function tiBl(){ CKBLRE.lastIndex=0; return CKBLRE.exec(ti.value); }
+  function upd(){ var n=blanks().length+(tiBl()?1:0); cnt.textContent=n?"빈칸 "+n+"곳":"빈칸을 다 채웠어요"; nx.hidden=!n; }
+  function pick(k){ var r=document.createRange(); r.selectNodeContents(k); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+  nx.onclick=function(){
+    var m=tiBl(); if(m&&document.activeElement!==ti){ ti.focus(); ti.setSelectionRange(m.index,m.index+m[0].length); return; }
+    var L=blanks(); if(!L.length) return; var s=getSelection(), at=s.rangeCount&&body.contains(s.anchorNode)?s.getRangeAt(0):null, k=L[0];
+    if(at) for(var i=0;i<L.length;i++){ var r=document.createRange(); r.selectNodeContents(L[i]); if(r.compareBoundaryPoints(Range.START_TO_END,at)>0&&!L[i].contains(at.startContainer)){ k=L[i]; break; } }
+    body.focus(); k.scrollIntoView({block:"center"}); pick(k); };
+  body.addEventListener("click",function(e){ var k=e.target.closest&&e.target.closest("mark.ckbl"); if(k&&!k.classList.contains("ckblok")) pick(k); });
+  body.addEventListener("input",upd); ti.addEventListener("input",upd);
+  ckBlMark(body); upd();
+  return {nx:nx,cnt:cnt,upd:function(){ ckBlMark(body); upd(); }};
+}
 function ckGenPrompt(ti,b,memo){
-  return "너는 경상남도교육청 소속 학교의 기안문 작성 도우미다. 아래 [예시 기안문] 한 건을 [우리 상황]에 맞게 고쳐라.\n\n[규칙]\n"+
-  "- 줄 수·항목 번호·짜임새·말투는 그대로 둔다. 새 항목을 만들거나 있던 항목을 지우지 않는다.\n"+
+  return "너는 경상남도교육청 소속 학교의 기안문 작성 도우미다. 아래 [예시 기안문] 한 건을 본떠 [우리 상황]에 맞는 기안문을 써라.\n\n[규칙]\n"+
+  "- 줄 수·항목 번호·짜임새·말투는 예시를 그대로 따른다. 새 항목을 만들거나 있던 항목을 지우지 않는다.\n"+
   "- 줄 나눔은 예시와 똑같이 지킨다. 한 줄에 한 항목만 쓰고, 여러 항목(가. 나. 다. …)을 한 줄로 합치지 않는다.\n"+
-  "- 바꾸는 곳은 빈칸(○○, 000, 20○○, 0. 0. 등)과 [우리 상황]에 적힌 내용과 맞닿은 값·문구뿐이다.\n"+
-  "- [우리 상황]에 없는 값(금액·날짜·업체·사람·학교 이름 등)은 지어내지 말고 빈칸(○○, 000) 그대로 둔다.\n"+
-  "- [우리 상황]의 값은 그 값이 무엇인지(회의 날짜인지, 발령 날짜인지 등) 뜻이 맞는 자리에만 넣는다. 맞는 자리가 확실하지 않으면 그 자리는 빈칸으로 둔다. 차수·번호도 [우리 상황]에 없으면 빈칸이다.\n"+
+  "- [우리 상황]의 '하려는 일'이 예시와 조금 다르면 주제에 해당하는 말(사업명·물품·행사·위원회 이름 등)만 하려는 일에 맞게 바꾼다.\n"+
+  "- 그 밖에 바꾸는 곳은 빈칸(○○, 000, 20○○, 0. 0. 등)과 [우리 상황]에 적힌 값뿐이다.\n"+
+  "- [우리 상황]에 없는 값(금액·날짜·업체·사람·학교 이름·차수·번호 등)은 지어내지 말고 빈칸(○○, 000) 그대로 둔다.\n"+
+  "- [우리 상황]의 값은 그 값이 무엇인지(회의 날짜인지, 발령 날짜인지 등) 뜻이 맞는 자리에만 넣는다. 맞는 자리가 확실하지 않으면 빈칸으로 둔다.\n"+
   "- '관련' 줄과 「 」 안의 법령·규정 이름, 조문 번호는 한 글자도 바꾸지 않는다.\n"+
   "- 날짜는 2026. 11. 17. 처럼, 시각은 14:00 처럼 쓴다. 금액은 예시와 같은 꼴로 쓴다.\n"+
   "- 마지막은 예시처럼 \"끝.\"으로 맺는다.\n- 설명·마크다운 없이 아래 형식만 쓴다.\n제목: …\n본문:\n…\n\n"+
@@ -1527,55 +1553,24 @@ function ckGenCheck(o,nw,memo,t){
   laws(nw).forEach(function(x){ if(olw.indexOf(x.replace(/\s/g,""))<0&&w.indexOf(x)<0) w.push("예시에 없던 법령 이름 "+x); });
   var rel=ol.filter(function(x){ return /관련/.test(x)&&/^(1\s*[.)]|[가-하]\.)/.test(x); });
   if(rel.some(function(x){ return nl.indexOf(x)<0; })) w.push("'관련' 줄이 바뀌었어요");
-  var num=function(x){ return (x.match(/\d+/g)||[]).map(function(v){ return String(+v); }); }, ok=num(o+" "+(memo||"")), nn=[];
+  var num=function(x){ return (x.match(/\d[\d,]*\s*(?:억|만)?/g)||[]).map(function(v){ var n=+v.replace(/[^\d]/g,""); return String(/억/.test(v)?n*1e8:/만/.test(v)?n*1e4:n); }); }   /* 3,500만 = 35,000,000 */, ok=num(o+" "+(memo||"")), nn=[];
   num(nw+" "+(t||"")).forEach(function(v){ if(ok.indexOf(v)<0&&nn.indexOf(v)<0) nn.push(v); });
-  if(nn.length) w.push("예시·우리 상황에 없던 숫자 "+nn.slice(0,5).join(", ")+"(지어낸 값일 수 있어요)");
+  if(nn.length) w.push("예시·입력에 없던 숫자 "+nn.slice(0,5).join(", ")+"(지어낸 값일 수 있어요)");
   if(!/끝\s*\.\s*$/.test(nw.trim())) w.push("'끝.'이 없어요");
   if(Math.abs(nl.length-ol.length)>Math.max(2,ol.length*.3)) w.push("줄 수가 예시와 많이 달라요("+ol.length+"줄 → "+nl.length+"줄)");
   return w;
 }
-function ckGenAdd(box,bar,body,ti,save){
-  var cnt=el("span","ckblcnt"), nx=el("button","pill","다음 빈칸 ›"); nx.type="button";
-  function blanks(){ return [].slice.call(body.querySelectorAll("mark.ckbl")).filter(function(k){ var ok=!ckIsBl(k.textContent); k.classList.toggle("ckblok",ok); return !ok; }); }
-  function tiBl(){ CKBLRE.lastIndex=0; return CKBLRE.exec(ti.value); }
-  function upd(){ var n=blanks().length+(tiBl()?1:0); cnt.textContent=n?"빈칸 "+n+"곳":"빈칸을 다 채웠어요"; nx.hidden=!n; }
-  function pick(k){ var r=document.createRange(); r.selectNodeContents(k); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }
-  nx.onclick=function(){
-    var m=tiBl(); if(m&&document.activeElement!==ti){ ti.focus(); ti.setSelectionRange(m.index,m.index+m[0].length); return; }
-    var L=blanks(); if(!L.length) return; var s=getSelection(), at=s.rangeCount&&body.contains(s.anchorNode)?s.getRangeAt(0):null, k=L[0];
-    if(at) for(var i=0;i<L.length;i++){ var r=document.createRange(); r.selectNodeContents(L[i]); if(r.compareBoundaryPoints(Range.START_TO_END,at)>0&&!L[i].contains(at.startContainer)){ k=L[i]; break; } }
-    body.focus(); k.scrollIntoView({block:"center"}); pick(k); };
-  body.addEventListener("click",function(e){ var k=e.target.closest&&e.target.closest("mark.ckbl"); if(k&&!k.classList.contains("ckblok")) pick(k); });
-  body.addEventListener("input",upd); ti.addEventListener("input",upd);
-  ckBlMark(body);
-  /* AI로 우리 상황에 맞추기: 편집 상자 바로 아래에만 작은 입력칸 */
-  var gb=el("button","pill","AI로 우리 상황에 맞추기"); gb.type="button";
-  var ar=el("div","ckgen"), q=el("textarea"), row=el("div","ckgenrow"), go=el("button","pill pri","맞추기"), msg=el("span","ckgenmsg");
-  ar.hidden=true; q.rows=4; q.placeholder="우리 학교 상황을 아는 만큼 적어 주세요. 예: 3학년 수업용 노트북 30대, 예산 3,000만 원, 12월 납품\n학생·교직원 이름 같은 개인정보는 적지 마세요."; q.setAttribute("aria-label","우리 상황");
-  go.type="button"; row.appendChild(go); row.appendChild(msg); ar.appendChild(q); ar.appendChild(row);
-  gb.onclick=function(){ ar.hidden=!ar.hidden; if(!ar.hidden) q.focus(); };
-  go.onclick=function(){
-    var memo=q.value.trim(); if(!memo){ msg.className="ckgenmsg warn"; msg.textContent="우리 상황을 한 줄이라도 적어 주세요."; q.focus(); return; }
-    var old=body.innerText.trim(), ti0=ti.value; go.disabled=gb.disabled=true; go.textContent="맞추는 중…"; msg.className="ckgenmsg"; msg.textContent="예시 한 건을 바탕으로 고치는 중이에요(10~20초).";
-    var ai=window.ckSample; if(!ai){ msg.className="ckgenmsg warn"; msg.textContent="AI를 불러오지 못했어요. 새로고침해 주세요."; go.disabled=gb.disabled=false; go.textContent="맞추기"; return; }
-    ai(ckGenPrompt(ti.value,old,memo)).then(function(r){
-      var p=ckGenParse(r.text); if(!p.b||p.b.length<20) throw {code:"empty"};
-      var oldL={}; old.split("\n").forEach(function(x){ oldL[x.replace(/\s+/g,"")]=1; });
-      body.textContent="";   /* 한 줄씩 그대로(기존 그리기는 '나.정기'처럼 붙은 항목을 앞줄에 합친다) */
-      p.b.split("\n").forEach(function(x){ x=x.trim(); if(!x) return; var e=el("div","gp ckgl",x);
-        e.style.paddingLeft=/^[가-하]\s*\./.test(x)?"1em":/^(\d+\)|[가-하]\)|-|※|·)/.test(x)?"2em":"";
-        if(!oldL[x.replace(/\s+/g,"")]) e.classList.add("ckchg"); body.appendChild(e); });
-      if(p.ti) ti.value=p.ti; ckBlMark(body); upd(); save();
-      var w=ckGenCheck(old+"\n"+ti0,p.b,memo,p.ti);
-      msg.className="ckgenmsg"+(w.length?" warn":""); msg.textContent=(w.length?"확인하세요: "+w.join(" · ")+". ":"")+"바뀐 줄은 파란 선으로 표시했어요. 법령·금액·날짜는 원문과 대조한 뒤 쓰세요. 처음 예시는 '원래대로'로 돌아가요.";
-    }).catch(function(e){ msg.className="ckgenmsg warn"; msg.textContent=e&&e.code==="rate_limited"?"오늘 AI 사용 한도가 찼어요. 내일 다시 해 보세요.":"AI가 답하지 못했어요. 잠시 뒤 다시 해 보세요."; })
-    .then(function(){ go.disabled=gb.disabled=false; go.textContent="맞추기"; });
-  };
-  bar.appendChild(gb); bar.appendChild(nx); bar.appendChild(cnt);
-  box.appendChild(bar); box.appendChild(ar);
+/* 글을 한 줄씩 그대로 그린다(기존 그리기는 '나.정기'처럼 붙은 항목을 앞줄에 합친다). oldL에 없는 줄은 파란 선 */
+function ckGenLines(body,text,oldL){
+  body.textContent="";
+  String(text).split("\n").forEach(function(x){ x=x.trim(); if(!x) return; var e=el("div","gp ckgl",x);
+    e.style.paddingLeft=/^[가나다라마바사아자차카타파하]\s*\./.test(x)?"1em":/^(\d+\)|[가나다라마바사아자차카타파하]\)|-|※|·)/.test(x)?"2em":"";
+    if(oldL&&!oldL[x.replace(/\s+/g,"")]) e.classList.add("ckchg"); body.appendChild(e); });
+}
+function ckGenAdd(box,bar,body,ti){   /* 기안문 모음 편집 상자: 빈칸 표시만 */
+  var T=ckBlTools(body,ti); bar.appendChild(T.nx); bar.appendChild(T.cnt); box.appendChild(bar);
   var rb=[].slice.call(bar.querySelectorAll("button")).filter(function(b){ return b.textContent==="원래대로"; })[0];
-  if(rb) rb.addEventListener("click",function(){ setTimeout(function(){ ckBlMark(body); upd(); },0); });
-  upd();
+  if(rb) rb.addEventListener("click",function(){ setTimeout(T.upd,0); });
 }
 function ckDraftEditor(box,d,x){
   var key="kbg.dr."+d[0]+"|"+d[1], saved=null;
@@ -1607,7 +1602,7 @@ function ckDraftEditor(box,d,x){
   btn("제목 복사",function(b,lbl){ ckCopy(ti.value,null,function(){ done(b,lbl); }); });
   btn("본문 복사",function(b,lbl){ ckCopy(body.innerText,ckBlStrip(body.innerHTML),function(){ done(b,lbl); }); });
   btn("원래대로",function(){ if(!confirm("고친 내용을 지우고 처음 예시로 되돌릴까요?")) return; try{ localStorage.removeItem(key); }catch(e){} to.value=val("수신자"); ti.value=val("제목")||x.t||""; fresh(); });
-  if(/^모음\|/.test(d[1])) ckGenAdd(box,bar,body,ti,save); else box.appendChild(bar);
+  if(/^모음\|/.test(d[1])) ckGenAdd(box,bar,body,ti); else box.appendChild(bar);
 }
 /* 복사: 표 서식까지(HTML) 되면 같이, 안 되면 글만. 클립보드 API가 막힌 파일 화면에선 선택 후 execCommand */
 function ckCopy(text,html,ok){
@@ -2123,7 +2118,7 @@ var CKGS={lv:"",cat:"",q:"",open:-1};   /* 기안문 모음에서 고른 것(새
 var CKGSTOP=/^(기안문?|기안하기|공문|예시|양식|서식|문서|작성|관련|건|및|등|방법|어떻게|하는|하기|하려고|좀)$/;
 var CKGSYN=[["구입","구매","매입"],["공사","보수","리모델링","환경개선"],["수당","강사료","강사비","인건비","사례비"],["출장","여비"],["채용","임용","기간제","계약제"],
   ["품의","지출품의"],["용역","위탁"],["입찰","공고"],["학운위","학교운영위원회","운영위원회"],["공무직","교육공무직원","교육공무직"],["체험학습","현장체험학습","수학여행","수련활동"],
-  ["학폭","학교폭력"],["겸직","외부강의"],["범죄경력","전력조회","성범죄"],["노트북","컴퓨터","정보화기기"],["교복","체육복"],["방과후","방과후학교"],["개인정보","정보보호"],["휴직","육아휴직"],["회의","협의회"]];
+  ["학폭","학교폭력"],["겸직","외부강의"],["범죄경력","전력조회","성범죄"],["노트북","컴퓨터","정보화기기","태블릿","스마트기기","크롬북"],["교복","체육복"],["방과후","방과후학교"],["개인정보","정보보호"],["휴직","육아휴직"],["회의","협의회"]];
 var CKGCHIP=[["물품 구입","물품 구입"],["공사","공사"],["용역 계약","용역 계약"],["수의계약","수의계약"],["입찰 공고","입찰 공고"],["지출 품의","품의"],["강사 수당","강사 수당"],
   ["기간제·계약제 채용","채용"],["범죄경력 조회","범죄경력"],["휴직·복직","휴직 복직"],["겸직 허가","겸직"],["국외출장","국외출장"],["학교운영위원회","학운위"],["위원회 개최","위원회 개최"],
   ["계획 수립","계획 수립"],["결과 보고","결과 보고"],["학교폭력","학교폭력"],["체험학습·수학여행","체험학습"],["방과후학교","방과후"],["개인정보","개인정보"]];
@@ -2201,6 +2196,69 @@ function ckGian(){
   draw();
 }
 /*CKTOOL*/
+
+/* ---- 도구 모음 'AI 기안문'(시험판): 하려는 일 → 비슷한 기안문 예시 고르기 → 그 예시를 본떠 AI(window.ckSample)가 씀 ---- */
+function ckAiGian(mount){
+  var K="kbg.aigian", st={}; try{ st=JSON.parse(localStorage.getItem(K)||"{}")||{}; }catch(e){}
+  function keep(){ try{ localStorage.setItem(K,JSON.stringify(st)); }catch(e){} }
+  var w=el("div","ckai2");
+  w.appendChild(el("label","ckailbl","① 무엇을 하려나요?"));
+  var job=el("input","ckgq"); job.placeholder="예: 수업용 노트북 구입, 인사자문위원회 개최, 현장체험학습 실시"; job.value=st.job||""; job.setAttribute("aria-label","하려는 일"); w.appendChild(job);
+  w.appendChild(el("label","ckailbl","② 아는 것 (날짜·장소·대상·수량·금액 등, 아는 만큼)"));
+  var memo=el("textarea","ckaimemo"); memo.rows=3; memo.value=st.memo||""; memo.setAttribute("aria-label","아는 것");
+  memo.placeholder="예: 2026. 12. 10.(목) 15:00 시청각실, 2학년 40명, 예산 300만 원\n학생·교직원 이름 같은 개인정보는 적지 마세요."; w.appendChild(memo);
+  w.appendChild(el("label","ckailbl","③ 본뜰 기안문 예시"));
+  var pick=el("div","ckaipick"); w.appendChild(pick);
+  var row=el("div","ckgenrow"), go=el("button","pill pri","AI로 기안문 쓰기"), msg=el("span","ckgenmsg"); go.type="button"; row.appendChild(go); row.appendChild(msg); w.appendChild(row);
+  var out=el("div","ckaiout"); w.appendChild(out); mount.appendChild(w);
+  var sel=typeof st.sel==="number"?st.sel:-1, cands=[], tm=0;
+  function find(){ var toks=ckGtoks(job.value), res=[];
+    if(toks.length) CKGIAN.forEach(function(g,i){ var r=ckGscore(g,toks); if(r.m) res.push({i:i,s:r.s+r.m*3}); });
+    res.sort(function(a,b){ return b.s-a.s; }); var top=res.length?res[0].s:0;
+    cands=res.filter(function(r){ return r.s>=top*0.5; }).slice(0,5).map(function(r){ return r.i; });
+    if(cands.indexOf(sel)<0) sel=cands.length?cands[0]:-1; draw(); }
+  function draw(){ pick.textContent=""; go.disabled=!cands.length;
+    if(!cands.length){ pick.appendChild(el("p","note",job.value.trim()?"비슷한 예시를 못 찾았어요. 다른 말로 적어 보세요(예: 구입 → 구매, 학운위 → 운영위원회).":"하려는 일을 적으면 비슷한 기안문 예시를 골라 드려요.")); return; }
+    cands.forEach(function(i){ var g=CKGIAN[i], l=el("label","ckaic"+(i===sel?" on":"")), r=el("input"), t=el("span");
+      r.type="radio"; r.name="ckaipick"; r.checked=i===sel; r.onchange=function(){ sel=i; st.sel=i; keep(); draw(); };
+      t.appendChild(el("b",null,g[2]+(g[7]?" ("+g[7]+")":""))); t.appendChild(el("small",null,g[0]+" · "+g[1]+(g[6]?" · "+g[6]:"")));
+      l.appendChild(r); l.appendChild(t); pick.appendChild(l); }); }
+  job.oninput=function(){ st.job=job.value; keep(); clearTimeout(tm); tm=setTimeout(find,250); };
+  memo.oninput=function(){ st.memo=memo.value; keep(); };
+  function show(R){
+    out.textContent=""; var doc=el("div","ckdoc");
+    function field(lbl,v){ var f=el("label","ckdocf"), i=el("input"); f.appendChild(el("span",null,lbl)); i.value=v; f.appendChild(i); doc.appendChild(f); return i; }
+    var to=field("수신자",R.to2!=null?R.to2:R.to), ti=field("제목",R.ti2!=null?R.ti2:R.ti), body=el("div","ckdocb");
+    body.contentEditable="true"; body.setAttribute("aria-label","기안문 본문 (고칠 수 있음)");
+    if(R.html) body.innerHTML=R.html; else { var oldL={}; String(R.old).split("\n").forEach(function(x){ oldL[x.replace(/\s+/g,"")]=1; }); ckGenLines(body,R.b,oldL); }
+    doc.appendChild(body);
+    out.appendChild(el("div","note","AI가 예시 「"+R.src+"」를 본떠 쓴 초안이에요. 바뀐 줄은 파란 선, 채울 빈칸은 점선 밑줄로 보여요. 법령·금액·날짜는 원문과 대조해 고친 뒤 복사하세요."));
+    if(R.w&&R.w.length) out.appendChild(el("p","ckgenmsg warn","확인하세요: "+R.w.join(" · ")));
+    out.appendChild(doc);
+    var tmx=0; function save(){ clearTimeout(tmx); tmx=setTimeout(function(){ R.to2=to.value; R.ti2=ti.value; R.html=body.innerHTML; st.res=R; keep(); },400); }
+    to.oninput=ti.oninput=body.oninput=save;
+    var bar=el("div","cktools");
+    function btn(lbl,fn){ var b=el("button","pill",lbl); b.type="button"; b.onclick=function(){ fn(b,lbl); }; bar.appendChild(b); return b; }
+    function done(b,lbl){ b.textContent="복사했어요"; setTimeout(function(){ b.textContent=lbl; },1400); }
+    btn("제목 복사",function(b,lbl){ ckCopy(ti.value,null,function(){ done(b,lbl); }); });
+    btn("본문 복사",function(b,lbl){ ckCopy(body.innerText,ckBlStrip(body.innerHTML),function(){ done(b,lbl); }); });
+    var T=ckBlTools(body,ti); bar.appendChild(T.nx); bar.appendChild(T.cnt); out.appendChild(bar);
+  }
+  go.onclick=function(){
+    var g=CKGIAN[sel], ai=window.ckSample; if(!g) return;
+    if(!ai){ msg.className="ckgenmsg warn"; msg.textContent="AI를 불러오지 못했어요. 새로고침해 주세요."; return; }
+    var mm="하려는 일: "+job.value.trim()+(memo.value.trim()?"\n"+memo.value.trim():"");
+    go.disabled=true; go.textContent="쓰는 중…"; msg.className="ckgenmsg"; msg.textContent="고른 예시를 본떠 쓰는 중이에요(10~20초).";
+    ai(ckGenPrompt(g[2],g[4],mm)).then(function(r){
+      var p=ckGenParse(r.text); if(!p.b||p.b.length<20) throw {code:"empty"};
+      st.res={src:g[2],to:g[3]||"내부결재",ti:p.ti||g[2],b:p.b,old:g[4],w:ckGenCheck(g[2]+"\n"+g[4],p.b,mm,p.ti)}; keep(); show(st.res);
+      msg.textContent=""; out.scrollIntoView({block:"start",behavior:"smooth"});
+    }).catch(function(e){ msg.className="ckgenmsg warn"; msg.textContent=e&&e.code==="rate_limited"?"오늘 AI 사용 한도가 찼어요. 내일 다시 해 보세요.":"AI가 답하지 못했어요. 잠시 뒤 다시 해 보세요."; })
+    .then(function(){ go.disabled=!cands.length; go.textContent="AI로 기안문 쓰기"; });
+  };
+  find(); if(st.res&&st.res.b) show(st.res);
+}
+window.TKNATIVE=window.TKNATIVE||{}; window.TKNATIVE.gian=ckAiGian;
 /* 도구(본예산·예산 변경·수의·입찰 따라가기 …)를 체크리스트 화면 안에서 연다: CK.mode "tool", CK.tool=<id>. 도구 스크립트는 처음 열 때 tools/app.js에서 불러온다 */
 var TKM=null, TKLOAD=null, TKALIAS={bb:"hb",flow:"ct",pub:"pri"};
 function tkMeta(){ if(TKM) return TKM; var n=document.getElementById("TKMETA"), m={tools:[]}; try{ if(n) m=JSON.parse(n.textContent); }catch(e){} m.by={}; m.tools.forEach(function(t){ m.by[t.id]=t; }); if(n) TKM=m; return m; }   /* TKMETA는 body 끝에 있어 처음 그릴 때는 아직 없을 수 있다 */
@@ -2921,7 +2979,7 @@ function viaGem(msgs,signal){
   .then(function(r){ if(!r.ok) return aiErr(r); return r.json(); })
   .then(function(j){ var c=j.candidates&&j.candidates[0], t=c&&c.content&&(c.content.parts||[]).map(function(p){ return p.text||""; }).join(""); if(!t) throw {code:"http",message:"빈 답"}; return {text:t,model:GEM}; });
 }
-window.ckSample=function(a,o){ return sampleFn(a,o); };   /* 기안문 생성기가 다른 블록에서 부른다 */
+window.ckSample=function(a,o){ return sampleFn(a,o); };   /* AI 기안문이 다른 블록에서 부른다 */
 function sampleFn(input,opts){
   opts=opts||{}; var msgs=(typeof input==="string")?[{role:"user",content:input}]:input.map(function(m){ return {role:m.role,content:String(m.content)}; });
   var stop=function(e){ return (opts.signal&&opts.signal.aborted)||(e&&e.name==="AbortError"); };
@@ -3372,7 +3430,7 @@ function ckTour(S0,sk){
 if(window.CKTOURFIRST) setTimeout(ckTour,400);
 </script>
 <!--CKTOOLS-->
-<script type="application/json" id="TKMETA">{"src": "tools/app.js?v=fd303215fd", "tools": [{"id": "pri", "name": "본예산 편성", "cat": "회계", "who": "행정실(공립·사립)", "in": "공립/사립, 학교명(사립은 법인명)·학년도, 공문 날짜, 에듀파인 업로드서식·회수한 요구안 엑셀, 조정액", "out": "단계별 기한, 채워진 기안문(복사·한글), 요구안 배포 서식·취합본 엑셀, 일정표·조정 결과표·회의록 hwpx", "basis": [["경남교육청 「학교회계 예산편성 및 운영지침」·「사학기관 예산편성 및 결산지침」(2026학년도)", ""], ["초·중등교육법 제30조의3 — 공립: 개시 30일 전 학운위 제출, 5일 전까지 심의", "https://www.law.go.kr/법령/초·중등교육법/제30조의3"], ["사립학교법 시행령 제14조 — 사립: 개시 5일 이전 관할청 보고·누리집 공시", "https://www.law.go.kr/법령/사립학교법시행령/제14조"], ["사학기관 재무·회계 규칙 제16조 — 학교 예산은 학교장이 편성해 이사장에게 제출", "https://www.law.go.kr/법령/사학기관재무·회계규칙/제16조"]], "check": [], "ck": [{"id": "f9817e293", "t": "학교회계 본예산 편성", "c": "회계"}, {"id": "budgetchg", "t": "예산 변경·이월 (성립전·추경·이용·전용·예비비·적립금)", "c": "회계"}], "steps": []}, {"id": "bc", "name": "예산 변경", "cat": "회계", "who": "행정실(공립·사립), 사업 담당 교사", "in": "공립/사립, 학교명·학년도, 사안 종류, 교부 공문·사업명, 과목별 예산액·지출액·증감액, 학운위·이사회·확정 날짜", "out": "단계별 기한, 채워진 기안문(성립전·추경·이용·전용·예비비·이월·간주처리, 복사·한글), 추경 산출식(경정-기정), 이(전)용 명세서(별지 제2호)·예비비 사용명세서(별지 제1호) hwpx", "basis": [["경남 업무흐름도 「예ㆍ결산 관리」 1-2~1-5와 참고자료 기안 예시 2-6~2-10, 서식 1-3·1-4", ""], ["경남교육청 「2026학년도 학교회계 예산편성 기본지침」 Ⅴ.2~Ⅴ.8, 「2026학년도 사학기관 예산편성 및 결산지침」", ""], ["경상남도 공립학교회계 규칙 제15조~제20조·제52조", "https://www.law.go.kr/자치법규/경상남도공립학교회계규칙"], ["사학기관 재무·회계 규칙 제18조~제22조", "https://www.law.go.kr/법령/사학기관재무·회계규칙"], ["사립학교법 시행령 제14조제2항 — 추경 확정 후 15일 이내 관할청 보고", "https://www.law.go.kr/법령/사립학교법시행령/제14조"]], "check": ["공립 전용 제외 과목: 현행 규칙 제18조①(2026. 6. 4. 개정)은 인건비만 적고, 2026 기본지침(2025. 12.)은 인건비·시설비를 적어요. 시설비 전용은 교육청 안내를 확인해요."], "ck": [{"id": "budgetchg", "t": "예산 변경·이월 (성립전·추경·이용·전용·예비비·적립금)", "c": "회계"}], "steps": []}, {"id": "ct", "name": "수의·입찰 따라가기", "cat": "계약", "who": "행정실 계약 담당", "in": "무엇을·얼마에(추정가격), 업체(사업자번호 조회 또는 직접), 공고·개찰·낙찰 날짜, 계약금액·기간, 완료 통지·청구 날짜", "out": "쓸 수 있는 계약방법과 근거 조문, 해야 할 일·기한 목록, 입찰 공고기간·적격심사 기한·낙찰하한율, 계약 서류 엑셀, 하자검사조서", "basis": [["지방계약법 시행령 제25조제1항 — 근거 조항 고르기(2인 견적: 종합공사 4억·전문공사 2억·그 밖의 공사 1억6천만 원 이하)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제25조"], ["지방계약법 시행령 제51조 — 계약보증금(계약금액의 100분의 10 이상)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제51조"], ["지방계약법 시행령 제35조 — 입찰공고의 시기(마감 전날부터 7일 전, 공사 10억~50억 15일, 50억 이상 40일, 긴급 5일)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제35조"], ["지방계약법 시행령 제42조 — 적격심사에 의한 낙찰자 결정", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제42조"], ["경남 업무흐름도(2026. 3.) — 견적·입찰 공고, 개찰, 적격심사·낙찰자 결정 (업무체크리스트 '견적·입찰 공고')", ""], ["경남 업무흐름도(2026. 3.) — 수의계약(1인 견적) 단계·기한·서류 (업무체크리스트 '수의계약 (1인 견적) 계약')", ""], ["인지세법 제3조 — 계약서 인지세액", "https://www.law.go.kr/법령/인지세법/제3조"], ["경상남도교육청 「2026 계약실무편람」 실무사례 서식", ""], ["경남교육청 물품선정위원회 운영 기준(재정과-13634, 2026. 6. 25.)", ""]], "check": [], "ck": [{"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약"}, {"id": "bid", "t": "견적·입찰 공고 (2인 이상 견적·입찰)", "c": "계약"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약"}], "steps": [{"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 1, "n": "계약방법 결정"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 3, "n": "견적서 징구"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 4, "n": "계약 (원인행위 확정)"}, {"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약", "i": 0, "n": "수의계약 대상 판단"}, {"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약", "i": 1, "n": "견적서 징구·계약상대자 결정"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약", "i": 0, "n": "적격심사·낙찰자 결정"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약", "i": 1, "n": "계약체결"}, {"id": "field", "t": "현장체험학습 (수학여행·수련활동)", "c": "체육·안전", "i": 10, "n": "계약방법 결정·업체 계약 (안전 조항 명시)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 3, "n": "제작 구매 계약 요구 (담당부서)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 4, "n": "계약방법 결정·계약 (제작일정·KC 인증)"}]}, {"id": "gb", "name": "교복 구매", "cat": "체육·안전", "who": "교무(학생부)·행정실", "in": "학교명·학년도, 위원 명단, 견적, 입찰 일정, 업체 평가 점수, 낙찰·납품·청구 날짜", "out": "기준 충족 여부와 기한, 채워진 기안문(본문 복사), 학교 값이 들어간 붙임 hwpx 서식, 경남교육청 자료", "basis": [["경상남도교육청 「교복 학교주관구매 길라잡이」(2026. 6. 개정, 체육예술건강과)", ""], ["「2026학년도 중·고등학교 신입생 교복 지원 계획」, 「교복 학교주관구매 시 주요 유의사항」", ""], ["경상남도교육청 체육예술건강과-6509(2026. 6. 2.) 「2026년 교복 학교주관구매 상한가격, 품목별 단가 비율 및 주요 유의사항」", ""]], "check": ["2027학년도 신입생분 상한가격은 경남교육청 체육예술건강과-6509(2026. 6. 2.) 기준 동복(4pcs) 246,020원·하복(2pcs) 97,605원(동결)이에요. 적용 기간은 2026. 6. 2.~2027. 3. 31.이에요."], "ck": [{"id": "gys_7_10", "t": "교복 구매", "c": "체육·안전"}], "steps": []}, {"id": "tb", "name": "교과서 선정", "cat": "교육과정·평가", "who": "교무(교과서 담당)·행정실", "in": "학교명·학교급·학년도, 선정 대상 과목과 추천 도서, 학운위 날짜", "out": "단계별 기한, 채워진 기안문 9건(본문 복사·한글), 선정심의(안)·확정 결과 hwpx, 매뉴얼·평가표 서식", "basis": [["경상남도교육청 「검정·인정도서 선정 매뉴얼」(2026. 9., 중등교육과)", ""], ["「2026학년도 1학기 교과용도서 주문 및 정산절차 안내」, 경남 학교업무 도움자료(중등) 2-07", ""], ["교과용도서에 관한 규정 제3조·제30조·제31조", "https://www.law.go.kr/법령/교과용도서에관한규정"], ["경남 학교업무 도움자료(초등) 2-09 교과서 연구 — 업무체크리스트 '교과서 연구'", ""]], "check": ["초등학교도 같은 흐름이에요(경남 학교업무 도움자료(초등) 2-09). 초등은 전년도 9월에 검정교과서 선정계획을 세우고 선정기준 평가표·일람표, 검정도서 심의 및 추천 의견서, 서약서를 준비해요."], "ck": [{"id": "gys_2_7", "t": "교과용도서선정위원회", "c": "교육과정·평가"}, {"id": "el_2_09", "t": "교과서", "c": "연구"}], "steps": []}, {"id": "hk", "name": "학운위 문서", "cat": "학운위", "who": "학운위 간사(행정실)", "in": "위원 명단, 안건(.hwp·.hwpx), 회의 일시·문서번호", "out": "소집 기안·공고문·안내장, 등록부·시나리오·심의자료, 회의록·이송 기안·처리상황표", "basis": [["경상남도립학교 운영위원회 운영 조례", "https://www.law.go.kr/자치법규/경상남도립학교운영위원회운영조례"], ["경남 학교운영위원회 누리집 — 학교운영위원회 규정(예시) 제18조: 개최 7일 전 소집공고·개별 통지", "https://www.gne.go.kr/gneschoolcouncil/statute/rule.jsp"], ["경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31. 시행)", "https://www.law.go.kr/자치법규/경상남도립학교운영위원회운영조례"]], "check": ["근거 조례 기본값 '제19조'는 경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31.)의 회의 소집 조문이에요(경남 학운위 업무흐름: 안건 제20조, 회의 개최 제21·23조, 공개 제22조, 결과 이송 제16조)."], "ck": [{"id": "f1ec6050e", "t": "학교운영위원회 회의", "c": "학운위"}, {"id": "settle", "t": "학교회계 결산", "c": "회계"}, {"id": "f9817e293", "t": "학교회계 본예산 편성", "c": "회계"}], "steps": [{"id": "settle", "t": "학교회계 결산", "c": "회계", "i": 3, "n": "결산서 운영위원회 제출"}, {"id": "settle", "t": "학교회계 결산", "c": "회계", "i": 4, "n": "운영위원회 심의·결산 확정"}, {"id": "after", "t": "방과후학교 교육비", "c": "회계", "i": 2, "n": "학교운영위원회 심의 (수강료)"}, {"id": "field", "t": "현장체험학습 (수학여행·수련활동)", "c": "체육·안전", "i": 6, "n": "학교운영위원회 심의(자문)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 2, "n": "학교운영위원회 심의"}, {"id": "meal", "t": "학교급식비", "c": "급식", "i": 0, "n": "급식운영계획 수립·운영위원회 심의"}, {"id": "meal", "t": "학교급식비", "c": "급식", "i": 1, "n": "급식소위원회 운영"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 6, "n": "결산보고서 작성·운영위 심의"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 7, "n": "관할청 결산보고"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 8, "n": "결산 공개"}]}, {"id": "sg", "name": "송금내역서 생성기", "cat": "급여", "who": "사립학교 급여 담당", "in": "나이스 급여대장 엑셀 2개, 사학연금 부담금 고지서·대여금 납부통지서 PDF", "out": "송금내역서 엑셀(세금·4대보험·법인부담금·공제 항목별)", "basis": [["나이스 급여대장, 사학연금공단 업무포털 고지서(전국 공통 양식)", ""]], "check": ["사립학교 전용이에요. 계좌·받는 분은 이 PC에만 저장되니 담당이 바뀌면 '설정 내보내기' 파일을 넘겨주세요."], "ck": [{"id": "f0e6cd63c", "t": "보수업무", "c": "급여"}, {"id": "ins4", "t": "4대 보험료 (국민연금·건강·고용·산재)", "c": "급여"}], "steps": []}, {"id": "hb", "name": "호봉 획정·정산", "cat": "인사", "who": "교원 인사·급여 담당(교무·행정)", "in": "자격증·졸업증명서·경력증명서·호봉획정표(PDF·사진), 나이스 본봉/수당 월별내역 엑셀", "out": "호봉 획정 내역, 월별 정산표(엑셀)", "basis": [["공무원보수규정 별표 11·22·23·25", "https://www.law.go.kr/법령/공무원보수규정"], ["교육공무원 호봉획정시 경력환산율표의 적용 등에 관한 예규", ""], ["공무원보수규정 별표 3·11(봉급표, 2010~2026년 내장)", "https://www.law.go.kr/법령/공무원보수규정"], ["지방공무원 보수규정", "https://www.law.go.kr/법령/지방공무원보수규정"]], "check": ["호봉 계산 기준은 전국 공통이에요. 경남은 학교 호봉경력평가심의회를 거쳐 확정해요(업무체크리스트 '계약제 교원 채용' 단계 참고).", "보수 정산은 소멸시효를 넘는 기간이 있는지 먼저 확인해요(업무체크리스트 '호봉획정 및 정기승급' 마지막 단계)."], "ck": [{"id": "kteacher", "t": "계약제 교원 채용 (기간제 교원·결원대체강사)", "c": "인사"}, {"id": "pteacher", "t": "사립학교 정규교원 신규채용 (교육청 위탁·자체 전형)", "c": "인사"}, {"id": "f1e40fb7c", "t": "지방공무원의 호봉획정 및 정기승급", "c": "인사"}, {"id": "f0e6cd63c", "t": "보수업무", "c": "급여"}], "steps": []}]}</script>
+<script type="application/json" id="TKMETA">{"src": "tools/app.js?v=fd303215fd", "tools": [{"id": "gian", "name": "AI 기안문", "cat": "행정", "who": "교직원 누구나", "in": "하려는 일, 아는 값(날짜·장소·대상·수량·금액 등)", "out": "고른 기안문 예시를 본떠 AI가 쓴 초안(빈칸 표시, 제목·본문 복사)", "basis": [["업무체크리스트 '기안문' 모음 609건(경남 업무흐름도·학교업무 도움자료의 기안문 예시)", ""], ["행정업무의 운영 및 혁신에 관한 규정 제7조(문서 작성의 일반원칙)", "https://www.law.go.kr/법령/행정업무의운영및혁신에관한규정/제7조"]], "check": ["AI 초안이에요. 법령·금액·날짜·업체명은 원문과 대조해 고친 뒤 쓰세요.", "AI는 질문하기와 같은 하루 사용 횟수를 나눠 써요. 적은 내용은 맥미니 서버를 거쳐 AI에 보내져요."], "ck": [], "steps": []}, {"id": "pri", "name": "본예산 편성", "cat": "회계", "who": "행정실(공립·사립)", "in": "공립/사립, 학교명(사립은 법인명)·학년도, 공문 날짜, 에듀파인 업로드서식·회수한 요구안 엑셀, 조정액", "out": "단계별 기한, 채워진 기안문(복사·한글), 요구안 배포 서식·취합본 엑셀, 일정표·조정 결과표·회의록 hwpx", "basis": [["경남교육청 「학교회계 예산편성 및 운영지침」·「사학기관 예산편성 및 결산지침」(2026학년도)", ""], ["초·중등교육법 제30조의3 — 공립: 개시 30일 전 학운위 제출, 5일 전까지 심의", "https://www.law.go.kr/법령/초·중등교육법/제30조의3"], ["사립학교법 시행령 제14조 — 사립: 개시 5일 이전 관할청 보고·누리집 공시", "https://www.law.go.kr/법령/사립학교법시행령/제14조"], ["사학기관 재무·회계 규칙 제16조 — 학교 예산은 학교장이 편성해 이사장에게 제출", "https://www.law.go.kr/법령/사학기관재무·회계규칙/제16조"]], "check": [], "ck": [{"id": "f9817e293", "t": "학교회계 본예산 편성", "c": "회계"}, {"id": "budgetchg", "t": "예산 변경·이월 (성립전·추경·이용·전용·예비비·적립금)", "c": "회계"}], "steps": []}, {"id": "bc", "name": "예산 변경", "cat": "회계", "who": "행정실(공립·사립), 사업 담당 교사", "in": "공립/사립, 학교명·학년도, 사안 종류, 교부 공문·사업명, 과목별 예산액·지출액·증감액, 학운위·이사회·확정 날짜", "out": "단계별 기한, 채워진 기안문(성립전·추경·이용·전용·예비비·이월·간주처리, 복사·한글), 추경 산출식(경정-기정), 이(전)용 명세서(별지 제2호)·예비비 사용명세서(별지 제1호) hwpx", "basis": [["경남 업무흐름도 「예ㆍ결산 관리」 1-2~1-5와 참고자료 기안 예시 2-6~2-10, 서식 1-3·1-4", ""], ["경남교육청 「2026학년도 학교회계 예산편성 기본지침」 Ⅴ.2~Ⅴ.8, 「2026학년도 사학기관 예산편성 및 결산지침」", ""], ["경상남도 공립학교회계 규칙 제15조~제20조·제52조", "https://www.law.go.kr/자치법규/경상남도공립학교회계규칙"], ["사학기관 재무·회계 규칙 제18조~제22조", "https://www.law.go.kr/법령/사학기관재무·회계규칙"], ["사립학교법 시행령 제14조제2항 — 추경 확정 후 15일 이내 관할청 보고", "https://www.law.go.kr/법령/사립학교법시행령/제14조"]], "check": ["공립 전용 제외 과목: 현행 규칙 제18조①(2026. 6. 4. 개정)은 인건비만 적고, 2026 기본지침(2025. 12.)은 인건비·시설비를 적어요. 시설비 전용은 교육청 안내를 확인해요."], "ck": [{"id": "budgetchg", "t": "예산 변경·이월 (성립전·추경·이용·전용·예비비·적립금)", "c": "회계"}], "steps": []}, {"id": "ct", "name": "수의·입찰 따라가기", "cat": "계약", "who": "행정실 계약 담당", "in": "무엇을·얼마에(추정가격), 업체(사업자번호 조회 또는 직접), 공고·개찰·낙찰 날짜, 계약금액·기간, 완료 통지·청구 날짜", "out": "쓸 수 있는 계약방법과 근거 조문, 해야 할 일·기한 목록, 입찰 공고기간·적격심사 기한·낙찰하한율, 계약 서류 엑셀, 하자검사조서", "basis": [["지방계약법 시행령 제25조제1항 — 근거 조항 고르기(2인 견적: 종합공사 4억·전문공사 2억·그 밖의 공사 1억6천만 원 이하)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제25조"], ["지방계약법 시행령 제51조 — 계약보증금(계약금액의 100분의 10 이상)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제51조"], ["지방계약법 시행령 제35조 — 입찰공고의 시기(마감 전날부터 7일 전, 공사 10억~50억 15일, 50억 이상 40일, 긴급 5일)", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제35조"], ["지방계약법 시행령 제42조 — 적격심사에 의한 낙찰자 결정", "https://www.law.go.kr/법령/지방자치단체를당사자로하는계약에관한법률시행령/제42조"], ["경남 업무흐름도(2026. 3.) — 견적·입찰 공고, 개찰, 적격심사·낙찰자 결정 (업무체크리스트 '견적·입찰 공고')", ""], ["경남 업무흐름도(2026. 3.) — 수의계약(1인 견적) 단계·기한·서류 (업무체크리스트 '수의계약 (1인 견적) 계약')", ""], ["인지세법 제3조 — 계약서 인지세액", "https://www.law.go.kr/법령/인지세법/제3조"], ["경상남도교육청 「2026 계약실무편람」 실무사례 서식", ""], ["경남교육청 물품선정위원회 운영 기준(재정과-13634, 2026. 6. 25.)", ""]], "check": [], "ck": [{"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약"}, {"id": "bid", "t": "견적·입찰 공고 (2인 이상 견적·입찰)", "c": "계약"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약"}], "steps": [{"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 1, "n": "계약방법 결정"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 3, "n": "견적서 징구"}, {"id": "spend", "t": "지출의 순서 (물품·용역 구매)", "c": "회계", "i": 4, "n": "계약 (원인행위 확정)"}, {"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약", "i": 0, "n": "수의계약 대상 판단"}, {"id": "sole", "t": "수의계약 (1인 견적)", "c": "계약", "i": 1, "n": "견적서 징구·계약상대자 결정"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약", "i": 0, "n": "적격심사·낙찰자 결정"}, {"id": "perform", "t": "계약체결·이행·검사 (공사·용역·물품)", "c": "계약", "i": 1, "n": "계약체결"}, {"id": "field", "t": "현장체험학습 (수학여행·수련활동)", "c": "체육·안전", "i": 10, "n": "계약방법 결정·업체 계약 (안전 조항 명시)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 3, "n": "제작 구매 계약 요구 (담당부서)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 4, "n": "계약방법 결정·계약 (제작일정·KC 인증)"}]}, {"id": "gb", "name": "교복 구매", "cat": "체육·안전", "who": "교무(학생부)·행정실", "in": "학교명·학년도, 위원 명단, 견적, 입찰 일정, 업체 평가 점수, 낙찰·납품·청구 날짜", "out": "기준 충족 여부와 기한, 채워진 기안문(본문 복사), 학교 값이 들어간 붙임 hwpx 서식, 경남교육청 자료", "basis": [["경상남도교육청 「교복 학교주관구매 길라잡이」(2026. 6. 개정, 체육예술건강과)", ""], ["「2026학년도 중·고등학교 신입생 교복 지원 계획」, 「교복 학교주관구매 시 주요 유의사항」", ""], ["경상남도교육청 체육예술건강과-6509(2026. 6. 2.) 「2026년 교복 학교주관구매 상한가격, 품목별 단가 비율 및 주요 유의사항」", ""]], "check": ["2027학년도 신입생분 상한가격은 경남교육청 체육예술건강과-6509(2026. 6. 2.) 기준 동복(4pcs) 246,020원·하복(2pcs) 97,605원(동결)이에요. 적용 기간은 2026. 6. 2.~2027. 3. 31.이에요."], "ck": [{"id": "gys_7_10", "t": "교복 구매", "c": "체육·안전"}], "steps": []}, {"id": "tb", "name": "교과서 선정", "cat": "교육과정·평가", "who": "교무(교과서 담당)·행정실", "in": "학교명·학교급·학년도, 선정 대상 과목과 추천 도서, 학운위 날짜", "out": "단계별 기한, 채워진 기안문 9건(본문 복사·한글), 선정심의(안)·확정 결과 hwpx, 매뉴얼·평가표 서식", "basis": [["경상남도교육청 「검정·인정도서 선정 매뉴얼」(2026. 9., 중등교육과)", ""], ["「2026학년도 1학기 교과용도서 주문 및 정산절차 안내」, 경남 학교업무 도움자료(중등) 2-07", ""], ["교과용도서에 관한 규정 제3조·제30조·제31조", "https://www.law.go.kr/법령/교과용도서에관한규정"], ["경남 학교업무 도움자료(초등) 2-09 교과서 연구 — 업무체크리스트 '교과서 연구'", ""]], "check": ["초등학교도 같은 흐름이에요(경남 학교업무 도움자료(초등) 2-09). 초등은 전년도 9월에 검정교과서 선정계획을 세우고 선정기준 평가표·일람표, 검정도서 심의 및 추천 의견서, 서약서를 준비해요."], "ck": [{"id": "gys_2_7", "t": "교과용도서선정위원회", "c": "교육과정·평가"}, {"id": "el_2_09", "t": "교과서", "c": "연구"}], "steps": []}, {"id": "hk", "name": "학운위 문서", "cat": "학운위", "who": "학운위 간사(행정실)", "in": "위원 명단, 안건(.hwp·.hwpx), 회의 일시·문서번호", "out": "소집 기안·공고문·안내장, 등록부·시나리오·심의자료, 회의록·이송 기안·처리상황표", "basis": [["경상남도립학교 운영위원회 운영 조례", "https://www.law.go.kr/자치법규/경상남도립학교운영위원회운영조례"], ["경남 학교운영위원회 누리집 — 학교운영위원회 규정(예시) 제18조: 개최 7일 전 소집공고·개별 통지", "https://www.gne.go.kr/gneschoolcouncil/statute/rule.jsp"], ["경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31. 시행)", "https://www.law.go.kr/자치법규/경상남도립학교운영위원회운영조례"]], "check": ["근거 조례 기본값 '제19조'는 경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31.)의 회의 소집 조문이에요(경남 학운위 업무흐름: 안건 제20조, 회의 개최 제21·23조, 공개 제22조, 결과 이송 제16조)."], "ck": [{"id": "f1ec6050e", "t": "학교운영위원회 회의", "c": "학운위"}, {"id": "settle", "t": "학교회계 결산", "c": "회계"}, {"id": "f9817e293", "t": "학교회계 본예산 편성", "c": "회계"}], "steps": [{"id": "settle", "t": "학교회계 결산", "c": "회계", "i": 3, "n": "결산서 운영위원회 제출"}, {"id": "settle", "t": "학교회계 결산", "c": "회계", "i": 4, "n": "운영위원회 심의·결산 확정"}, {"id": "after", "t": "방과후학교 교육비", "c": "회계", "i": 2, "n": "학교운영위원회 심의 (수강료)"}, {"id": "field", "t": "현장체험학습 (수학여행·수련활동)", "c": "체육·안전", "i": 6, "n": "학교운영위원회 심의(자문)"}, {"id": "album", "t": "졸업앨범", "c": "회계", "i": 2, "n": "학교운영위원회 심의"}, {"id": "meal", "t": "학교급식비", "c": "급식", "i": 0, "n": "급식운영계획 수립·운영위원회 심의"}, {"id": "meal", "t": "학교급식비", "c": "급식", "i": 1, "n": "급식소위원회 운영"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 6, "n": "결산보고서 작성·운영위 심의"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 7, "n": "관할청 결산보고"}, {"id": "fundacct", "t": "학교발전기금 회계·결산", "c": "학운위", "i": 8, "n": "결산 공개"}]}, {"id": "sg", "name": "송금내역서 생성기", "cat": "급여", "who": "사립학교 급여 담당", "in": "나이스 급여대장 엑셀 2개, 사학연금 부담금 고지서·대여금 납부통지서 PDF", "out": "송금내역서 엑셀(세금·4대보험·법인부담금·공제 항목별)", "basis": [["나이스 급여대장, 사학연금공단 업무포털 고지서(전국 공통 양식)", ""]], "check": ["사립학교 전용이에요. 계좌·받는 분은 이 PC에만 저장되니 담당이 바뀌면 '설정 내보내기' 파일을 넘겨주세요."], "ck": [{"id": "f0e6cd63c", "t": "보수업무", "c": "급여"}, {"id": "ins4", "t": "4대 보험료 (국민연금·건강·고용·산재)", "c": "급여"}], "steps": []}, {"id": "hb", "name": "호봉 획정·정산", "cat": "인사", "who": "교원 인사·급여 담당(교무·행정)", "in": "자격증·졸업증명서·경력증명서·호봉획정표(PDF·사진), 나이스 본봉/수당 월별내역 엑셀", "out": "호봉 획정 내역, 월별 정산표(엑셀)", "basis": [["공무원보수규정 별표 11·22·23·25", "https://www.law.go.kr/법령/공무원보수규정"], ["교육공무원 호봉획정시 경력환산율표의 적용 등에 관한 예규", ""], ["공무원보수규정 별표 3·11(봉급표, 2010~2026년 내장)", "https://www.law.go.kr/법령/공무원보수규정"], ["지방공무원 보수규정", "https://www.law.go.kr/법령/지방공무원보수규정"]], "check": ["호봉 계산 기준은 전국 공통이에요. 경남은 학교 호봉경력평가심의회를 거쳐 확정해요(업무체크리스트 '계약제 교원 채용' 단계 참고).", "보수 정산은 소멸시효를 넘는 기간이 있는지 먼저 확인해요(업무체크리스트 '호봉획정 및 정기승급' 마지막 단계)."], "ck": [{"id": "kteacher", "t": "계약제 교원 채용 (기간제 교원·결원대체강사)", "c": "인사"}, {"id": "pteacher", "t": "사립학교 정규교원 신규채용 (교육청 위탁·자체 전형)", "c": "인사"}, {"id": "f1e40fb7c", "t": "지방공무원의 호봉획정 및 정기승급", "c": "인사"}, {"id": "f0e6cd63c", "t": "보수업무", "c": "급여"}], "steps": []}]}</script>
 <style>
 #cktools{position:fixed;z-index:30;display:none;width:208px}
 #cktools.rail{display:block}

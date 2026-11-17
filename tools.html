@@ -1511,7 +1511,8 @@ var CSS=[
 "@media (max-width:560px){.cv-idx{padding:8px 2px 0}.cv-ix .n{width:26px;height:26px;font-size:12px}.cv-ix::before{top:14px}.cv-ix .t{font-size:11.5px}.cv-pane{padding:14px 12px}}",
 ".cv-one{border-radius:12px;padding:6px 18px 16px}",
 ".cv-orow{display:grid;grid-template-columns:120px 1fr;gap:10px 16px;padding:12px 0;border-bottom:1px solid var(--line)}",
-".cv-orow:last-child{border-bottom:0}",
+".cv-orow:last-of-type{border-bottom:0}",
+".cv-ofoot{padding:12px 0 0}",
 ".cv-olab{font-size:14.5px;font-weight:700;display:flex;align-items:center;align-self:start;padding-top:4px}",
 ".cv-olab .qn{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;align-items:center;justify-content:center;margin-right:8px}",
 ".cv-obody{min-width:0}",
@@ -1655,8 +1656,11 @@ function build(root){
     var top=el("div","cv-top"); top.appendChild(el("h3",null,"새 계약")); app.appendChild(top);
     var pn=el("section","cv-pane cv-one"); app.appendChild(pn);
     function row(n,label){ var r=el("div","cv-orow"), h=el("div","cv-olab"); h.appendChild(el("span","qn",String(n))); h.appendChild(document.createTextNode(label)); r.appendChild(h); var b=el("div","cv-obody"); r.appendChild(b); pn.appendChild(r); return b; }
-    /* 1 무엇을 */
-    var b1=row(1,"무엇을"), c1=el("div","cv-chips"); b1.appendChild(c1); var c1b=el("div","cv-chips"); b1.appendChild(c1b);
+    /* 1 계약 이름 */
+    var b0=row(1,"계약 이름"), nw=el("div","cv-amt"), ni=el("input"); ni.style.fontSize="16px"; ni.style.maxWidth="560px"; ni.value=W.name; nw.appendChild(ni); b0.appendChild(nw);
+    ni.oninput=function(){ W.name=ni.value; }; setTimeout(function(){ if(!W.name) ni.focus(); },0);
+    /* 2 무엇을 */
+    var b1=row(2,"무엇을"), c1=el("div","cv-chips"); b1.appendChild(c1); var c1b=el("div","cv-chips"); b1.appendChild(c1b);
     var isC=function(){ return /^c/.test(W.kind)||W._c; };
     function draw1(){ c1.textContent=""; c1b.textContent="";
       [["goods","물품"],["serv","용역"],["c","공사"]].forEach(function(o){ var on=o[0]==="c"?isC():(!isC()&&W.kind===o[0]);
@@ -1664,19 +1668,16 @@ function build(root){
       if(isC()) [["c1","종합공사"],["c2","전문공사"],["c3","전기·정보통신·소방·그 밖"]].forEach(function(o){ var p=btn(o[1],"pill",function(){ W.kind=o[0]; W.pick=-1; draw1(); res(); }); p.setAttribute("aria-pressed",W.kind===o[0]?"true":"false"); c1b.appendChild(p); });
       c1b.hidden=!isC(); }
     /* 2 얼마에 */
-    var b2=row(2,"추정가격"), aw=el("div","cv-amt"), ai=el("input"), ah=el("span"); ai.inputMode="numeric"; ai.placeholder="부가세 뺀 금액 · 예: 1800만"; ai.value=W.est; aw.appendChild(ai); aw.appendChild(ah); b2.appendChild(aw);
+    var b2=row(3,"추정가격"), aw=el("div","cv-amt"), ai=el("input"), ah=el("span"); ai.inputMode="numeric"; ai.placeholder="부가세 뺀 금액 · 예: 1800만"; ai.value=W.est; aw.appendChild(ai); aw.appendChild(ah); b2.appendChild(aw);
     ai.oninput=function(){ W.est=ai.value; W.pick=-1; res(); };
     /* 3 계약상대 */
-    var b3=row(3,"계약상대"), c3=el("div","cv-chips"); b3.appendChild(c3);
+    var b3=row(4,"계약상대"), c3=el("div","cv-chips"); b3.appendChild(c3);
     function draw3(){ c3.textContent=""; ST.forEach(function(s){ if((s[0]==="x"||s[0]==="p")&&/^c/.test(W.kind)) return;
       var p=btn(s[1],"pill",function(){ var i=W.st.indexOf(s[0]); if(i<0) W.st.push(s[0]); else W.st.splice(i,1); W.pick=-1; p.setAttribute("aria-pressed",W.st.indexOf(s[0])>=0?"true":"false"); res(); });
       p.setAttribute("aria-pressed",W.st.indexOf(s[0])>=0?"true":"false"); if(s[2]) p.title=s[2]; c3.appendChild(p); }); }
     /* 4 계약방법 */
-    var b4=row(4,"계약방법"), rbox=el("div"); b4.appendChild(rbox);
-    /* 5 이름 */
-    var b5=row(5,"계약 이름"), nw=el("div","cv-amt"), ni=el("input"); ni.style.fontSize="16px"; ni.style.maxWidth="560px"; ni.value=W.name; nw.appendChild(ni); b5.appendChild(nw);
-    ni.oninput=function(){ W.name=ni.value; };
-    var mk=btn("장부에 올리기","btn"); mk.style.marginTop="10px"; b5.appendChild(mk); var mm=el("div","tkmsg"); b5.appendChild(mm);
+    var b4=row(5,"계약방법"), rbox=el("div"); b4.appendChild(rbox);
+    var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("장부에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
     var R=[];
     function res(){
       var a=amount(W.est), ok=!!W.est&&!isNaN(a); ah.textContent=ok?"= "+won(a):"";
@@ -1686,7 +1687,7 @@ function build(root){
       R=method(W.kind==="goods"||W.kind==="serv"?"g":W.kind,a,W.st,LS.get("priv",false));
       R.forEach(function(x,i){ var v=el("div","cv-v "+x.t+(W.pick===i?" pick":"")); v.appendChild(el("b",null,x.h)); x.p.forEach(function(p){ v.appendChild(el("p",null,p)); });
         v.appendChild(el("div","cv-law","근거: "+x.law));
-        if(x.t!=="bid"){ var b=btn(W.pick===i?"✓ 이 방법":"이 방법으로","btn"+(W.pick===i?"":" ghost"),function(){ W.pick=i; res(); ni.focus(); }); b.style.marginTop="8px"; v.appendChild(b); }
+        if(x.t!=="bid"){ var b=btn(W.pick===i?"✓ 이 방법":"이 방법으로","btn"+(W.pick===i?"":" ghost"),function(){ W.pick=i; res(); if(!W.name) ni.focus(); }); b.style.marginTop="8px"; v.appendChild(b); }
         else v.appendChild(btn("입찰은 계약 흐름도에서 보기 →","cv-back",function(){ if(window.tkShow) window.tkShow("flow"); }));
         rbox.appendChild(v); });
     }

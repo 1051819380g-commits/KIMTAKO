@@ -1201,7 +1201,7 @@ label.btn{display:inline-block}
       <span class="sub">작성·계산 도구 · 시험판</span>
     </div>
     <button type="button" class="ckhelpbtn" id="tkhelpbtn">사용법</button>
-    <a class="ckhelpbtn" href="./" style="text-decoration:none">업무 체크리스트</a>
+    <a class="ckhelpbtn" id="tkback" href="./" style="text-decoration:none">업무 체크리스트</a><script>/* 시험판(test.html)에서 왔으면 시험판으로 돌아간다 */(function(){ var k="tk.from"; try{ if(/\/test\.html/.test(document.referrer)) sessionStorage.setItem(k,"test.html"); if(sessionStorage.getItem(k)) document.getElementById("tkback").href=sessionStorage.getItem(k); }catch(e){} })();</script>
   </div>
   <div class="navwrap"><div id="ckcats" class="ckcats"><div class="cktop" id="tktop"></div></div></div>
 </header>

@@ -46,7 +46,7 @@ for k in os.listdir(os.path.join(repo, "tools")):
         os.remove(os.path.join(repo, "tools", k))
 
 # ---- 3) test.html ----
-M = {"src": "tools/app.js?v=" + ver, "tools": [{k: t[k] for k in ("id", "name", "cat", "who", "in", "out", "basis", "check", "ck", "steps")} for t in TKD["tools"]]}
+M = {"src": "tools/app.js?v=" + ver, "tools": [{k: t.get(k, []) for k in ("id", "name", "cat", "sum", "who", "in", "out", "how", "tips", "check", "ck", "steps")} for t in TKD["tools"]]}
 mjson = json.dumps(M, ensure_ascii=False).replace("</", "<\\/")
 path = os.path.join(repo, "test.html")
 s = open(path, encoding="utf-8").read()
@@ -81,21 +81,24 @@ function tkLoad(){ if(window.TKNATIVE&&window.TKNATIVE.__ok) return Promise.reso
 function ckTool(){ var M=tkMeta(), k=TKALIAS[CK.tool]||CK.tool, t=M.by[k], d=$("#ckdetail"); d.textContent=""; d.appendChild(el("div","ckcap"));
   if(!t){ CK.mode="cal"; ckCal(); return; }
   var bar=el("div","tkbar"); bar.appendChild(el("h2",null,t.name)); bar.appendChild(el("span","ckcg c"+CKCATS.indexOf(t.cat),t.cat)); d.appendChild(bar);
-  var info=el("details","tkinfo"), sm=el("summary"); sm.appendChild(el("b","tksl","기준·근거")); info.appendChild(sm);
-  var bd=el("div","bd"); info.appendChild(bd);
-  function col(h){ var c=el("div"); c.appendChild(el("h5",null,h)); bd.appendChild(c); return c; }
-  function li(ul,x,href){ var l=el("li"); if(href){ var a=el("a",null,x); a.href=href; a.target="_blank"; a.rel="noopener"; l.appendChild(a); } else l.textContent=x; ul.appendChild(l); }
-  var c1=col("쓰는 법"), dl=el("dl"); [["누가",t.who],["넣을 것",t.in],["나오는 것",t.out]].forEach(function(p){ dl.appendChild(el("dt",null,p[0])); dl.appendChild(el("dd",null,p[1])); }); c1.appendChild(dl);
-  var u2=el("ul"); t.basis.forEach(function(b){ li(u2,b[0],b[1]); }); col("근거 자료").appendChild(u2);
-  if(t.check.length){ var u3=el("ul"); t.check.forEach(function(x){ li(u3,x); }); col("알아 둘 점").appendChild(u3); }
-  var c4=col("이 도구를 쓰는 업무"), w4=el("div","tkpills"); c4.appendChild(w4);
-  t.ck.forEach(function(c){ if(!CKBY[c.id]) return; var b=el("button","pill",c.t); b.type="button"; b.onclick=function(){ CK.mode="flow"; CK.cur=""; CK.pv=c.id; ckSave(); ckRender(); window.scrollTo(0,0); }; w4.appendChild(b); });
-  d.appendChild(info);
+  var hb=el("button","tkback","사용법"); hb.type="button"; hb.onclick=function(){ tkHelp(t); }; bar.appendChild(hb);
   var mount=el("div","tknative"); d.appendChild(mount); mount.appendChild(el("p","note","도구를 불러오는 중이에요…"));
   tkLoad().then(function(){ if(CK.mode!=="tool"||(TKALIAS[CK.tool]||CK.tool)!==k) return; mount.textContent="";
       try{ window.TKNATIVE[k](mount); }catch(e){ mount.appendChild(el("p","tkmsg on bad","도구를 그리지 못했어요: "+e.message)); } },
     function(e){ mount.textContent=""; mount.appendChild(el("p","tkmsg on bad",e.message)); });
 }
+function tkHelp(t){   /* 도구별 사용법 창: 하는 일·쓰는 순서·넣을 것/나오는 것·알아 둘 점·쓰는 업무 */
+  var dg=document.getElementById("tkhelp"); if(dg) dg.remove(); dg=el("dialog"); dg.id="tkhelp"; dg.setAttribute("aria-label",t.name+" 사용법");
+  var b=el("div","hb"); b.appendChild(el("h2",null,t.name+" 사용법")); if(t.sum) b.appendChild(el("p","lead",t.sum));
+  function sec(h){ b.appendChild(el("h5",null,h)); }
+  if((t.how||[]).length){ sec("쓰는 순서"); var ol=el("ol"); t.how.forEach(function(x){ ol.appendChild(el("li",null,x)); }); b.appendChild(ol); }
+  var dl=el("dl"); [["누가",t.who],["넣을 것",t.in],["나오는 것",t.out]].forEach(function(p){ if(!p[1]) return; dl.appendChild(el("dt",null,p[0])); dl.appendChild(el("dd",null,p[1])); }); b.appendChild(dl);
+  var tip=(t.tips||[]).concat(t.check||[]); if(tip.length){ sec("알아 둘 점"); var ul=el("ul"); tip.forEach(function(x){ ul.appendChild(el("li",null,x)); }); b.appendChild(ul); }
+  var w=el("div","tkpills"); (t.ck||[]).forEach(function(c){ if(!CKBY[c.id]) return; var p=el("button","pill",c.t); p.type="button"; p.onclick=function(){ dg.close(); CK.mode="flow"; CK.cur=""; CK.pv=c.id; ckSave(); ckRender(); window.scrollTo(0,0); }; w.appendChild(p); });
+  if(w.children.length){ sec("이 도구를 쓰는 업무"); b.appendChild(w); }
+  var f=el("div","hf"), x=el("button","pri","닫기"); x.type="button"; x.onclick=function(){ dg.close(); }; f.appendChild(x);
+  dg.appendChild(b); dg.appendChild(f); dg.onclick=function(e){ if(e.target===dg) dg.close(); }; dg.onclose=function(){ dg.remove(); };
+  document.body.appendChild(dg); dg.showModal(); x.focus(); }
 function ckToolMark(){ var cur=CK.mode==="tool"?(TKALIAS[CK.tool]||CK.tool):"", ct=CK.mode==="flow"?((ckCase(CK.cur)||{}).t||CK.pv||""):"", by=tkMeta().by;
   document.querySelectorAll("#cktl .cktc").forEach(function(a){ var k=a.dataset.k, t=by[k]; a.classList.toggle("on",k===cur); a.classList.toggle("rel",!!ct&&!!t&&t.ck.some(function(x){ return x.id===ct; })); if(k===cur) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); }); }
 window.ckOpenTool=function(k){ if(!CKL.length){ setTimeout(function(){ window.ckOpenTool(k); },150); return; } CK.mode="tool"; CK.tool=TKALIAS[k]||k; ckSave(); ckRender(); window.scrollTo(0,0); };

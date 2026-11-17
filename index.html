@@ -1553,6 +1553,18 @@ function ckGenAdd(box,bar,body,ti){   /* 기안문 모음 편집 상자: 빈칸 
   var rb=[].slice.call(bar.querySelectorAll("button")).filter(function(b){ return b.textContent==="원래대로"; })[0];
   if(rb) rb.addEventListener("click",function(){ setTimeout(T.upd,0); });
 }
+/* '끝.' 앞 두 칸: 혼자 있는 '끝.' 줄은 앞줄 끝으로, 같은 줄이면 앞 띄어쓰기를 두 칸으로(복사해도 두 칸) */
+function ckEnd2(root){
+  var leaf=function(e){ return !!e&&e.nodeType===1&&!e.querySelector("div,p,li,tr,table")&&!e.closest("table"); };
+  [].slice.call(root.querySelectorAll("div,p,li")).forEach(function(e){ if(!leaf(e)||e.textContent.replace(/\s/g,"")!=="끝.") return;
+    var p=e.previousElementSibling; if(p&&leaf(p)&&p.textContent.trim()){ p.appendChild(document.createTextNode(" 끝.")); e.remove(); } });
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), ns=[], n;
+  while((n=w.nextNode())) if(!n.parentNode.closest("span.ckend")&&/끝\s*\.\s*$/.test(n.nodeValue)) ns.push(n);
+  ns.forEach(function(t){ var m=/[ \t ]*끝\s*\.\s*$/.exec(t.nodeValue), before=t.nodeValue.slice(0,m.index);
+    if(!before.trim()&&!t.previousSibling) return;   /* 줄 맨 앞의 '끝.'은 그대로 */
+    t.nodeValue=before.replace(/[ \t ]+$/,""); var s=document.createElement("span"); s.className="ckend"; s.style.whiteSpace="pre-wrap"; s.textContent="  끝.";
+    t.parentNode.insertBefore(s,t.nextSibling); });
+}
 function ckDraftEditor(box,d,x){
   var key="kbg.dr."+d[0]+"|"+d[1], saved=null;
   try{ saved=JSON.parse(localStorage.getItem(key)||"null"); }catch(e){}
@@ -1572,8 +1584,8 @@ function ckDraftEditor(box,d,x){
   function field(lbl,v){ var w=el("label","ckdocf"), i=el("input"); w.appendChild(el("span",null,lbl)); i.value=v; w.appendChild(i); doc.appendChild(w); return i; }
   var to=field("수신자",saved?saved.to:val("수신자")), ti=field("제목",saved?saved.ti:(val("제목")||x.t||""));
   var body=el("div","ckdocb"); body.contentEditable="true"; body.setAttribute("aria-label","기안문 본문 (고칠 수 있음)");
-  function fresh(){ body.textContent=""; var tmp=el("div"); renderBlocks(tmp,ckClean(rest)); var g=tmp.querySelector(".gdoc")||tmp; while(g.firstChild) body.appendChild(g.firstChild); }
-  if(saved&&saved.html) body.innerHTML=saved.html; else fresh();
+  function fresh(){ body.textContent=""; var tmp=el("div"); renderBlocks(tmp,ckClean(rest)); var g=tmp.querySelector(".gdoc")||tmp; while(g.firstChild) body.appendChild(g.firstChild); ckEnd2(body); }
+  if(saved&&saved.html){ body.innerHTML=saved.html; ckEnd2(body); } else fresh();
   doc.appendChild(body); box.appendChild(doc);
   var tm=0; function save(){ clearTimeout(tm); tm=setTimeout(function(){ try{ localStorage.setItem(key,JSON.stringify({to:to.value,ti:ti.value,html:body.innerHTML})); }catch(e){} },400); }
   to.oninput=ti.oninput=body.oninput=save;

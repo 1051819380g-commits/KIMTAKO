@@ -21,7 +21,7 @@
 - `build_tools.py`를 먼저 돌려 도구 메타(TKD)를 만들고, `gbfiles/`·`tbfiles/`·`prifiles/`를 `<repo>/tools/gb|tb|pri/`로 복사해요(내려받기 서식).
 - `native/*.js`(+ `ct_data.json`)를 묶어 `<repo>/tools/app.js`를 만들어요.
 - `<repo>/test.html`의 `/*CKTOOL*/` 코드와 `<!--CKTOOLS-->` 카드·`TKMETA`를 바꿔 넣어요.
-- `<repo>/tools.html`은 `test.html#tool=<id>`로 넘기는 안내 페이지로 써요.
+- `build_tools.py`가 만든 중간 파일 `<repo>/tools.html`은 도구 메타(TKD)만 읽고 지워요. 예전 도구 주소(tools.html)는 2026-11-17에 내렸어요.
 
 **빌드가 보존하는 것(test.html):**
 - 다른 세션이 넣은 'AI 품의'(`TKMETA`의 `pumui` 항목, `window.TKNATIVE.pumui`, `window.ckLlmImg`)

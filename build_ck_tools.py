@@ -3,7 +3,7 @@
 # 1) build_tools.py로 도구 자료(tools/<id>/ 붙임 파일)와 TKD(도구 메타 + 체크리스트 연결)를 만든다
 # 2) 도구 스크립트 전부 + 도구 꾸밈(.tk*)을 tools/app.js 한 파일로 묶는다(시험판은 도구를 처음 열 때만 불러온다)
 # 3) test.html: 오른쪽 여백 '도구 모음' 카드(가로로 긴 작은 카드) + 체크리스트 안 화면(mode "tool")을 넣는다
-# 4) tools.html은 test.html#tool=<id>로 넘기는 안내 페이지로 바꾸고, 옛 원본 사본 tools/<id>.html은 지운다
+# 4) build_tools.py가 만든 중간 파일 tools.html(TKD만 읽음)과 옛 원본 사본 tools/<id>.html은 지운다 — 예전 도구 주소는 내림
 import hashlib, json, os, re, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 repo = sys.argv[1]
@@ -38,13 +38,9 @@ os.makedirs(os.path.join(repo, "tools"), exist_ok=True)
 open(os.path.join(repo, "tools", "app.js"), "w", encoding="utf-8").write(app)
 ver = hashlib.sha1(app.encode("utf-8")).hexdigest()[:10]
 
-# ---- 4) tools.html → 안내 페이지, 옛 사본 지우기 ----
-open(os.path.join(repo, "tools.html"), "w", encoding="utf-8").write('''<!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>업무 체크리스트로 옮겼어요</title>
-<script>var k=(location.hash||"").slice(1); location.replace("test.html"+(k?"#tool="+encodeURIComponent(k):""));</script>
-</head><body><p>도구는 업무 체크리스트 안으로 옮겼어요. <a href="test.html">업무 체크리스트(시험판)로 가기</a></p></body></html>
-''')
+# ---- 4) 중간 파일 tools.html과 옛 사본 tools/<id>.html은 지운다(예전 도구 주소는 2026-11-17 내림) ----
+if os.path.exists(os.path.join(repo, "tools.html")):
+    os.remove(os.path.join(repo, "tools.html"))
 for k in os.listdir(os.path.join(repo, "tools")):
     if k.endswith(".html"):
         os.remove(os.path.join(repo, "tools", k))

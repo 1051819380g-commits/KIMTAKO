@@ -3242,5 +3242,40 @@ function ckTour(S0,sk){
 }
 if(window.CKTOURFIRST) setTimeout(ckTour,400);
 </script>
+<!--CKTOOLS-->
+<style>
+#cktools{position:fixed;z-index:30;display:none;width:208px}
+#cktools.rail{display:block}
+#cktools h2{font-size:13px;font-weight:700;color:var(--muted);margin:0 0 8px;display:flex;align-items:center;justify-content:space-between;gap:6px}
+#cktools h2 a{font-size:12px;font-weight:600;color:var(--accent-ink);text-decoration:none}
+#cktools h2 a:hover{text-decoration:underline}
+.cktl{display:grid;gap:6px}
+.cktc{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 10px 6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);text-decoration:none;box-shadow:var(--shadow)}
+.cktc:hover{border-color:var(--accent-line);background:var(--accent-soft)}
+.cktc b{flex:1;min-width:0;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cktc small{flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink-2);background:var(--surface-3);border-radius:999px;padding:1px 7px}
+#cktoolsbtn{position:fixed;right:0;bottom:84px;z-index:31;display:none;font:inherit;font-size:13px;font-weight:700;writing-mode:vertical-rl;letter-spacing:.1em;padding:12px 7px;border:1px solid var(--accent);border-right:0;border-radius:10px 0 0 10px;background:var(--accent);color:#fff;cursor:pointer;box-shadow:var(--shadow)}
+:root[data-theme="dark"] #cktoolsbtn{color:#0B1430}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #cktoolsbtn{color:#0B1430}}
+#cktoolsbtn.on{display:block}
+#cktools.drawer{display:block;right:0;top:0;bottom:0;width:240px;max-width:82vw;padding:16px 14px;background:var(--ground,var(--surface));border-left:1px solid var(--line);box-shadow:var(--shadow);overflow:auto;transform:translateX(100%);transition:transform .18s}
+#cktools.drawer.open{transform:none}
+@media print{#cktools,#cktoolsbtn{display:none!important}}
+</style>
+<aside id="cktools" aria-label="도구 모음"><h2>도구 모음<a href="tools.html">전체 보기</a></h2><div class="cktl" id="cktl"></div></aside>
+<button type="button" id="cktoolsbtn" aria-controls="cktools" aria-expanded="false">도구 모음</button>
+<script>/* 오른쪽 여백에 도구 모음 메뉴: 여백이 넉넉하면 붙여 두고, 좁으면 오른쪽 끝 '도구 모음' 단추로 연다 */
+(function(){ var T=[["pri", "본예산 편성", "회계"], ["bc", "예산 변경", "회계"], ["ct", "계약 장부", "계약"], ["gb", "교복 구매", "체육·안전"], ["tb", "교과서 선정", "교육과정·평가"], ["hk", "학운위 문서", "학운위"], ["sg", "송금내역서 생성기", "급여"], ["hb", "호봉 획정·정산", "인사"]], box=document.getElementById("cktools"), list=document.getElementById("cktl"), bt=document.getElementById("cktoolsbtn"), W=208, G=16;
+  T.forEach(function(t){ var a=document.createElement("a"); a.className="cktc"; a.href="tools.html#"+t[0]; a.title=t[1]+" 도구 열기";
+    var b=document.createElement("b"); b.textContent=t[1]; var s=document.createElement("small"); s.textContent=t[2]; a.appendChild(b); a.appendChild(s); list.appendChild(a); });
+  function place(){ var m=document.querySelector("main"), r=m?m.getBoundingClientRect():{right:innerWidth}, free=innerWidth-r.right, top=(parseInt(getComputedStyle(document.documentElement).getPropertyValue("--hdr"))||120)+20;
+    if(free>=W+G*2){ box.className="rail"; box.style.left=Math.round(r.right+G)+"px"; box.style.top=top+"px"; box.style.width=Math.min(240,Math.round(free-G*2))+"px"; bt.className=""; bt.setAttribute("aria-expanded","false"); }
+    else { if(box.className.indexOf("drawer")<0){ box.className="drawer"; } box.style.left=""; box.style.top=""; box.style.width=""; bt.className="on"; } }
+  bt.onclick=function(e){ e.stopPropagation(); var o=box.classList.toggle("open"); bt.setAttribute("aria-expanded",String(o)); };
+  document.addEventListener("click",function(e){ if(box.classList.contains("open")&&!box.contains(e.target)){ box.classList.remove("open"); bt.setAttribute("aria-expanded","false"); } });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&box.classList.contains("open")){ box.classList.remove("open"); bt.setAttribute("aria-expanded","false"); } });
+  addEventListener("resize",place); if(window.ResizeObserver){ var m=document.querySelector("main"); if(m) new ResizeObserver(place).observe(m); var h=document.querySelector("header"); if(h) new ResizeObserver(place).observe(h); }
+  place(); })();</script>
+<!--/CKTOOLS-->
 </body>
 </html>

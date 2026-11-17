@@ -3572,6 +3572,10 @@ var CSS=[
 ".tb-sr .x:hover{color:var(--neg)}",
 ".tb-pk{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:6px}",
 ".tb-pk label{display:grid;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted);min-width:0}",
+".tb-oq{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:6px}",
+".tb-oq label{display:grid;gap:3px;font-size:11.5px;font-weight:700;color:var(--muted);min-width:0}",
+".tb-oq input{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);min-width:0;width:100%;box-sizing:border-box;text-align:right}",
+".tb-oqv{font-size:13px;color:var(--accent-ink);font-weight:600;margin-top:6px}",
 ".tb-sh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:14px;font-weight:650}",
 ".tb-sh small{font-weight:400;color:var(--muted);font-size:12.5px}",
 ".tb-add{font:inherit;font-size:13.5px;border:1px dashed var(--line-strong);background:none;color:var(--accent-ink);border-radius:10px;padding:7px 12px;cursor:pointer;justify-self:start}",
@@ -3595,7 +3599,7 @@ var CSS=[
 ".tb-file:hover{border-color:var(--accent);color:var(--accent-ink)}",
 ".tb-file i{font-style:normal;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 4px;background:var(--surface-3);color:var(--muted)}",
 ".tb-file.mk i{background:var(--accent-soft);color:var(--accent-ink)}",
-"@media (max-width:640px){.tbv .cv-ix .t{font-size:10.5px;letter-spacing:-.04em;text-overflow:clip}.tbv .cv-calc{grid-template-columns:1fr 1fr}.tb-pk{grid-template-columns:minmax(0,1fr)}.tb-sr{grid-template-columns:minmax(0,1fr) 28px}.tb-sr .one{grid-column:1/-1;grid-row:2}}"
+"@media (max-width:640px){.tbv .cv-ix .t{font-size:10.5px;letter-spacing:-.04em;text-overflow:clip}.tbv .cv-calc{grid-template-columns:1fr 1fr}.tb-pk{grid-template-columns:minmax(0,1fr)}.tb-oq{grid-template-columns:repeat(3,minmax(0,1fr))}.tb-sr{grid-template-columns:minmax(0,1fr) 28px}.tb-sr .one{grid-column:1/-1;grid-row:2}}"
 ].join("\n");
 
 function build(root){
@@ -3741,7 +3745,7 @@ function build(root){
           cand.forEach(function(b,j){ var o=el("option",null,b[3]+" · "+b[4]+(b[5]?" · "+b[5]:"")+(b[6]?" · "+comma(b[6])+"원":"")); o.value=String(j); se.appendChild(o); });
           var cur=s.p[k]; if(cur) cand.forEach(function(b,j){ if(b[3]===cur.t&&b[4]===cur.pub&&b[5]===cur.au) se.value=String(j); });
           if(cur&&se.value===""){ var oc=el("option",null,pickTxt(cur)); oc.value="cur"; se.appendChild(oc); se.value="cur"; }
-          se.onchange=function(){ if(se.value==="cur") return; var b=cand[+se.value]; s.p[k]=se.value===""?null:{t:b[3],pub:b[4],au:b[5],pr:typeof b[6]==="number"?b[6]:null,k:b[0]}; put(); };
+          se.onchange=function(){ if(se.value==="cur") return; var b=cand[+se.value]; s.p[k]=se.value===""?null:{t:b[3],pub:b[4],au:b[5],pr:typeof b[6]==="number"?b[6]:null,k:b[0],cur:b[8]}; put(); };
           lb.appendChild(se); pk.appendChild(lb); })(k);
         box.appendChild(r); }); }
     function cands(name){ if(!BOOKS) return []; var q=String(name||"").replace(/\s+/g,""), lv=LEVEL[V("level")]||"";
@@ -3768,7 +3772,30 @@ function build(root){
   S.s6=function(pn,st){ var g=grid(pn), c;
     fld(g,"orderS","NEIS 주문 시작",{type:"date",live:function(){ up(); }}); fld(g,"orderE","NEIS 주문 마감",{type:"date",live:function(){ up(); }}); fld(g,"orderDone","제출 완료일",{type:"date",live:function(){ up(); }});
     c=calc(pn); function up(){ var x=dd(V("orderE")), dn=V("orderDone");
-      tiles(c,[{l:"주문 마감",v:x.v,s:dn?(dn<=V("orderE")?"기한 안에 제출했어요":"마감을 넘겼어요"):x.s,c:dn?(dn<=V("orderE")?"ok":"bad"):x.c},{l:"주문 수량",v:"재학생·교사 수",s:"지도서는 교과·학년당 최소"},{l:"특수·저시력",v:"특수 1학기만",s:"저시력 확대교과서는 학기마다"}]); } up(); };
+      var q=qty(); tiles(c,[{l:"주문 마감",v:x.v,s:dn?(dn<=V("orderE")?"기한 안에 제출했어요":"마감을 넘겼어요"):x.s,c:dn?(dn<=V("orderE")?"ok":"bad"):x.c},
+        {l:"주문 부수",v:q.n?comma(q.tb)+"부":"-",s:q.n?"교과서 "+comma(q.tb)+" · 지도서 "+comma(q.gd)+(q.self?" · 자체예산 지도서 "+q.self:""):"아래 과목별로 학생·교사 수를 넣어요"},
+        {l:"추정 금액",v:q.amt?comma(q.amt)+"원":"-",s:q.miss?"정가 없는 책 "+q.miss+"종은 빠져요":"교과서 정가 × 부수",c:""}]); } up();
+    sub(pn,"과목별 주문 부수","교과서 = 학생 + 교사 − 재활용 · 지도서는 교과·학년당 1권");
+    var box=el("div","tb-subs"); pn.appendChild(box); var L=subs().filter(function(s){ return s.p&&s.p[0]; });
+    if(!L.length){ box.appendChild(el("p","cv-law","'협의회'에서 과목별 1순위 도서를 먼저 골라 주세요.")); return; }
+    L.forEach(function(s){ s.o=s.o||{}; var o=s.o, b=s.p[0], r=el("div","tb-sr pk"), h=el("div","tb-sh",s.name.trim()); h.appendChild(el("small",null,pickTxt(b)+(b.pr?" · "+comma(b.pr)+"원":""))); r.appendChild(h);
+      var pk=el("div","tb-oq"); r.appendChild(pk); var out=el("div","tb-oqv"); r.appendChild(out);
+      function show(){ var x=line(s); out.textContent="교과서 "+comma(x.tb)+"부"+(x.amt?" · "+comma(x.amt)+"원":"")+" · 지도서 "+(x.noGd?"NEIS 주문 불가(2022개정 중학교, 자체예산)":comma(x.gd)+"권"); }
+      [["gr","학년","1"],["st","학생 수",""],["te","교사 수",""],["re","재활용",""],["gd","지도서",""]].forEach(function(f){ var lb=el("label",null,f[1]), i=el("input"); i.inputMode="numeric"; i.value=o[f[0]]!=null&&o[f[0]]!==""?o[f[0]]:""; i.placeholder=f[0]==="gd"?"1":f[2]||"0";
+        i.oninput=function(){ o[f[0]]=i.value.replace(/[^\d]/g,""); put(); show(); up(); }; lb.appendChild(i); pk.appendChild(lb); });
+      show(); box.appendChild(r); });
+  };
+  function noGuide(s){ var b=s.p&&s.p[0]; return V("level")==="중"&&b&&String(b.cur||"").indexOf("2022")>=0; }
+  function line(s){ var o=s.o||{}, n=function(k){ return parseInt(o[k],10)||0; }, tb=Math.max(0,n("st")+n("te")-n("re")), ng=noGuide(s), gd=ng?0:(o.gd===""||o.gd==null?1:n("gd")), pr=s.p&&s.p[0]&&s.p[0].pr;
+    return {tb:tb,gd:gd,noGd:ng,amt:pr?pr*tb:0,miss:!pr&&tb?1:0}; }
+  function qty(){ var r={tb:0,gd:0,amt:0,miss:0,self:0,n:0}; subs().forEach(function(s){ if(!(s.p&&s.p[0])||!s.o) return; var x=line(s); if(!x.tb&&!x.gd) return; r.n++; r.tb+=x.tb; r.gd+=x.gd; r.amt+=x.amt; r.miss+=x.miss; if(x.noGd) r.self++; }); return r; }
+  function orderBlocks(){ var y=Y()?String(Y()):"○○○○", rows=[[th("과목"),th("학년"),th("도서명"),th("출판사"),th("학생"),th("교사"),th("재활용"),th("교과서"),th("지도서"),th("금액(원)")]], q=qty();
+    subs().forEach(function(s){ if(!(s.p&&s.p[0])||!s.o) return; var o=s.o, b=s.p[0], x=line(s);
+      rows.push([cell(s.name.trim(),{al:"center",b:true}),cell(o.gr||"",{al:"center"}),cell(b.t),cell(b.pub),cell(o.st||"0",{al:"right"}),cell(o.te||"0",{al:"right"}),cell(o.re||"0",{al:"right"}),cell(comma(x.tb),{al:"right"}),cell(x.noGd?"자체예산":comma(x.gd),{al:"center"}),cell(x.amt?comma(x.amt):"",{al:"right"})]); });
+    rows.push([cell("합계",{cs:7,al:"center",b:true,bg:"#EDEDED"}),cell(comma(q.tb),{al:"right",b:true,bg:"#EDEDED"}),cell(comma(q.gd),{al:"center",b:true,bg:"#EDEDED"}),cell(q.amt?comma(q.amt):"",{al:"right",b:true,bg:"#EDEDED"})]);
+    return [P0(y+"학년도 1학기 교과용도서 주문 부수",{b:true,size:16,al:"center"}),{t:"p",text:"",size:8},P0(V("school")||"○○학교",{al:"right"}),{t:"p",text:"",size:6},
+      {t:"tbl",w:[20,10,36,22,12,12,13,14,14,22],font:"m",size:10,pad:1,rows:rows},{t:"p",text:"",size:6},
+      P0("※ 주문 기준: 현재 재학생 및 교사 수, 지도서는 교과·학년당 최소 수량. 금액은 정가 기준 추정.",{size:11})]; }
   S.s7=function(pn,st){ var g=grid(pn); var w=el("label","tkf"), cb=el("input"); cb.type="checkbox"; cb.checked=hasAdd(); cb.style.width="auto"; w.appendChild(el("span","tkfl","추가·반품"));
     var sp=el("span"); sp.style.display="flex"; sp.style.gap="6px"; sp.style.alignItems="center"; sp.appendChild(cb); sp.appendChild(document.createTextNode("있어요 (정산 기한이 3월 말로)")); w.appendChild(sp); g.appendChild(w);
     cb.onchange=function(){ P.f.addRet=cb.checked; prefill(); put(); draw(); };
@@ -3779,6 +3806,7 @@ function build(root){
     c=calc(pn); function up(){ var x=dd(V("settle")), dn=V("settleDone");
       tiles(c,[{l:"정산 기한",v:x.v,s:hasAdd()?"추가·반품이 있어 3월 말":"2월 말 (추가·반품 시 3월 말)",c:dn?(dn<=V("settle")?"ok":"bad"):x.c},{l:"가격",v:"가격결정 완료 뒤",s:"'가격결정중'이면 정산 못 해요"},{l:"정산처",v:"검정: 한국교과서협회",s:"국정은 공문으로 발행자 확인"}]); } up(); };
   var MAKE={s3:[["선정심의(안)",function(){ hwpx(planBlocks(false),(Y()||"")+"학년도 교과용도서 선정심의(안)",this.parentNode.nextSibling); }]],
+            s6:[["주문 부수표",function(){ hwpx(orderBlocks(),(Y()||"")+"학년도 교과용도서 주문 부수",this.parentNode.nextSibling); }]],
             s5:[["선정 결과(확정)",function(){ hwpx(planBlocks(true),(Y()||"")+"학년도 교과용도서 선정 결과",this.parentNode.nextSibling); }]]};
 
   /* ---- 화면 ---- */

@@ -393,6 +393,18 @@ footer details summary{cursor:pointer;color:var(--ink-2);font-weight:500}
 .ckdocf input{flex:1;min-width:0;font:inherit;font-size:14.5px;border:1px solid transparent;border-radius:4px;padding:5px 6px;background:#F7F8FB;color:#1F2329}
 .ckdocf input:focus{border-color:#A9C3FF;background:#fff;outline:none}
 .ckdocb{min-height:120px;margin-top:10px;padding:8px;border:1px dashed #C9CED8;border-radius:4px;outline:none;color:#1F2329}
+.ckdocb mark.ckbl{background:rgba(55,114,255,.14);color:inherit;border-bottom:1.5px dashed #3772FF;border-radius:2px;padding:0 1px;cursor:pointer}
+.ckdocb mark.ckbl.ckblok{background:none;border-bottom:0;padding:0;cursor:text}
+.ckdocb .ckchg{box-shadow:inset 3px 0 0 #3772FF;background:rgba(55,114,255,.06);padding-left:6px}
+.ckblcnt{font-size:13px;color:var(--muted);align-self:center}
+.ckgen{margin:4px 0 6px}
+.ckgen textarea{display:block;width:100%;box-sizing:border-box;font:inherit;font-size:15px;line-height:1.5;padding:8px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+.ckgen textarea:focus{outline:none;border-color:var(--accent)}
+.ckgenrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.ckgenrow .pill.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.ckgenrow .pill:disabled{opacity:.6;cursor:default}
+.ckgenmsg{font-size:13px;color:var(--muted);flex:1;min-width:200px}
+.ckgenmsg.warn{color:var(--warn)}
 .ckdocb:focus{border-color:#3772FF;border-style:solid}
 .ckdocb .gp,.ckdocb .gl{color:#1F2329}
 .ckdocb table td,.ckdocb table th{color:#1F2329}
@@ -1479,6 +1491,88 @@ function ckDraftOf(bl){
   if(!ti){ var hd=out[0]&&out[0].t==="tbl"&&out[0].r.filter(function(r){ return r[0]==="제목"; })[0]; ti=hd?hd.slice(1).filter(Boolean).join(" "):"공문 예시"; }
   return {t:ti,b:out};
 }
+
+/* ---- 기안문 생성기(시험판): 모음 기안문 편집 상자 안에서만. 빈칸(○○·000·20○○·0. 0.) 표시 + AI로 예시 한 건을 우리 상황에 맞추기 ---- */
+var CKBLRE=/(?:19|20)[○◯〇]{2}|[○◯〇]+|(?<![A-Za-z])O{2,}(?![A-Za-z])|(?<![\d.])(?:\d{2,4}\.\s?)?0{1,2}\.\s?0{1,2}\.|(?<!\d)0{1,2}(?:월\s?0{1,2}일|월|일)|(?<![\d,:])0{2,}(?![\d,])/g;
+function ckIsBl(s){ CKBLRE.lastIndex=0; var m=CKBLRE.exec(s||""); return !!m&&m[0]===s; }
+function ckBlMark(root){
+  var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), ns=[], n;
+  while((n=w.nextNode())) if(!n.parentNode.closest("mark.ckbl")) ns.push(n);
+  ns.forEach(function(t){ var s=t.nodeValue, f=document.createDocumentFragment(), i=0, m; CKBLRE.lastIndex=0;
+    while((m=CKBLRE.exec(s))){ if(m.index>i) f.appendChild(document.createTextNode(s.slice(i,m.index)));
+      var k=document.createElement("mark"); k.className="ckbl"; k.textContent=m[0]; f.appendChild(k); i=m.index+m[0].length; }
+    if(!i) return; if(i<s.length) f.appendChild(document.createTextNode(s.slice(i))); t.parentNode.replaceChild(f,t); });
+}
+function ckBlStrip(h){ return String(h).replace(/<mark class="ckbl[^"]*">|<\/mark>/g,""); }
+function ckGenPrompt(ti,b,memo){
+  return "너는 경상남도교육청 소속 학교의 기안문 작성 도우미다. 아래 [예시 기안문] 한 건을 [우리 상황]에 맞게 고쳐라.\n\n[규칙]\n"+
+  "- 줄 수·항목 번호·짜임새·말투는 그대로 둔다. 새 항목을 만들거나 있던 항목을 지우지 않는다.\n"+
+  "- 줄 나눔은 예시와 똑같이 지킨다. 한 줄에 한 항목만 쓰고, 여러 항목(가. 나. 다. …)을 한 줄로 합치지 않는다.\n"+
+  "- 바꾸는 곳은 빈칸(○○, 000, 20○○, 0. 0. 등)과 [우리 상황]에 적힌 내용과 맞닿은 값·문구뿐이다.\n"+
+  "- [우리 상황]에 없는 값(금액·날짜·업체·사람·학교 이름 등)은 지어내지 말고 빈칸(○○, 000) 그대로 둔다.\n"+
+  "- '관련' 줄과 「 」 안의 법령·규정 이름, 조문 번호는 한 글자도 바꾸지 않는다.\n"+
+  "- 날짜는 2026. 11. 17. 처럼, 시각은 14:00 처럼 쓴다. 금액은 예시와 같은 꼴로 쓴다.\n"+
+  "- 마지막은 예시처럼 \"끝.\"으로 맺는다.\n- 설명·마크다운 없이 아래 형식만 쓴다.\n제목: …\n본문:\n…\n\n"+
+  "[예시 기안문]\n제목: "+ti+"\n본문:\n"+b+"\n\n[우리 상황]\n"+memo;
+}
+function ckGenParse(t){
+  t=String(t||"").replace(/```[a-z]*\n?/g,"").replace(/\*\*/g,"").trim();
+  var n=/^\s*제\s*목\s*[:：]\s*(.*)$/m.exec(t), b=/본\s*문\s*[:：]?\s*\n([\s\S]*)$/.exec(t);
+  return {ti:n?n[1].trim():"", b:(b?b[1]:t).trim()};
+}
+function ckGenCheck(o,nw){
+  var w=[], L=function(s){ return s.split("\n").map(function(x){ return x.replace(/\s+/g," ").trim(); }).filter(Boolean); }, ol=L(o), nl=L(nw);
+  var laws=function(s){ return s.match(/「[^」]+」/g)||[]; }, olw=laws(o).map(function(x){ return x.replace(/\s/g,""); });
+  laws(nw).forEach(function(x){ if(olw.indexOf(x.replace(/\s/g,""))<0&&w.indexOf(x)<0) w.push("예시에 없던 법령 이름 "+x); });
+  var rel=ol.filter(function(x){ return /관련/.test(x)&&/^(1\s*[.)]|[가-하]\.)/.test(x); });
+  if(rel.some(function(x){ return nl.indexOf(x)<0; })) w.push("'관련' 줄이 바뀌었어요");
+  if(!/끝\s*\.\s*$/.test(nw.trim())) w.push("'끝.'이 없어요");
+  if(Math.abs(nl.length-ol.length)>Math.max(2,ol.length*.3)) w.push("줄 수가 예시와 많이 달라요("+ol.length+"줄 → "+nl.length+"줄)");
+  return w;
+}
+function ckGenAdd(box,bar,body,ti,save){
+  var cnt=el("span","ckblcnt"), nx=el("button","pill","다음 빈칸 ›"); nx.type="button";
+  function blanks(){ return [].slice.call(body.querySelectorAll("mark.ckbl")).filter(function(k){ var ok=!ckIsBl(k.textContent); k.classList.toggle("ckblok",ok); return !ok; }); }
+  function tiBl(){ CKBLRE.lastIndex=0; return CKBLRE.exec(ti.value); }
+  function upd(){ var n=blanks().length+(tiBl()?1:0); cnt.textContent=n?"빈칸 "+n+"곳":"빈칸을 다 채웠어요"; nx.hidden=!n; }
+  function pick(k){ var r=document.createRange(); r.selectNodeContents(k); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+  nx.onclick=function(){
+    var m=tiBl(); if(m&&document.activeElement!==ti){ ti.focus(); ti.setSelectionRange(m.index,m.index+m[0].length); return; }
+    var L=blanks(); if(!L.length) return; var s=getSelection(), at=s.rangeCount&&body.contains(s.anchorNode)?s.getRangeAt(0):null, k=L[0];
+    if(at) for(var i=0;i<L.length;i++){ var r=document.createRange(); r.selectNodeContents(L[i]); if(r.compareBoundaryPoints(Range.START_TO_END,at)>0&&!L[i].contains(at.startContainer)){ k=L[i]; break; } }
+    body.focus(); k.scrollIntoView({block:"center"}); pick(k); };
+  body.addEventListener("click",function(e){ var k=e.target.closest&&e.target.closest("mark.ckbl"); if(k&&!k.classList.contains("ckblok")) pick(k); });
+  body.addEventListener("input",upd); ti.addEventListener("input",upd);
+  ckBlMark(body);
+  /* AI로 우리 상황에 맞추기: 편집 상자 바로 아래에만 작은 입력칸 */
+  var gb=el("button","pill","AI로 우리 상황에 맞추기"); gb.type="button";
+  var ar=el("div","ckgen"), q=el("textarea"), row=el("div","ckgenrow"), go=el("button","pill pri","맞추기"), msg=el("span","ckgenmsg");
+  ar.hidden=true; q.rows=4; q.placeholder="우리 학교 상황을 아는 만큼 적어 주세요. 예: 3학년 수업용 노트북 30대, 예산 3,000만 원, 12월 납품\n학생·교직원 이름 같은 개인정보는 적지 마세요."; q.setAttribute("aria-label","우리 상황");
+  go.type="button"; row.appendChild(go); row.appendChild(msg); ar.appendChild(q); ar.appendChild(row);
+  gb.onclick=function(){ ar.hidden=!ar.hidden; if(!ar.hidden) q.focus(); };
+  go.onclick=function(){
+    var memo=q.value.trim(); if(!memo){ msg.className="ckgenmsg warn"; msg.textContent="우리 상황을 한 줄이라도 적어 주세요."; q.focus(); return; }
+    var old=body.innerText.trim(); go.disabled=gb.disabled=true; go.textContent="맞추는 중…"; msg.className="ckgenmsg"; msg.textContent="예시 한 건을 바탕으로 고치는 중이에요(10~20초).";
+    var ai=window.ckSample; if(!ai){ msg.className="ckgenmsg warn"; msg.textContent="AI를 불러오지 못했어요. 새로고침해 주세요."; go.disabled=gb.disabled=false; go.textContent="맞추기"; return; }
+    ai(ckGenPrompt(ti.value,old,memo)).then(function(r){
+      var p=ckGenParse(r.text); if(!p.b||p.b.length<20) throw {code:"empty"};
+      var oldL={}; old.split("\n").forEach(function(x){ oldL[x.replace(/\s+/g,"")]=1; });
+      body.textContent="";   /* 한 줄씩 그대로(기존 그리기는 '나.정기'처럼 붙은 항목을 앞줄에 합친다) */
+      p.b.split("\n").forEach(function(x){ x=x.trim(); if(!x) return; var e=el("div","gp ckgl",x);
+        e.style.paddingLeft=/^[가-하]\s*\./.test(x)?"1em":/^(\d+\)|[가-하]\)|-|※|·)/.test(x)?"2em":"";
+        if(!oldL[x.replace(/\s+/g,"")]) e.classList.add("ckchg"); body.appendChild(e); });
+      if(p.ti) ti.value=p.ti; ckBlMark(body); upd(); save();
+      var w=ckGenCheck(old,p.b);
+      msg.className="ckgenmsg"+(w.length?" warn":""); msg.textContent=(w.length?"확인하세요: "+w.join(" · ")+". ":"")+"바뀐 줄은 파란 선으로 표시했어요. 법령·금액·날짜는 원문과 대조한 뒤 쓰세요. 처음 예시는 '원래대로'로 돌아가요.";
+    }).catch(function(e){ msg.className="ckgenmsg warn"; msg.textContent=e&&e.code==="rate_limited"?"오늘 AI 사용 한도가 찼어요. 내일 다시 해 보세요.":"AI가 답하지 못했어요. 잠시 뒤 다시 해 보세요."; })
+    .then(function(){ go.disabled=gb.disabled=false; go.textContent="맞추기"; });
+  };
+  bar.appendChild(gb); bar.appendChild(nx); bar.appendChild(cnt);
+  box.appendChild(bar); box.appendChild(ar);
+  var rb=[].slice.call(bar.querySelectorAll("button")).filter(function(b){ return b.textContent==="원래대로"; })[0];
+  if(rb) rb.addEventListener("click",function(){ setTimeout(function(){ ckBlMark(body); upd(); },0); });
+  upd();
+}
 function ckDraftEditor(box,d,x){
   var key="kbg.dr."+d[0]+"|"+d[1], saved=null;
   try{ saved=JSON.parse(localStorage.getItem(key)||"null"); }catch(e){}
@@ -1507,9 +1601,9 @@ function ckDraftEditor(box,d,x){
   function btn(lbl,fn){ var b=el("button","pill",lbl); b.type="button"; b.onclick=function(){ fn(b,lbl); }; bar.appendChild(b); return b; }
   function done(b,lbl){ b.textContent="복사했어요"; setTimeout(function(){ b.textContent=lbl; },1400); }
   btn("제목 복사",function(b,lbl){ ckCopy(ti.value,null,function(){ done(b,lbl); }); });
-  btn("본문 복사",function(b,lbl){ ckCopy(body.innerText,body.innerHTML,function(){ done(b,lbl); }); });
+  btn("본문 복사",function(b,lbl){ ckCopy(body.innerText,ckBlStrip(body.innerHTML),function(){ done(b,lbl); }); });
   btn("원래대로",function(){ if(!confirm("고친 내용을 지우고 처음 예시로 되돌릴까요?")) return; try{ localStorage.removeItem(key); }catch(e){} to.value=val("수신자"); ti.value=val("제목")||x.t||""; fresh(); });
-  box.appendChild(bar);
+  if(/^모음\|/.test(d[1])) ckGenAdd(box,bar,body,ti,save); else box.appendChild(bar);
 }
 /* 복사: 표 서식까지(HTML) 되면 같이, 안 되면 글만. 클립보드 API가 막힌 파일 화면에선 선택 후 execCommand */
 function ckCopy(text,html,ok){
@@ -2823,6 +2917,7 @@ function viaGem(msgs,signal){
   .then(function(r){ if(!r.ok) return aiErr(r); return r.json(); })
   .then(function(j){ var c=j.candidates&&j.candidates[0], t=c&&c.content&&(c.content.parts||[]).map(function(p){ return p.text||""; }).join(""); if(!t) throw {code:"http",message:"빈 답"}; return {text:t,model:GEM}; });
 }
+window.ckSample=function(a,o){ return sampleFn(a,o); };   /* 기안문 생성기가 다른 블록에서 부른다 */
 function sampleFn(input,opts){
   opts=opts||{}; var msgs=(typeof input==="string")?[{role:"user",content:input}]:input.map(function(m){ return {role:m.role,content:String(m.content)}; });
   var stop=function(e){ return (opts.signal&&opts.signal.aborted)||(e&&e.name==="AbortError"); };

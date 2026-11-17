@@ -1558,6 +1558,16 @@ function STAGES(c){
   if(tp(c)==="공사") s.push(["haja","하자 관리"]);
   return s;
 }
+/* 앞 단계 날짜로 정할 수 있는 날짜는 미리 채운다. 직접 고친 값(autoV와 다름)은 건드리지 않고, 끝난 단계는 그대로 둔다.
+   실제로 일어난 날(서류 받은 날·통지일·검사일·지급일 등)은 채우지 않는다 */
+function prefill(c){ c.autoV=c.autoV||{}; c.done=c.done||{}; var ch=false, td=today();
+  var A=function(k,v,st){ if(c.done[st]||!v) return; if(c[k]&&c[k]!==c.autoV[k]) return; if(c[k]!==v){ c[k]=v; ch=true; } c.autoV[k]=v; };
+  var nextWork=function(d){ return d?workDays(addDays(d,-1),1):""; };
+  if(isBid(c)){ A("nd",td,"notice"); A("od",nextWork(bidEarliest(c)),"notice"); A("req",c.od,"award"); }
+  else if(c.m&&c.m.n===2){ A("qd",td,"vendor"); A("qe",quoteOpen(c),"vendor"); }
+  A("d1",isBid(c)&&c.awardD&&c.awardD>td?c.awardD:td,"sign"); A("d2",c.d1,"sign");
+  A("fin",c.notice,"check"); A("claim",c.insp,"pay");
+  return ch; }
 function isBid(c){ return !!(c.m&&c.m.n===3); }
 /* 입찰 기한 (경남 업무흐름도 '견적·입찰 공고', 2026 계약실무편람 흐름도) */
 function bidDays(c,urgent){ if(urgent) return 5; var a=amount(c.est)||0; return tp(c)==="공사"?(a<1e9?7:a<5e9?15:40):7; }   /* 시행령 제35조: 마감 전날부터 거꾸로 센 날수 */
@@ -1584,10 +1594,10 @@ function halves(c){ /* 준공 후 반기마다 1번(연 2회 이상), 마지막�
 /* 다음에 할 일과 기한 */
 function nextTodo(c){
   var s=STAGES(c), i=curStage(c); if(i>=s.length) return null; var id=s[i][0], t=tp(c);
-  if(id==="vendor") return c.m&&c.m.n===2?(c.qd?{t:"견적 마감·개찰하기",due:c.qe||quoteOpen(c)}:{t:"견적 안내공고 내기",due:""}):{t:"견적서 받고 업체 확인하기",due:""};
-  if(id==="notice") return c.nd?{t:"입찰 마감·개찰 기다리기",due:c.od||bidEarliest(c)}:{t:"입찰 공고 올리기",due:""};
-  if(id==="award"){ if(!c.req) return {t:"개찰하고 적격심사 서류 요구하기",due:c.od||""}; var sd=addDays(c.req,subDays(c));
-    return c.subm?{t:"적격심사하고 낙찰자 정하기",due:addDays(c.subm,7)}:{t:"적격심사 서류 받기",due:sd}; }
+  if(id==="vendor") return c.m&&c.m.n===2?{t:"견적 안내공고 내고 견적 받기",due:c.qe||""}:{t:"견적서 받고 업체 확인하기",due:""};
+  if(id==="notice") return {t:"입찰 공고 올리기"+(c.od?" (마감 "+kdate(c.od)+")":""),due:c.nd||""};
+  if(id==="award"){ var td=today(); if(!c.od||c.od>=td) return {t:"개찰하기",due:c.od||""}; if(!c.subm) return {t:"적격심사 서류 받기",due:c.req?addDays(c.req,subDays(c)):""};
+    return {t:"적격심사하고 낙찰자 정하기",due:addDays(c.subm,7)}; }
   if(id==="sign") return isBid(c)&&c.awardD?{t:"계약 맺기 (낙찰 통지 "+kdate(c.awardD)+")",due:addDays(c.awardD,10)}:{t:"계약금액·기간 넣고 업체 서명 서류 만들기",due:""};
   if(id==="work") return {t:t==="공사"?"착공 서류 받기":"착수 서류 받기",due:c.d2||""};
   if(id==="check") return c.notice?{t:"검사하기 (이행 완료 통지 "+kdate(c.notice)+")",due:addDays(c.notice,14)}:{t:(t==="물품"?"납품":"준공")+" 기다리기 · 완료 통지 받으면 날짜 넣기",due:c.d3||""};
@@ -1837,6 +1847,7 @@ function build(root){
     app.appendChild(btn("← 장부","cv-back",function(){ go({v:"list"}); }));
     var top=el("div","cv-top"); top.appendChild(el("h3",null,c.name)); app.appendChild(top);
     var mt=el("div","cv-meta"); [KINDT[c.kind],c.m&&c.m.h,c.biz&&c.biz.bizname,c.amount?won(c.amount):(amount(c.est)?"추정 "+won(amount(c.est)):"")].filter(Boolean).forEach(function(t){ mt.appendChild(el("span",null,t)); }); app.appendChild(mt);
+    CUR=c; if(prefill(c)) put();
     var S=STAGES(c), cur=curStage(c); c.done=c.done||{};
     var SH={pick:"방법",vendor:"업체",notice:"공고",award:"낙찰",sign:"계약",work:tp(c)==="공사"?"착공":"착수",check:"검사",pay:"지급",haja:"하자"};
     var sel=-1; S.forEach(function(s,i){ if(s[0]===view.open) sel=i; }); if(sel<0) sel=Math.min(cur,S.length-1);
@@ -1857,9 +1868,10 @@ function build(root){
     var go2=btn(label,"btn",function(){ var why=ready(); if(why){ msg(m,why,"warn"); return; } finish(c,k); }); n.appendChild(go2);
     var m=el("div","tkmsg"); b.appendChild(m); return n;
   }
+  var CUR=null;
   function fld(g,label,val,on,o){ o=o||{}; var f=el("label","tkf"+(o.wide?" wide":"")); f.appendChild(el("span","tkfl",label)); var i=el("input"); i.type=o.type||"text"; if(o.num) i.inputMode="numeric";
     i.value=val==null?"":val; if(o.ph) i.placeholder=o.ph; f.appendChild(i); if(o.hint) f.appendChild(el("small",null,o.hint)); g.appendChild(f);
-    i.addEventListener(o.type==="date"?"change":"input",function(){ on(i.value); }); if(o.num) i.addEventListener("blur",function(){ var n=num(i.value); i.value=n?comma(n):""; }); return i; }
+    i.addEventListener(o.type==="date"?"change":"input",function(){ on(i.value); if(o.type==="date"&&CUR&&prefill(CUR)){ put(); view.open=view.open||null; draw(); } }); if(o.num) i.addEventListener("blur",function(){ var n=num(i.value); i.value=n?comma(n):""; }); return i; }
   function nums(box,items){ box.textContent=""; items.forEach(function(x){ if(!x) return; var d=el("div","cv-num "+(x.c||"")); d.appendChild(el("span",null,x.l)); d.appendChild(el("b",null,x.v)); if(x.s) d.appendChild(el("small",null,x.s)); box.appendChild(d); }); }
   function ticks(box,list,store){ var u=el("ul","cv-list"); box.appendChild(u); list.forEach(function(it){ var li=el("li"), lb=el("label"), cb=el("input"); cb.type="checkbox"; cb.checked=!!store[it[0]];
     cb.onchange=function(){ store[it[0]]=cb.checked; put(); }; var t=el("span",null,it[1]); if(it[2]) t.appendChild(el("small",null,it[2])); lb.appendChild(cb); lb.appendChild(t); li.appendChild(lb); u.appendChild(li); }); return u; }
@@ -1928,9 +1940,8 @@ function build(root){
       :"업체 한 곳에서 견적서를 받아요. 신용도·기술능력·경험을 보고 예정가격 이하로 금액을 협의해 정해요.");
     b.appendChild(el("p","cv-say",say));
     if(two){ var qg=el("div","tkgridf"); b.appendChild(qg); var qc=el("div","cv-calc");
-      var qauto=function(){ if(!c.qd||(c.qe&&!c.qeAuto)) return; c.qe=quoteOpen(c); c.qeAuto=true; if(qi) qi.value=c.qe; };
-      fld(qg,"안내공고 올린 날",c.qd,function(v){ c.qd=v; qauto(); put(); qre(); },{type:"date"});
-      var qi=fld(qg,"견적 마감·개찰일",c.qe,function(v){ c.qe=v; c.qeAuto=!v; qauto(); put(); qre(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
+      fld(qg,"안내공고 올린 날",c.qd,function(v){ c.qd=v; put(); qre(); },{type:"date"});
+      fld(qg,"견적 마감·개찰일",c.qe,function(v){ c.qe=v; put(); qre(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
       b.appendChild(qc);
       var qre=function(){ var e=quoteOpen(c), bad=c.qe&&e&&c.qe<e;
         nums(qc,[{l:"공고기간",v:"3일 이상",s:"토·공휴일 빼고 · 게시부터 개찰까지 5일 이상"},
@@ -1951,12 +1962,10 @@ function build(root){
     if(c.fails&&c.fails.length) b.appendChild(el("p","cv-say","재공고 "+c.fails.length+"번째예요 (지난 개찰 "+c.fails.map(function(f){ return f.od?kdate(f.od):"-"; }).join(", ")+" 유찰). 예정가격·참가자격은 바꿀 수 없고, 바꾸려면 새로운 입찰로 해요."));
     b.appendChild(el("p","cv-say",(s2bOk(c)?"나라장터(G2B)나 학교장터(S2B)":"나라장터(G2B)")+"에 입찰공고를 올리고 기초금액을 넣어요. 공고일과 마감일을 넣으면 공고기간이 모자라지 않은지 바로 봐요."));
     var g=el("div","tkgridf"); b.appendChild(g); var calc=el("div","cv-calc");
-    /* 마감·개찰일은 가장 빠른 날로 자동으로 채운다(직접 고치면 그 날을 지킨다) */
-    var auto=function(){ if(!c.nd||(c.od&&!c.odAuto)) return; c.od=workDays(addDays(bidEarliest(c),-1),1); c.odAuto=true; if(oi) oi.value=c.od; };
-    fld(g,"공고일",c.nd,function(v){ c.nd=v; auto(); put(); re(); },{type:"date"});
-    var oi=fld(g,"입찰 마감·개찰일",c.od,function(v){ c.od=v; c.odAuto=!v; auto(); put(); re(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
+    fld(g,"공고일",c.nd,function(v){ c.nd=v; put(); re(); },{type:"date"});
+    fld(g,"입찰 마감·개찰일",c.od,function(v){ c.od=v; put(); re(); },{type:"date",hint:"공고일을 넣으면 가장 빠른 날로 채워요"});
     var uw=el("label","tkf"), ub=el("input"); ub.type="checkbox"; ub.checked=!!c.urg; ub.style.width="auto"; uw.appendChild(el("span","tkfl","긴급·재공고")); var us=el("span"); us.style.display="flex"; us.style.gap="6px"; us.style.alignItems="center"; us.appendChild(ub); us.appendChild(document.createTextNode("5일로 줄여요")); uw.appendChild(us); g.appendChild(uw);
-    ub.onchange=function(){ c.urg=ub.checked; auto(); put(); re(); };
+    ub.onchange=function(){ c.urg=ub.checked; prefill(c); put(); view.open="notice"; draw(); };
     b.appendChild(calc); b.appendChild(el("div","cv-sub","공고문에 넣을 것")); noticeFields(c,b,true);
     function re(){ var n=bidDays(c,c.urg), e=bidEarliest(c), bad=c.od&&e&&c.od<e;
       nums(calc,[{l:"공고기간",v:n+"일 이상",s:c.urg?"긴급·재공고":t==="공사"?"공사 추정가격 "+(est<1e9?"10억 원 미만":est<5e9?"10억~50억 원":"50억 원 이상"):"물품·용역"},

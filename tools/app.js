@@ -1452,11 +1452,11 @@ function bidEarliest(c){ return c.nd?addDays(c.nd,bidDays(c,c.urg)+1):""; }
 function subDays(c){ var t=tp(c), a=amount(c.est)||0; return t==="공사"?(a>=3e9&&a<1e10?15:7):t==="용역"?7:(a>=GOSI?5:3); }   /* 적격심사 서류 제출기간 */
 var GOSI=2.3e8;   /* 재정경제부 고시금액(물품·용역) — 2026 계약실무편람 p.454·기간 계산표 */
 function floorRate(c){ var t=tp(c), a=amount(c.est)||0;   /* 입찰 낙찰하한율(%) — 2026 계약실무편람 */
-  if(t==="물품") return c.smeg?87.995:(a<GOSI?84.245:80.495);   /* p.454 물품 제조·구매 표(일반제품 적격심사 85점, 중소기업자간 경쟁제품 88점) */
+  if(t==="물품") return c.smeg?89.995:(a<GOSI?84.245:80.495);   /* p.454 물품 제조·구매 표(일반제품 적격심사 85점) · 중소기업자간 경쟁제품은 중기부 고시 제2026-80호(88점, 하한율 89.995%) */
   if(t==="용역") return a<2e8?87.745:a<5e8?86.745:a<1e9?85.495:77.995;   /* 경상남도 일반용역 등 적격심사 세부기준 · 편람 '계약금액별 낙찰하한율' */
   return a<1e9?89.745:a<5e9?88.745:a<1e10?87.495:a<3e10?81.995:null; }   /* p.89 공사 표: 종합·전문·전기 등 같은 구간, 300억 이상은 종합평가 */
 function frBase(c){ return tp(c)==="공사"?"(예정가격−A) 대비 (입찰가격−A)":"예정가격 대비"; }   /* A = 국민연금·건강·노인장기요양보험료·퇴직공제부금·산업안전보건관리비·안전관리비·품질관리비 */
-function frNote(c){ return tp(c)==="물품"&&c.smeg?"편람 표 87.995% · 2026 개정 89.995% 여부는 공고 전 중소기업자간 경쟁제품 계약이행능력심사 세부기준으로 확인":""; }
+function frNote(c){ return tp(c)==="물품"&&c.smeg?"2026. 10. 1. 시행 중기부 고시 제2026-80호 기준(개정 전 87.995%) · 2026. 10. 이전 공고는 당시 고시 확인":""; }
 function quoteOpen(c){ return c.qd?workDays(c.qd,4):""; }   /* 2인 견적: 게시일+공고기간 3일(토·공휴일 빼고)+개찰일 = 게시 5일 이상 */
 function s2bOk(c){ var a=amount(c.est)||0, L={c1:4e8,c2:2e8,c3:1.6e8}[c.kind]||1e8; return a<=L; }
 function curStage(c){ var s=STAGES(c); c.done=c.done||{}; for(var i=0;i<s.length;i++) if(!c.done[s[i][0]]) return i; return s.length; }
@@ -2874,6 +2874,10 @@ function build(root){
   function subs(){ return P.subs.filter(function(s){ return String(s.name||"").trim(); }); }
   function step(id){ for(var i=0;i<SRC.STEPS.length;i++) if(SRC.STEPS[i].id===id) return SRC.STEPS[i]; }
   function hasAdd(){ return !!P.f.addRet; }
+  /* 주문 기간을 공문으로 고치지 않았으면 추정값(예년 10월) */
+  function oEst(){ var e=V("orderE"); return !!e&&P.autoV.orderE===e; }
+  var O_EST="2027학년도 주문 기간은 경남교육청 공문으로 확인하세요. 예년에는 9월 말에 안내하고 10월에 주문했어요(2025학년도용 10. 7.~10. 25., 2026학년도용 10. 1.~10. 31.).";
+  function oEstTxt(){ var y=Y(); return y?O_EST.replace(/^2027/,String(y)):O_EST; }
 
   /* ---- 날짜 미리 채우기(직접 고친 값·끝난 단계는 그대로) ---- */
   function prefill(){ var ch=false, y=Y();
@@ -2977,7 +2981,7 @@ function build(root){
     c=calc(pn);
     function up(){ var a=V("expoS"), b=V("expoE"), n=a&&b?Math.round((pd(b)-pd(a))/864e5)+1:null, oe=V("orderE");
       tiles(c,[{l:"전시·선정 기간",v:n?n+"일":"-",s:"공문 날짜로 고쳐요(2026학년도용 2025. 9. 15.~10. 31.)"},
-        {l:"NEIS 주문 마감",v:oe?dot(oe):"-",s:oe?ddTxt(dday(oe)):"",c:oe&&!P.done.s6?ddCls(dday(oe)):""},
+        {l:"NEIS 주문 마감",v:oe?dot(oe):"-",s:oe?(oEst()?"추정 · ":"")+ddTxt(dday(oe)):"",c:oe&&!P.done.s6?ddCls(dday(oe)):""},
         {l:"선정 대상 과목",v:subs().length+"과목",s:subs().filter(function(s){ return s.one; }).length?"1책 1도서 "+subs().filter(function(s){ return s.one; }).length+"과목":"신간본이 있는 과목"}]); }
     up();
     sub(pn,"선정 대상 과목","교육청 공문의 도서 목록에서 신간본이 있는 과목");
@@ -3026,8 +3030,9 @@ function build(root){
       tiles(c,[{l:"확정",v:f?dot(f):"-",s:late?"NEIS 주문 마감보다 늦어요":"심의 결과를 존중해 확정",c:late?"bad":""},{l:"공개 항목",v:"기준표·절차·결과",s:"개인별 평가·의견은 빼요"},{l:"보관",v:"새 교과서 선정 때까지",s:"평가표·총괄표·의견서·회의록"}]); } up(); };
   S.s6=function(pn,st){ var g=grid(pn), c;
     fld(g,"orderS","NEIS 주문 시작",{type:"date",live:function(){ up(); }}); fld(g,"orderE","NEIS 주문 마감",{type:"date",live:function(){ up(); }}); fld(g,"orderDone","제출 완료일",{type:"date",live:function(){ up(); }});
+    if(oEst()) pn.appendChild(el("p","cv-law","추정값 · "+oEstTxt()));
     c=calc(pn); function up(){ var x=dd(V("orderE")), dn=V("orderDone");
-      var q=qty(); tiles(c,[{l:"주문 마감",v:x.v,s:dn?(dn<=V("orderE")?"기한 안에 제출했어요":"마감을 넘겼어요"):x.s,c:dn?(dn<=V("orderE")?"ok":"bad"):x.c},
+      var q=qty(); tiles(c,[{l:"주문 마감",v:x.v,s:dn?(dn<=V("orderE")?"기한 안에 제출했어요":"마감을 넘겼어요"):(oEst()?"추정 · ":"")+x.s,c:dn?(dn<=V("orderE")?"ok":"bad"):x.c},
         {l:"주문 부수",v:q.n?comma(q.tb)+"부":"-",s:q.n?"교과서 "+comma(q.tb)+" · 지도서 "+comma(q.gd)+(q.self?" · 자체예산 지도서 "+q.self:""):"아래 과목별로 학생·교사 수를 넣어요"},
         {l:"추정 금액",v:q.amt?comma(q.amt)+"원":"-",s:q.miss?"정가 없는 책 "+q.miss+"종은 빠져요":"교과서 정가 × 부수",c:""}]); } up();
     if(V("level")==="초") pn.appendChild(el("p","cv-law","초등학교는 2학기 교과서·지도서를 따로 주문해요. 4월 초 교육청 안내에 따라 NEIS로 주문해 교육지원청에 내요(2026년은 4. 15.까지). 근거: 「2026학년도 2학기 교과용도서 주문 및 정산절차 안내」"));
@@ -3083,7 +3088,7 @@ function build(root){
     var now=el("div","tb-now");
     if(cur>=STG.length) now.appendChild(el("b",null,"이번 학년도 교과서 선정·주문·정산을 모두 마쳤어요."));
     else { var st0=step(STG[cur][0]); now.appendChild(el("span","cv-dd",st0.when)); var t=el("span"); t.appendChild(el("b",null,"지금: "+st0.title)); now.appendChild(t);
-      var oe=V("orderE"); if(!P.done.s6&&oe){ var n=dday(oe); now.appendChild(el("span","cv-dd "+ddCls(n),"NEIS 주문 마감 "+ddTxt(n))); } }
+      var oe=V("orderE"); if(!P.done.s6&&oe){ var n=dday(oe); now.appendChild(el("span","cv-dd "+ddCls(n),"NEIS 주문 마감"+(oEst()?"(추정)":"")+" "+ddTxt(n))); } }
     app.appendChild(now);
     var nv=el("nav","cv-idx"); nv.style.setProperty("--n",STG.length);
     STG.forEach(function(s,i){ var stt=P.done[s[0]]?"done":i===cur?"cur":"todo", b=btn("","cv-ix "+stt+(i===sel?" sel":""),function(){ view.open=s[0]; draw(); });
@@ -4474,6 +4479,9 @@ var DEPTS=["행정실","교무부","연구부","교육과정부","학생안전�
 
 /* ---------- 장부 ---------- */
 var MEET=null, CUR=null;
+/* 공립/사립(이 PC 기준). 사립은 경남 조례가 적용되지 않음 — 초·중등교육법 제34조②, 시행령 제63조 */
+function PRI(){ return lsGet("hk.kind","공립")==="사립"; }
+var HK_PRIV="사립학교는 경남 조례가 적용되지 않아요. 소집 기한·정족수·회의록 공개는 학교법인 정관과 학교 운영위원회 규정을 따라요(초·중등교육법 제34조②). 심의 결과는 학교장이 최대한 존중하고(시행령 제63조③), 예산·결산은 학운위 심의를 거쳐 이사회가 의결해요(사립학교법 제29조④·제31조③). 학칙은 자문 사항이고, 공모교장·초빙교사는 심의 대상이 아니에요.";
 function loadMeet(){
   MEET=lsGet("hk.meetings",null);
   if(!Array.isArray(MEET)){ MEET=[];
@@ -4499,14 +4507,14 @@ function maskName(n){ n=trim(n); return n?n.charAt(0)+"○○":n; }
 function mTitle(st){ return (st.meet.year||"")+"학년도 제"+(st.meet.no||"?")+"회 "+(st.meet.kind||"정기회"); }
 function members(st){ return [].concat(st.members.parent,st.members.teacher,st.members.local); }
 function curIdx(m){ m.done=m.done||{}; for(var i=0;i<STG.length;i++) if(!m.done[STG[i][0]]) return i; return STG.length; }
-function hkDue(d){ var w=TK().workDays; if(!d) return ""; d=addDays(d,-7); if(!w) return d; for(var i=0;i<10;i++){ if(w(addDays(d,-1),1)===d) return d; d=addDays(d,-1); } return d; }
+function hkDue(d){ var w=TK().workDays; if(!d) return ""; if(PRI()) return d; d=addDays(d,-7); if(!w) return d; for(var i=0;i<10;i++){ if(w(addDays(d,-1),1)===d) return d; d=addDays(d,-1); } return d; }
 function nextTodo(m){
   var i=curIdx(m); if(i>=STG.length) return null; var d=m.s.meet.date, k=STG[i][0];
   if(k==="mem") return {t:"위원 명단 확인",due:hkDue(d)};
   if(k==="ag") return {t:"심의 안건 받기",due:hkDue(d)};
   if(k==="call") return {t:"소집 공고·위원 통지",due:hkDue(d)};
   if(k==="meet") return {t:"회의 열기",due:d};
-  return {t:"처리결과 학교장 이송",due:d?addDays(d,3):""};
+  return {t:"처리결과 학교장 이송",due:d?(PRI()?d:addDays(d,3)):""};
 }
 
 /* ---------- 모양 ---------- */
@@ -4608,6 +4616,8 @@ function build(root){
   function drawList(){
     var hero=el("div","cv-hero"); var h=el("div"); h.appendChild(el("h3",null,MEET.length?(trim(MEET[0].s.school.name)||"우리 학교")+" 운영위원회":"학교운영위원회 회의")); hero.appendChild(h);
     var bs=el("div","cv-btns"); bs.appendChild(btn("+ 새 회의","btn",function(){ go({v:"new"}); })); var mv=btn("자료 내보내기","btn ghost"); bs.appendChild(mv); hero.appendChild(bs); app.appendChild(hero);
+    var kb=el("div","cv-chips"); kb.style.margin="0 0 10px"; ["공립","사립"].forEach(function(k){ var p=btn(k,"pill",function(){ lsSet("hk.kind",k); draw(); }); p.setAttribute("aria-pressed",(PRI()?"사립":"공립")===k?"true":"false"); kb.appendChild(p); }); app.appendChild(kb);
+    if(PRI()) app.appendChild(el("p","cv-law",HK_PRIV));
     var setBox=el("div"); app.appendChild(setBox); mv.onclick=function(){ if(setBox.firstChild){ setBox.textContent=""; return; } moveBox(setBox); };
     var y=String(new Date().getFullYear()), open=MEET.filter(function(m){ return curIdx(m)<STG.length; });
     var up=open.map(function(m){ return m.s.meet.date; }).filter(function(d){ return d&&d>=today(); }).sort()[0];
@@ -4664,7 +4674,7 @@ function build(root){
     var ft=el("div","cv-ofoot"); pn.appendChild(ft); var mk=btn("목록에 올리기","btn"); ft.appendChild(mk); var mm=el("div","tkmsg"); ft.appendChild(mm);
     function res(){ rb.textContent=""; var d=W.meet.date; if(!d){ rb.appendChild(el("p","cv-law","회의 날짜를 넣으면 공고·통지 기한이 나와요.")); return; }
       var c=el("div","cv-calc"); rb.appendChild(c); var nd=hkDue(d);
-      tiles(c,[{l:"소집 공고·통지",v:kd(nd)+"까지",s:"회의 7일 전(휴일이면 앞 근무일) · "+ddTxt(dd(nd)),c:dd(nd)<0?"bad":""},{l:"회의",v:fmtDotW(d)+(W.meet.time?" "+fmtTime(W.meet.time):""),s:ddTxt(dd(d))}]); }
+      tiles(c,[PRI()?{l:"소집 공고·통지",v:"정관·학교 규정",s:"사립은 법령 기한이 없어요"}:{l:"소집 공고·통지",v:kd(nd)+"까지",s:"회의 7일 전(휴일이면 앞 근무일) · "+ddTxt(dd(nd)),c:dd(nd)<0?"bad":""},{l:"회의",v:fmtDotW(d)+(W.meet.time?" "+fmtTime(W.meet.time):""),s:ddTxt(dd(d))}]); }
     mk.onclick=function(){ if(!trim(W.meet.no)){ noI.focus(); return msg(mm,"회차를 넣어 주세요.","warn"); } if(!W.meet.date) return msg(mm,"회의 날짜를 넣어 주세요.","warn");
       W.meet.kind=W.meet.kind||"정기회"; var id=Date.now(), m={id:id,attKey:"hk."+id,s:W,done:{}}; if(members(W).length) m.done.mem=today();
       MEET.unshift(m); lsSet("hk.meetings",MEET); openMeeting(m); go({v:"m"}); };
@@ -4702,9 +4712,9 @@ function build(root){
     dz.appendChild(btn("이 회의 지우기","cv-x",function(){ if(!confirm("'"+mTitle(S)+"'를 목록에서 지울까요?")) return; MEET=MEET.filter(function(x){ return x!==m; }); lsSet("hk.meetings",MEET); CUR=null; go({v:"list"}); }));
   }
   function headLine(k){ var d=S.meet.date;
-    if(k==="call") return d?"공고·통지 "+kd(hkDue(d))+"까지 ("+ddTxt(dd(hkDue(d)))+")":"";
+    if(k==="call") return d?(PRI()?"공고·통지 기한은 정관·학교 규정":"공고·통지 "+kd(hkDue(d))+"까지 ("+ddTxt(dd(hkDue(d)))+")"):"";
     if(k==="meet") return d?fmtDotW(d)+(S.meet.time?" "+fmtTime(S.meet.time):"")+" · "+placeStr():"";
-    if(k==="res") return S.docs.resultDate?"이송 "+kd(S.docs.resultDate):d?"이송 "+kd(addDays(d,3))+"까지":"회의 뒤 처리결과를 학교장에게 이송";
+    if(k==="res") return S.docs.resultDate?"이송 "+kd(S.docs.resultDate):d&&!PRI()?"이송 "+kd(addDays(d,3))+"까지":"회의 뒤 처리결과를 학교장에게 이송";
     if(k==="ag") return agendaList().length?"안건 "+agendaList().length+"건"+((S.attach||[]).length?" · 원문 "+S.attach.length+"건":""):"";
     if(k==="mem") return memberCount()?"재적 "+memberCount()+"명":""; return ""; }
 
@@ -4800,9 +4810,10 @@ function build(root){
     if(idx<0){ var u=new Set(Object.keys(used).map(Number)); idx=attachFuzzyLink(a,u); } a.agIdx=idx; }
   /* 3. 소집 */
   ST.call=function(pn){
-    pn.appendChild(el("p","hk-say","회의 7일 전까지 소집을 공고하고 위원에게 알려요. 공고문은 학교 누리집·게시판에, 안내장은 학부모·지역주민 방청 안내로 내보내요."));
+    if(PRI()) pn.appendChild(el("p","hk-say","소집 기한은 학교법인 정관과 학교 운영위원회 규정을 따라요. 공고문은 학교 누리집·게시판에, 안내장은 학부모·지역주민 방청 안내로 내보내요.")); else pn.appendChild(el("p","hk-say","회의 7일 전까지 소집을 공고하고 위원에게 알려요. 공고문은 학교 누리집·게시판에, 안내장은 학부모·지역주민 방청 안내로 내보내요."));
     var c=calc(pn);
     function upd(){ var d=S.meet.date, nd=hkDue(d), g=daysBetween(S.docs.noticeDate,d);
+      if(PRI()){ tiles(c,[{l:"공고·통지 기한",v:"정관·학교 규정",s:"사립은 법령 기한이 없어요"},{l:"공고일",v:S.docs.noticeDate?kd(S.docs.noticeDate):"-",s:g==null?"":"회의 "+g+"일 전"},{l:"심의 안건",v:agendaList().length+"건",c:agendaList().length?"":"warn"}]); return; }
       tiles(c,[{l:"공고·통지 기한",v:nd?kd(nd)+"까지":"-",s:nd?ddTxt(dd(nd)):"회의 날짜를 넣어 주세요",c:nd&&!S.docs.noticeDate&&dd(nd)<0?"bad":""},
         {l:"공고일",v:S.docs.noticeDate?kd(S.docs.noticeDate):"-",s:g==null?"":"회의 "+g+"일 전"+(g<7?" · 긴급이면 사유 기록":""),c:g==null?"":g>=7?"ok":"warn"},
         {l:"심의 안건",v:agendaList().length+"건",c:agendaList().length?"":"warn"}]); }
@@ -4816,11 +4827,11 @@ function build(root){
       Object.keys(o).forEach(function(k){ S.docs[k]=o[k]; }); save(); draw(); HK.toast("문서번호를 "+(pv?mTitle(pv.s)+"에서 ":"")+"이어 매겼어요."); }));
     nb.appendChild(el("small","cv-law",pv?"지난 회의("+mTitle(pv.s)+") 번호 다음으로: 공고번호 +1(같은 학년도), 운영위 문서번호 앞 번호 +1":"지난 회의가 없으면 앞 번호를 물어봐요"));
     upd();
-    pn.appendChild(el("p","cv-law","긴급한 사유가 있으면 7일 전을 지키지 않아도 돼요. 그래도 소집 공고와 위원 통지는 빠뜨릴 수 없어요. (초·중등교육법 시행령 제59조의2②)"));
+    if(!PRI()) pn.appendChild(el("p","cv-law","긴급한 사유가 있으면 7일 전을 지키지 않아도 돼요. 그래도 소집 공고와 위원 통지는 빠뜨릴 수 없어요. (초·중등교육법 시행령 제59조의2②)"));
     sub(pn,"근거 문구","소집 기안문·공고문에 들어가요");
     var g2=grid(pn); fld(g2,"opts.ordinance","근거 조례"); fld(g2,"opts.article","소집 근거 조항"); fld(g2,"opts.article2","공고문 근거 조항"); fld(g2,"opts.refLine","참고사항 (공고문·안내장)",{wide:true});
     docs(pn,4,"소집 문서");
-    law(pn,"근거: 경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31.) 제19조(회의소집 등), 경남 학교운영위원회 규정(예시) — 개최 7일 전 소집 공고·개별 통지");
+    law(pn,PRI()?"사립학교: 초·중등교육법 제34조②, 시행령 제63조 — 소집은 학교법인 정관·학교 운영위원회 규정. 근거 문구 칸은 학교 규정에 맞게 고쳐 주세요.":"근거: 경상남도립학교 운영위원회 운영 조례(제5815호, 2025. 1. 31.) 제19조(회의소집 등), 경남 학교운영위원회 규정(예시) — 개최 7일 전 소집 공고·개별 통지");
   };
   /* 4. 회의 */
   ST.meet=function(pn){
@@ -4836,12 +4847,12 @@ function build(root){
     upd();
     var g=grid(pn); fld(g,"minutes.staffAttend","출석 교직원",{ph:"예: 교감 ○○○, 교무부장 ○○○",wide:true});
     docs(pn,5,"회의 문서");
-    law(pn,"근거: 경상남도립학교 운영위원회 운영 조례 — 회의는 재적위원 과반수 출석으로 열고 출석위원 과반수 찬성으로 의결");
+    law(pn,PRI()?"사립학교: 정족수는 학교법인 정관·학교 운영위원회 규정을 따라요. 위 정족수는 과반 기준 예시예요.":"근거: 경상남도립학교 운영위원회 운영 조례 — 회의는 재적위원 과반수 출석으로 열고 출석위원 과반수 찬성으로 의결");
   };
   /* 5. 결과 */
   ST.res=function(pn){
     pn.appendChild(el("p","hk-say","안건마다 처리결과와 표결결과를 확정하면 회의록·처리상황표·이송 기안문에 그대로 들어가요. 처리결과는 학교장에게 이송하고 회의록은 누리집에 공개해요."));
-    var d3=S.meet.date?addDays(S.meet.date,3):"", rc=calc(pn); tiles(rc,[{l:"학교장 이송 기한",v:d3?kd(d3)+"까지":"-",s:d3?"의결한 날부터 3일 이내 · "+ddTxt(dd(d3)):"회의 날짜를 넣어 주세요"}]);
+    var d3=S.meet.date?addDays(S.meet.date,3):""; if(PRI()) pn.appendChild(el("p","cv-law","사립학교: 심의 결과는 학교장이 최대한 존중해요(시행령 제63조③). 이송 기한·회의록 공개는 학교 운영위원회 규정을 따라요.")); else { var rc=calc(pn); tiles(rc,[{l:"학교장 이송 기한",v:d3?kd(d3)+"까지":"-",s:d3?"의결한 날부터 3일 이내 · "+ddTxt(dd(d3)):"회의 날짜를 넣어 주세요"}]); }
     var g=grid(pn); fld(g,"docs.resultDate","처리(이송)일",{type:"date"}); fld(g,"docs.no3","처리결과 이송 문서번호");
 
     sub(pn,"안건별 결과");
@@ -4863,7 +4874,7 @@ function build(root){
       try{ fn(); } finally { S.members=JSON.parse(keep.m); S.staff=JSON.parse(keep.st); S.minutes.staffAttend=keep.sa; } }
     pb.appendChild(btn("공개용 한글 저장","btn ghost",function(){ var d=docById("c1"); masked(function(){ saveHwpx(["c1"],docFileName(d)+"_공개용"); }); }));
     pb.appendChild(btn("공개용 인쇄·PDF","btn ghost",function(){ masked(function(){ printDocs(["c1"]); }); }));
-    law(pn,"근거: 학교운영위원회 규정(예시) 제26조(심의결과의 통보 — 의결된 날부터 3일 이내 학교장에게 이송), 제23조②(회의록 누리집 공개)");
+    law(pn,PRI()?"사립학교: 초·중등교육법 시행령 제63조③(심의 결과 최대한 존중), 사립학교법 제29조④·제31조③(예산·결산은 학운위 심의 뒤 이사회 의결). 회의록 공개는 법령 의무가 아니고 학교 규정을 따라요.":"근거: 학교운영위원회 규정(예시) 제26조(심의결과의 통보 — 의결된 날부터 3일 이내 학교장에게 이송), 제23조②(회의록 누리집 공개)");
   };
 
   if(view.v==="list"&&MEET.length===1&&curIdx(MEET[0])<STG.length){ /* 장부부터 보여 준다 */ }
@@ -4873,8 +4884,8 @@ window.TKNATIVE=window.TKNATIVE||{}; window.TKNATIVE.hk=build;
 })();
 
 (function(){ "use strict";
-var CSS=":host{--sub:var(--ink-2);--line2:var(--line-strong);--canvas:var(--surface-2);--navy:var(--accent);--navy-d:var(--accent);--mint:var(--accent-soft);--warn:#A8802A;--bad:var(--neg,#B23A2E);--bad-bg:rgba(178,58,46,.12);--ok:var(--pos,#1BA979);color:var(--ink)}\n:host{display:block;background:transparent;margin:0}:host{font:15px/1.6 \"Noto Sans KR\",-apple-system,\"Malgun Gothic\",sans-serif;color:var(--ink);font-synthesis:none;display:flow-root;padding:2px 2px 24px}\n.lede{color:var(--sub);font-size:14px;margin:0 0 18px}\n.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}\n.card h2{font-size:16px;font-weight:600;margin:0 0 10px;display:flex;gap:8px;align-items:baseline}\n.card h2 small{font-weight:400;color:var(--sub);font-size:13px}\n.drops{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}\n.drop{border:2px dashed #A9C3FF;background:var(--accent-soft);border-radius:10px;padding:14px;cursor:pointer;min-height:86px;display:flex;flex-direction:column;gap:4px}\n.drop:hover,.drop.over{background:var(--mint);border-color:var(--navy)}\n.drop b{font-weight:600}.drop span{font-size:13px;color:var(--sub)}\n.drop.done{border-style:solid;border-color:var(--navy);background:var(--surface)}\n.drop .fn{font-size:13px;color:var(--navy);word-break:break-all}\n.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}\nlabel.f{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--sub)}\ninput[type=text]{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0}\ninput.num{text-align:right;font-variant-numeric:tabular-nums}\ninput.auto{background:var(--accent-soft);border-color:#A9C3FF}\n.sum{margin-top:8px;text-align:right;font-weight:600;color:var(--navy)}\n.btn{font:inherit;font-size:14px;border:1px solid var(--line2);background:var(--surface);border-radius:7px;padding:7px 14px;cursor:pointer}\n.btn:hover{background:var(--canvas)}\n.btn.pri{background:var(--navy);border-color:var(--navy);color:var(--surface);font-weight:600;padding:10px 20px;font-size:15px}\n.btn.pri:hover{background:var(--navy-d)}\n#dl{margin-left:4px;padding:10px 18px;font-size:15px}\n.btn:disabled{opacity:.45;cursor:not-allowed}\n.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}\n.msg{font-size:14px;border-radius:7px;padding:9px 12px;margin-top:10px;display:none}\n.msg.on{display:block}.msg.ok{background:var(--accent-soft);color:var(--ok)}.msg.warn{background:var(--warn-bg);color:var(--warn,#6F5418)}.msg.bad{background:var(--bad-bg);color:var(--bad)}\n.msg ul{margin:4px 0 0;padding-left:18px}\ntable{border-collapse:collapse;width:100%;font-size:13.5px}\nth,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:middle}\nth{font-weight:600;color:var(--sub);background:var(--surface-2)}\ntd input{width:100%;box-sizing:border-box;padding:5px 7px;font-size:13.5px}\ntd.k{white-space:nowrap}\n.cfgtbl td:nth-child(2) input{width:64px}\n.note{font-size:13px;color:var(--sub)}\ndetails summary{cursor:pointer;font-weight:600}\n.prev{overflow-x:auto;margin-top:10px}\n.prev table{font-size:13px;min-width:760px}\n.prev td.n{text-align:right;font-variant-numeric:tabular-nums}\n.prev tr.w td{background:var(--warn-bg);color:var(--bad);font-weight:600}\n.prev td.s{background:var(--surface-2);color:var(--sub);text-align:right}\n.chk{display:grid;grid-template-columns:auto 1fr auto auto;gap:2px 14px;font-size:14px;margin-top:6px}\n.chk .r{text-align:right;font-variant-numeric:tabular-nums}\n.badge{font-size:12px;border-radius:999px;padding:1px 8px}\n.newbox{margin-top:14px;padding:12px 14px;border:1px solid #EACF97;background:var(--warn-bg);border-radius:8px;font-size:14px}\n.newbox table{margin-top:8px;background:var(--surface)}\n.newbox td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}\n.newbox input.nb{width:56px}\n.badge.ok{background:var(--accent-soft);color:var(--ok)}.badge.bad{background:var(--bad-bg);color:var(--bad)}\n\nbutton,input{color:inherit}\n.cfgtbl td:nth-child(2) input{width:100%}\n#cfgBody td:nth-child(3),#optBody td:nth-child(3){width:72px}#cfgBody td:nth-child(3) input,#optBody td:nth-child(3) input{width:64px;text-align:center}\n#cfgBody td:nth-child(2){width:28%}#optBody td:nth-child(5){width:24%}\n.newbox input.nb{width:56px;text-align:center}\n@media (max-width:640px){.cfgtbl thead{display:none}.cfgtbl,.cfgtbl tbody{display:block}.cfgtbl tr{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 8px;padding:8px 0;border-bottom:1px solid var(--line)}.cfgtbl td{display:block;border:0;padding:0;width:auto!important}.cfgtbl td.k{grid-column:1/-1;font-weight:600}.cfgtbl td input{width:100%!important}#cfgBody td:nth-child(2){grid-column:1/-1}#cfgBody td:nth-child(5){grid-column:1/-1}#optBody td:nth-child(5),#optBody td:nth-child(6){grid-column:1/-1}.cfgtbl td:not(.k)::before{display:block;font-size:11.5px;color:var(--sub)}#cfgBody td:nth-child(2)::before{content:'송금내역서 표시'}#cfgBody td:nth-child(3)::before{content:'은행코드'}#cfgBody td:nth-child(4)::before{content:'계좌번호'}#cfgBody td:nth-child(5)::before{content:'받는 분'}#optBody td:nth-child(3)::before{content:'은행코드'}#optBody td:nth-child(4)::before{content:'계좌번호'}#optBody td:nth-child(5)::before{content:'송금내역서 표시'}#optBody td:nth-child(6)::before{content:'받는 분'}#optBody td:nth-child(7)::before{content:none}}", BODY="\n<p class=\"lede\">나이스 급여대장 2개와 사학연금 부담금 고지서·대여금 납부통지서를 올리면 송금내역서 엑셀을 만듭니다. 파일은 이 컴퓨터 안에서만 읽습니다.<\/p>\n\n<div class=\"card\">\n  <h2>1. 파일 올리기 <small>끌어다 놓거나 눌러서 고르기<\/small><\/h2>\n  <div class=\"drops\">\n    <label class=\"drop\" data-k=\"edu\"><b>교직원 급여대장<\/b><span>나이스 급여대장 엑셀(교원·기간제·행정직)<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".xlsx\" hidden><\/label>\n    <label class=\"drop\" data-k=\"gong\"><b>공무직 급여대장<\/b><span>나이스 급여대장 엑셀(교육공무직)<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".xlsx\" hidden><\/label>\n    <label class=\"drop\" data-k=\"tp\"><b>사학연금 부담금 고지서<\/b><span>공단 업무포털 PDF — 납부 뒤의 수납확인서도 됩니다<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".pdf\" hidden><\/label>\n    <label class=\"drop\" data-k=\"loan\"><b>사학연금 대여금 납부통지서<\/b><span>공단 업무포털 PDF — 상환 계좌번호를 자동으로 채웁니다<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".pdf\" hidden><\/label>\n  <\/div>\n  <div class=\"msg\" id=\"readMsg\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <h2>2. 이번 달 값 <small>사학연금 PDF를 올리면 법인부담금이 자동으로 채워집니다<\/small><\/h2>\n  <div class=\"grid\">\n    <label class=\"f\">교원 법인부담금<input type=\"text\" class=\"num\" id=\"vT\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">사무직 법인부담금<input type=\"text\" class=\"num\" id=\"vA\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">재해보상 법인부담금<input type=\"text\" class=\"num\" id=\"vD\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">대여금 상환 계좌번호 (매월 변경)<input type=\"text\" id=\"vAcct\" placeholder=\"대여금 납부통지서를 올리면 자동\"><\/label>\n  <\/div>\n  <div class=\"sum\" id=\"vSum\">법인부담금 합계: —<\/div>\n  <div id=\"chkBox\"><\/div>\n  <div id=\"newBox\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <div class=\"row\"><button class=\"btn pri\" id=\"go\" type=\"button\">송금내역서 만들기<\/button><button class=\"btn\" id=\"dl\" type=\"button\" disabled>엑셀 받기<\/button><span class=\"note\" id=\"goNote\">'만들기'로 미리보기를 확인한 뒤 엑셀을 받으세요.<\/span><\/div>\n  <div class=\"msg\" id=\"outMsg\"><\/div>\n  <div class=\"prev\" id=\"prev\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <details id=\"cfgDet\">\n    <summary>송금 항목 설정 (은행코드·계좌·받는 분) — 처음 한 번 입력하면 이 PC에 저장<\/summary>\n    <p class=\"note\">계좌와 받는 분은 길잡이 파일에 들어 있지 않고, 이 PC 브라우저에만 저장됩니다. 담당자가 바뀌면 '설정 내보내기' 파일을 넘겨주세요.\n    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름).<\/p>\n    <h3 style=\"font-size:15px;margin:10px 0 6px\">고정 항목 <small class=\"note\" style=\"font-weight:400\">— 세금·건강보험·기간제 4대보험·사학연금 법인부담·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)<\/small><\/h3>\n    <table class=\"cfgtbl\"><thead><tr><th>항목<\/th><th>송금내역서 표시<\/th><th>은행코드<\/th><th>계좌번호<\/th><th>받는 분<\/th><\/tr><\/thead><tbody id=\"cfgBody\"><\/tbody><\/table>\n    <h3 style=\"font-size:15px;margin:16px 0 6px\">급여대장 공제 항목 <small class=\"note\" style=\"font-weight:400\">— 급여대장을 올리면 '소득세' 뒤의 공제 열(공제회비·회비·식대·경조사비 …)이 열 이름 그대로 여기에 생깁니다. 금액이 0이 아닌 달에만 송금내역서에 들어갑니다<\/small><\/h3>\n    <table class=\"cfgtbl\"><thead><tr><th>급여대장<\/th><th>열 이름<\/th><th>은행코드<\/th><th>계좌번호<\/th><th>송금내역서 표시<\/th><th>받는 분<\/th><th><\/th><\/tr><\/thead><tbody id=\"optBody\"><\/tbody><\/table>\n    <div class=\"row\" style=\"margin-top:10px\">\n      <button class=\"btn\" type=\"button\" id=\"optAdd\">항목 직접 추가<\/button>\n      <button class=\"btn\" type=\"button\" id=\"cfgExp\">설정 내보내기<\/button>\n      <button class=\"btn\" type=\"button\" id=\"cfgImpBtn\">설정 불러오기<\/button><input type=\"file\" id=\"cfgImp\" accept=\".json\" hidden>\n      <button class=\"btn\" type=\"button\" id=\"cfgReset\">설정 지우기<\/button>\n      <span class=\"note\" id=\"cfgMsg\"><\/span>\n    <\/div>\n  <\/details>\n<\/div>\n\n";
-function loadJs(u){ return new Promise(function(ok,no){ var s=document.createElement("script"); s.src=u; s.onload=ok; s.onerror=no; document.head.appendChild(s); }); }
+var CSS=":host{--sub:var(--ink-2);--line2:var(--line-strong);--canvas:var(--surface-2);--navy:var(--accent);--navy-d:var(--accent);--mint:var(--accent-soft);--warn:#A8802A;--bad:var(--neg,#B23A2E);--bad-bg:rgba(178,58,46,.12);--ok:var(--pos,#1BA979);color:var(--ink)}\n:host{display:block;background:transparent;margin:0}:host{font:15px/1.6 \"Noto Sans KR\",-apple-system,\"Malgun Gothic\",sans-serif;color:var(--ink);font-synthesis:none;display:flow-root;padding:2px 2px 24px}\n.lede{color:var(--sub);font-size:14px;margin:0 0 18px}\n.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}\n.card h2{font-size:16px;font-weight:600;margin:0 0 10px;display:flex;gap:8px;align-items:baseline}\n.card h2 small{font-weight:400;color:var(--sub);font-size:13px}\n.drops{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}\n.drop{border:2px dashed #A9C3FF;background:var(--accent-soft);border-radius:10px;padding:14px;cursor:pointer;min-height:86px;display:flex;flex-direction:column;gap:4px}\n.drop:hover,.drop.over{background:var(--mint);border-color:var(--navy)}\n.drop b{font-weight:600}.drop span{font-size:13px;color:var(--sub)}\n.drop.done{border-style:solid;border-color:var(--navy);background:var(--surface)}\n.drop .fn{font-size:13px;color:var(--navy);word-break:break-all}\n.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 14px}\nlabel.f{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--sub)}\ninput[type=text]{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line2);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0}\ninput.num{text-align:right;font-variant-numeric:tabular-nums}\ninput.auto{background:var(--accent-soft);border-color:#A9C3FF}\n.sum{margin-top:8px;text-align:right;font-weight:600;color:var(--navy)}\n.btn{font:inherit;font-size:14px;border:1px solid var(--line2);background:var(--surface);border-radius:7px;padding:7px 14px;cursor:pointer}\n.btn:hover{background:var(--canvas)}\n.btn.pri{background:var(--navy);border-color:var(--navy);color:var(--surface);font-weight:600;padding:10px 20px;font-size:15px}\n.btn.pri:hover{background:var(--navy-d)}\n#dl{margin-left:4px;padding:10px 18px;font-size:15px}\n.btn:disabled{opacity:.45;cursor:not-allowed}\n.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}\n.msg{font-size:14px;border-radius:7px;padding:9px 12px;margin-top:10px;display:none}\n.msg.on{display:block}.msg.ok{background:var(--accent-soft);color:var(--ok)}.msg.warn{background:var(--warn-bg);color:var(--warn,#6F5418)}.msg.bad{background:var(--bad-bg);color:var(--bad)}\n.msg ul{margin:4px 0 0;padding-left:18px}\ntable{border-collapse:collapse;width:100%;font-size:13.5px}\nth,td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:middle}\nth{font-weight:600;color:var(--sub);background:var(--surface-2)}\ntd input{width:100%;box-sizing:border-box;padding:5px 7px;font-size:13.5px}\ntd.k{white-space:nowrap}\n.cfgtbl td:nth-child(2) input{width:64px}\n.note{font-size:13px;color:var(--sub)}\ndetails summary{cursor:pointer;font-weight:600}\n.prev{overflow-x:auto;margin-top:10px}\n.prev table{font-size:13px;min-width:760px}\n.prev td.n{text-align:right;font-variant-numeric:tabular-nums}\n.prev tr.w td{background:var(--warn-bg);color:var(--bad);font-weight:600}\n.prev td.s{background:var(--surface-2);color:var(--sub);text-align:right}\n.chk{display:grid;grid-template-columns:auto 1fr auto auto;gap:2px 14px;font-size:14px;margin-top:6px}\n.chk .r{text-align:right;font-variant-numeric:tabular-nums}\n.badge{font-size:12px;border-radius:999px;padding:1px 8px}\n.newbox{margin-top:14px;padding:12px 14px;border:1px solid #EACF97;background:var(--warn-bg);border-radius:8px;font-size:14px}\n.newbox table{margin-top:8px;background:var(--surface)}\n.newbox td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}\n.newbox input.nb{width:56px}\n.badge.ok{background:var(--accent-soft);color:var(--ok)}.badge.bad{background:var(--bad-bg);color:var(--bad)}\n\nbutton,input{color:inherit}\n.cfgtbl td:nth-child(2) input{width:100%}\n#cfgBody td:nth-child(3),#optBody td:nth-child(3){width:72px}#cfgBody td:nth-child(3) input,#optBody td:nth-child(3) input{width:64px;text-align:center}\n#cfgBody td:nth-child(2){width:28%}#optBody td:nth-child(5){width:24%}\n.newbox input.nb{width:56px;text-align:center}\n@media (max-width:640px){.cfgtbl thead{display:none}.cfgtbl,.cfgtbl tbody{display:block}.cfgtbl tr{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 8px;padding:8px 0;border-bottom:1px solid var(--line)}.cfgtbl td{display:block;border:0;padding:0;width:auto!important}.cfgtbl td.k{grid-column:1/-1;font-weight:600}.cfgtbl td input{width:100%!important}#cfgBody td:nth-child(2){grid-column:1/-1}#cfgBody td:nth-child(5){grid-column:1/-1}#optBody td:nth-child(5),#optBody td:nth-child(6){grid-column:1/-1}.cfgtbl td:not(.k)::before{display:block;font-size:11.5px;color:var(--sub)}#cfgBody td:nth-child(2)::before{content:'송금내역서 표시'}#cfgBody td:nth-child(3)::before{content:'은행코드'}#cfgBody td:nth-child(4)::before{content:'계좌번호'}#cfgBody td:nth-child(5)::before{content:'받는 분'}#optBody td:nth-child(3)::before{content:'은행코드'}#optBody td:nth-child(4)::before{content:'계좌번호'}#optBody td:nth-child(5)::before{content:'송금내역서 표시'}#optBody td:nth-child(6)::before{content:'받는 분'}#optBody td:nth-child(7)::before{content:none}}", BODY="\n<p class=\"lede\">나이스 급여대장 2개와 사학연금 부담금 고지서·대여금 납부통지서를 올리면 송금내역서 엑셀을 만듭니다. 파일은 이 컴퓨터 안에서만 읽습니다.<\/p>\n\n<div class=\"card\">\n  <h2>1. 파일 올리기 <small>끌어다 놓거나 눌러서 고르기<\/small><\/h2>\n  <div class=\"drops\">\n    <label class=\"drop\" data-k=\"edu\"><b>교직원 급여대장<\/b><span>나이스 급여대장 엑셀(교원·기간제·행정직)<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".xlsx\" hidden><\/label>\n    <label class=\"drop\" data-k=\"gong\"><b>공무직 급여대장<\/b><span>나이스 급여대장 엑셀(교육공무직)<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".xlsx\" hidden><\/label>\n    <label class=\"drop\" data-k=\"tp\"><b>사학연금 부담금 고지서<\/b><span>공단 업무포털 PDF — 납부 뒤의 수납확인서도 됩니다<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".pdf\" hidden><\/label>\n    <label class=\"drop\" data-k=\"loan\"><b>사학연금 대여금 납부통지서<\/b><span>공단 업무포털 PDF — 상환 계좌번호를 자동으로 채웁니다<\/span><span class=\"fn\"><\/span><input type=\"file\" accept=\".pdf\" hidden><\/label>\n  <\/div>\n  <div class=\"msg\" id=\"readMsg\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <h2>2. 이번 달 값 <small>사학연금 PDF를 올리면 법인부담금이 자동으로 채워집니다<\/small><\/h2>\n  <div class=\"grid\">\n    <label class=\"f\">교원 법인부담금<input type=\"text\" class=\"num\" id=\"vT\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">사무직 법인부담금<input type=\"text\" class=\"num\" id=\"vA\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">재해보상 법인부담금<input type=\"text\" class=\"num\" id=\"vD\" inputmode=\"numeric\"><\/label>\n    <label class=\"f\">대여금 상환 계좌번호 (매월 변경)<input type=\"text\" id=\"vAcct\" placeholder=\"대여금 납부통지서를 올리면 자동\"><\/label>\n  <\/div>\n  <div class=\"sum\" id=\"vSum\">법인부담금 합계: —<\/div>\n  <div id=\"chkBox\"><\/div>\n  <div id=\"newBox\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <div class=\"row\"><button class=\"btn pri\" id=\"go\" type=\"button\">송금내역서 만들기<\/button><button class=\"btn\" id=\"dl\" type=\"button\" disabled>엑셀 받기<\/button><span class=\"note\" id=\"goNote\">'만들기'로 미리보기를 확인한 뒤 엑셀을 받으세요.<\/span><\/div>\n  <div class=\"msg\" id=\"outMsg\"><\/div>\n  <div class=\"prev\" id=\"prev\"><\/div>\n<\/div>\n\n<div class=\"card\">\n  <details id=\"cfgDet\">\n    <summary>송금 항목 설정 (은행코드·계좌·받는 분) — 처음 한 번 입력하면 이 PC에 저장<\/summary>\n    <p class=\"note\">계좌와 받는 분은 길잡이 파일에 들어 있지 않고, 이 PC 브라우저에만 저장됩니다. 담당자가 바뀌면 '설정 내보내기' 파일을 넘겨주세요.\n    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름).<\/p>\n    <h3 style=\"font-size:15px;margin:10px 0 6px\">고정 항목 <small class=\"note\" style=\"font-weight:400\">— 세금·건강보험·기간제 4대보험·사학연금·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)<br>사학연금(개인부담) 줄의 송금액(C)은 개인부담금(G)이에요. 법인부담분은 F·H 칸, 공단 송금 총액은 F예요.<\/small><\/h3>\n    <table class=\"cfgtbl\"><thead><tr><th>항목<\/th><th>송금내역서 표시<\/th><th>은행코드<\/th><th>계좌번호<\/th><th>받는 분<\/th><\/tr><\/thead><tbody id=\"cfgBody\"><\/tbody><\/table>\n    <h3 style=\"font-size:15px;margin:16px 0 6px\">급여대장 공제 항목 <small class=\"note\" style=\"font-weight:400\">— 급여대장을 올리면 '소득세' 뒤의 공제 열(공제회비·회비·식대·경조사비 …)이 열 이름 그대로 여기에 생깁니다. 금액이 0이 아닌 달에만 송금내역서에 들어갑니다<\/small><\/h3>\n    <table class=\"cfgtbl\"><thead><tr><th>급여대장<\/th><th>열 이름<\/th><th>은행코드<\/th><th>계좌번호<\/th><th>송금내역서 표시<\/th><th>받는 분<\/th><th><\/th><\/tr><\/thead><tbody id=\"optBody\"><\/tbody><\/table>\n    <div class=\"row\" style=\"margin-top:10px\">\n      <button class=\"btn\" type=\"button\" id=\"optAdd\">항목 직접 추가<\/button>\n      <button class=\"btn\" type=\"button\" id=\"cfgExp\">설정 내보내기<\/button>\n      <button class=\"btn\" type=\"button\" id=\"cfgImpBtn\">설정 불러오기<\/button><input type=\"file\" id=\"cfgImp\" accept=\".json\" hidden>\n      <button class=\"btn\" type=\"button\" id=\"cfgReset\">설정 지우기<\/button>\n      <span class=\"note\" id=\"cfgMsg\"><\/span>\n    <\/div>\n  <\/details>\n<\/div>\n\n";
+function loadJs(u,sri){ return new Promise(function(ok,no){ var s=document.createElement("script"); if(sri){ s.integrity=sri; s.crossOrigin="anonymous"; } s.src=u; s.onload=ok; s.onerror=no; document.head.appendChild(s); }); }
 function run(W){
 
 "use strict";
@@ -4884,7 +4895,7 @@ function run(W){
    계좌·받는 분·표시 이름은 '송금 항목 설정'(이 PC 브라우저 저장). 급여대장 줄의 설정 열쇠 = "교직원|열이름" · "공무직|열이름" */
 var FIXED=[
  ["tax","소득세"],["ltax","지방소득세"],["hT","교사건강"],["hK","기간제건강"],["hA","행정직건강"],["hR","건강보험장기요양소급"],
- ["npK","기간제국민연금"],["eiK","기간제고용"],["schP","사학연금법인부담"],["loan","대여금상환"],
+ ["npK","기간제국민연금"],["eiK","기간제고용"],["schP","사학연금(개인부담)"],["loan","대여금상환"],
  ["gTax","공무직소득세"],["gLtax","공무직지방소득세"],["gH","공무직건강"],["gNp","공무직국민연금"],["gEi","공무직고용"]];
 /* 고정 줄이 이미 처리하는 급여대장 열 — 급여대장 줄에서 뺀다 */
 var STRUCT_RE=/^(소득세|지방소득세|건강보험|노인장기요양보험|건강보험소급|장기요양소급|국민연금|고용보험)$|사학연금|군소급|연금대여|국고대여/;
@@ -4900,6 +4911,7 @@ var OLD_FIXED={kTF:"교직원|교직원공제회비",union:"교직원|교원연�
 function mergeCfg(s){
   var c=blankCfg(); if(!s||typeof s!=="object") return c;
   Object.keys(c.fixed).forEach(function(k){ if(s.fixed&&s.fixed[k]) c.fixed[k]=Object.assign(c.fixed[k],s.fixed[k]); });
+  if(c.fixed.schP&&c.fixed.schP.label==="사학연금법인부담") c.fixed.schP.label="사학연금(개인부담)";
   Object.keys(OLD_FIXED).forEach(function(k){ var o=s.fixed&&s.fixed[k]; if(o&&(o.bank||o.acct||o.recv)) c.items[OLD_FIXED[k]]=Object.assign(blankItem.apply(null,OLD_FIXED[k].split("|")),o); });
   (Array.isArray(s.opt)?s.opt:[]).forEach(function(o){ if(!o.col) return;
     c.items[itemKey("교직원",o.col)]={bank:o.bank||"",acct:o.acct||"",label:o.label||o.col,recv:o.recv||""};
@@ -4950,7 +4962,7 @@ function readXlsx(buf){
 /* ───────── 기존 프로그램과 같은 계산 ───────── */
 function isna(v){ return v==null||(typeof v==="number"&&isNaN(v)); }
 function safeCol(row,name){ if(!row) return 0; var v=row[name]; if(isna(v)) return 0; return Math.trunc(+v)||0; }
-function findColSum(T,rows,kw){ var col=T.cols.filter(function(c){return c.indexOf(kw)>=0})[0]; if(!col) return 0; return Math.trunc(rows.reduce(function(s,r){ return s+(isna(r[col])?0:+r[col]); },0)); }
+function findColSum(T,rows,kw){ var cols=T.cols.filter(function(c){ return c.indexOf(kw)>=0&&!(kw==="사학연금"&&/대여/.test(c))&&!TOTAL_COLUMNS[c]; }); return Math.trunc(rows.reduce(function(s,r){ return s+cols.reduce(function(t,col){ return t+(isna(r[col])?0:+r[col]); },0); },0)); }
 function orgs(T){ var L=[]; T.rows.forEach(function(r){ var o=r["기관분류"]; if(r["직종"]==="전체"&&typeof o==="string"&&/학교$/.test(o)&&L.indexOf(o)<0) L.push(o); }); return L; }
 function ORG(T){ var L=orgs(T); return L.indexOf("고등학교")>=0?"고등학교":(L[0]||"고등학교"); }
 function getSummary(T){ var g=ORG(T); return T.rows.filter(function(r){ return r["기관분류"]===g&&r["직종"]==="전체"; })[0]||null; }
@@ -5342,8 +5354,8 @@ window.TKNATIVE.sg=function(root){
   /* 사이트 CSS와 섞이지 않게 그림자 DOM 안에 원본 화면을 그대로 둔다(색 변수만 사이트 것을 이어받음) */
   root.textContent=""; var host=document.createElement("div"); host.className="sgo"; root.appendChild(host);
   var w=host.attachShadow({mode:"open"}); w.innerHTML="<style>"+CSS+"</style>"+BODY;
-  if(!window.JSZip) loadJs("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js").catch(function(){});
-  if(!window.pdfjsLib) loadJs("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js").catch(function(){});
+  if(!window.JSZip) loadJs("https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js","sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==").catch(function(){});
+  if(!window.pdfjsLib) loadJs("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js","sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==").catch(function(){});
   run(w);
 };
 })();
@@ -5374,7 +5386,8 @@ var H=window.TKHB_H||{}, E=window.TKHB_E||{}, HOBONG=H.HOBONG, READER=H.READER, 
   [{g:"교원경력",t:"장애영유아 어린이집 보육교직원 (특수학교 교원 자격, 유치원 과정 제외)",r:80,b:"별표22 1-바",k:"장애영유아 어린이집 장애아 특수 보육교직원 보육교사"},
    {g:"유사경력 · 강사",t:"대학 시간강사 (고등교육법 제17조)",r:30,b:"별표22 3-가-3)",k:"대학 시간강사 대학강사 전문대학 강의",w:"주당 강의시간에 비례해 30~100%예요(예규 별표1 3-가, 최소 30%). 시간에 맞춰 조정하세요."},
    {g:"유사경력 · 그 밖의 경력",t:"병역법 대체복무 (산업기능요원·전문연구요원·예술체육요원·승선근무예비역)",r:100,b:"별표22 3-라-1)",k:"산업기능요원 전문연구요원 예술체육요원 승선근무예비역 병역특례 대체복무"},
-   {g:"유사경력 · 그 밖의 경력",t:"장애인복지관 근무 (특수학교 교원 자격)",r:80,b:"별표22 3-라-2)",k:"장애인복지관 장애인 재활시설 지역사회재활시설 복지관"}].forEach(function(x){ if(!has(x.t)) L.push(x); }); })();
+   {g:"유사경력 · 그 밖의 경력",t:"장애인복지관 근무 (특수학교 교원 자격)",r:80,b:"별표22 3-라-2)",k:"장애인복지관 장애인 재활시설 지역사회재활시설 복지관"}].forEach(function(x){ if(!has(x.t)) L.push(x); });
+  L.forEach(function(x){ if(/^강사 \(주 20시간\)/.test(x.t)) x.w="2012. 3. 1. 이후 기준(주 40시간)이에요. 주당 시간을 넣으면 기간별 기준시간(44·43·42·40시간)으로 계산해요."; else if(/^강사 \(전일제/.test(x.t)) x.w="1일 8시간 이상 전일제는 10할이에요."; }); })();
 function el(t,c,x){ var e=document.createElement(t); if(c) e.className=c; if(x!=null) e.textContent=x; return e; }
 function lsGet(k,d){ try{ var v=localStorage.getItem(k); return v==null?d:JSON.parse(v); }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }
@@ -5429,7 +5442,7 @@ function curIdx(c){ for(var i=0;i<STG.length;i++) if(!c.done[STG[i][0]]) return 
 function calc0(c){ if(!HOBONG||!c.q) return null; try{ return HOBONG.계산({경력:c.rows.map(function(r){ return {시작:r.s,종료:r.e,환산율:r.r===""||r.r==null?NaN:+r.r,제외:!!r.x}; }),자격:c.q,학력:c.edu,가산연수:+c.add||0,획정일:c.asof,양편넣기:true}); }catch(e){ return null; } }
 /* 엔진 결과 바로잡기(엔진 글자는 그대로 두고 여기서 다시 셈):
    ① 월력 계산: 기산일 전날에 해당하는 날이 없으면 그 달 말일까지를 1월(예: 1.31~2.28 = 1월) — 2026 중등교감업무도움자료(경남) 경력기간 계산
-   ② 경력과 경력이 겹치면 유리한(환산율 높은) 경력 하나만 — 같은 자료, 호봉획정 예규(제97호) Ⅱ.1. 같은 기간 여러 학교 시간강사는 겹침이 아니라 시간 합산이라 손대지 않음 */
+   ② 경력과 경력이 겹치면 유리한 경력 하나만 — 공무원보수규정 제8조②, 호봉획정 예규(제97호) Ⅱ.1. 같은 기간 여러 학교 시간강사는 겹침이 아니라 강의시간 합산 */
 function hbD(s){ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||""); return m?Date.UTC(+m[1],+m[2]-1,+m[3])/864e5:null; }
 function hbS(n){ var d=new Date(n*864e5); return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate()); }
 function hbSpan(a,b){   /* a~b(양편넣기) → 30일 단위 일수 */
@@ -5439,23 +5452,45 @@ function hbSpan(a,b){   /* a~b(양편넣기) → 30일 단위 일수 */
   while(endK(k+1)<=b) k++;
   return k*30+(b-(k?endK(k):a-1)); }
 function hbU(u){ return {y:Math.floor(u/360),m:Math.floor(u%360/30),d:u%30}; }
+/* 강사 기준시간(예규 별표1 3.가): ~2005. 2. 28. 44시간, ~2006. 2. 28. 43시간, ~2012. 2. 29. 42시간, 2012. 3. 1.부터 40시간 */
+var HB_KB=[[hbD("2005-03-01"),44],[hbD("2006-03-01"),43],[hbD("2012-03-01"),42],[1e9,40]];
+function hbBase(n){ for(var i=0;i<HB_KB.length;i++) if(n<HB_KB[i][0]) return HB_KB[i][1]; return 40; }
+function hbKr(h,n){ h=+h; if(!(h>0)) return 30; var b=hbBase(n); return h<=12?30:h>=b?100:Math.floor(h/b*1000)/10; }   /* 12시간 이하·불명확 3할, 전일제 10할 */
+function hbKang(w){ return /강사/.test(w.t||""); }
+function hbHas(w){ return hbKang(w)&&+w.h>0; }
 function calc(c){ var r=calc0(c); if(!r||!r.rows) return r;
-  var ok=[]; r.rows.forEach(function(q,i){ var w=c.rows[i]||{}, a=hbD(w.s), b=hbD(w.e), rt=w.r===""||w.r==null?NaN:+w.r;
-    if(!w.x&&!q.오류&&a!=null&&b!=null&&b>=a&&!isNaN(rt)) ok.push({i:i,a:a,b:b,rt:rt,kang:/강사/.test(w.t||"")}); });
-  var order=ok.slice().sort(function(x,y){ return y.rt-x.rt||x.i-y.i; }), done=[], changed=false;
+  var ok=[], kh=[], changed=false;
+  r.rows.forEach(function(q,i){ var w=c.rows[i]||{}, a=hbD(w.s), b=hbD(w.e), rt=w.r===""||w.r==null?NaN:+w.r;
+    if(w.x||q.오류||a==null||b==null||b<a) return;
+    if(hbHas(w)){ kh.push({i:i,a:a,b:b,h:+w.h}); return; }
+    if(!isNaN(rt)) ok.push({i:i,a:a,b:b,rt:rt,kang:hbKang(w)}); });
+  /* 주당 시간을 넣은 강사 경력: 같은 기간 여러 학교 강의시간은 합산해 기준시간으로 나눔(예규 제97호 예시 6+10+6=22시간 ÷ 42시간). 기준시간이 바뀌는 날에서도 나눔 */
+  var hsum=[];
+  if(kh.length){ var cut={}; kh.forEach(function(k){ cut[k.a]=1; cut[k.b+1]=1; }); HB_KB.forEach(function(x){ if(x[0]<1e9) cut[x[0]]=1; });
+    var pts=Object.keys(cut).map(Number).sort(function(x,y){ return x-y; });
+    for(var z=0;z<pts.length-1;z++){ var a=pts[z], b=pts[z+1]-1, cov=kh.filter(function(k){ return k.a<=a&&k.b>=b; }); if(!cov.length) continue;
+      var H=cov.reduce(function(t,k){ return t+k.h; },0), rt=hbKr(H,a);
+      if(cov.length>1||rt!==hbKr(cov[0].h,kh.filter(function(k){ return k.i===cov[0].i; })[0].a)) changed=true;
+      if(cov.length>1) hsum.push({a:a,b:b,H:H,base:hbBase(a),rt:rt,rows:cov.map(function(k){ return k.i; })});
+      var last=ok[ok.length-1]; if(last&&last.kh&&last.i===cov[0].i&&last.rt===rt&&last.b===a-1) last.b=b; else ok.push({i:cov[0].i,a:a,b:b,rt:rt,kang:true,kh:true}); } }
+  /* 경력과 경력이 겹치면 유리한 경력 하나만(공무원보수규정 제8조②): 겹친 구간은 인정 기간(기간 × 환산율 — 시간제는 시간 비율이 환산율에 들어감)이 긴 쪽 */
+  var order=ok.slice().sort(function(x,y){ return y.rt-x.rt||x.i-y.i; }), done=[];
   order.forEach(function(o){ var segs=[[o.a,o.b]];
     done.forEach(function(p){ if(o.kang&&p.kang) return; var nx=[]; segs.forEach(function(g){ if(p.b<g[0]||p.a>g[1]){ nx.push(g); return; } changed=true; if(g[0]<p.a) nx.push([g[0],p.a-1]); if(g[1]>p.b) nx.push([p.b+1,g[1]]); }); segs=nx; });
-    o.u=segs.reduce(function(t,g){ return t+hbSpan(g[0],g[1]); },0); o.cu=Math.floor(o.u*o.rt/100+1e-9);
-    var q=r.rows[o.i], eu=q.환산단위; if(o.u!==(q.기간.y*360+q.기간.m*30+q.기간.d)||o.cu!==eu) changed=true; done.push(o); });
+    o.u=segs.reduce(function(t,g){ return t+hbSpan(g[0],g[1]); },0); o.cv=o.u*o.rt/100; done.push(o); });
+  var per={}; ok.forEach(function(o){ var x=per[o.i]=per[o.i]||{u:0,cv:0}; x.u+=o.u; x.cv+=o.cv; });
+  Object.keys(per).forEach(function(i){ var x=per[i], q=r.rows[i]; x.cu=Math.floor(x.cv+1e-9); if(x.u!==(q.기간.y*360+q.기간.m*30+q.기간.d)||x.cu!==q.환산단위) changed=true; });
+  kh.forEach(function(k){ if(!per[k.i]){ per[k.i]={u:0,cv:0,cu:0}; changed=true; } });
+  r.강사합산=hsum;
   if(!changed) return r;
-  var tot=0, raw=0; ok.forEach(function(o){ var q=r.rows[o.i]; q.기간=hbU(o.u); q.환산=hbU(o.cu); q.환산단위=o.cu; tot+=o.cu; raw+=o.u; });
-  r.rows.forEach(function(q,i){ if(!ok.some(function(o){ return o.i===i; })) tot+=q.환산단위||0; });
+  var tot=0, raw=0; Object.keys(per).forEach(function(i){ var x=per[i], q=r.rows[i]; q.기간=hbU(x.u); q.환산=hbU(x.cu); q.환산단위=x.cu; tot+=x.cu; raw+=x.u; });
+  r.rows.forEach(function(q,i){ if(!per[i]) tot+=q.환산단위||0; });
   /* 합계는 엔진에 같은 일수의 100% 경력을 넣어 호봉·잔여·차기승급일을 엔진 규칙 그대로 받는다 */
   var k=Math.floor(tot/30), d=tot%30, rows=[];
   if(k) rows.push({시작:"1900-01-01",종료:hbS(Date.UTC(1900,k,1)/864e5-1),환산율:100,제외:false});
   if(d) rows.push({시작:"1950-01-01",종료:"1950-01-"+pad(d),환산율:100,제외:false});
   try{ var t=HOBONG.계산({경력:rows,자격:c.q,학력:c.edu,가산연수:+c.add||0,획정일:c.asof,양편넣기:true});
-    r.총경력=hbU(raw+r.rows.reduce(function(x,q,i){ return x+(ok.some(function(o){ return o.i===i; })||(c.rows[i]||{}).x||!q.기간?0:q.기간.y*360+q.기간.m*30+q.기간.d); },0)); r.환산경력=t.환산경력; r.호봉=t.호봉; r.잔여=t.잔여; r.차기승급일=t.차기승급일; r.고침=true; }catch(e){}
+    r.총경력=hbU(raw+r.rows.reduce(function(x,q,i){ return x+(per[i]||(c.rows[i]||{}).x||!q.기간?0:q.기간.y*360+q.기간.m*30+q.기간.d); },0)); r.환산경력=t.환산경력; r.호봉=t.호봉; r.잔여=t.잔여; r.차기승급일=t.차기승급일; r.고침=true; }catch(e){}
   return r; }
 function cTitle(c){ return (c.name||"이름 없음")+(c.q?" · "+c.q.replace(/\s*등\(.*\)$/,""):""); }
 
@@ -5548,7 +5583,7 @@ function build(root){
     var sm=el("div","cv-sum"); [["진행 중",open.length+"명"],["끝남",(CASES.length-open.length)+"명"],["정산 중",CASES.filter(function(c){ return Object.keys(c.pay.files).length&&!c.done.pay; }).length+"명"]].forEach(function(p){ var d=el("div"); d.appendChild(el("span",null,p[0])); d.appendChild(el("b",null,p[1])); sm.appendChild(d); }); app.appendChild(sm);
     if(!CASES.length){ var e=el("div","cv-empty"); e.appendChild(el("p",null,"아직 올린 사람이 없어요."));
       e.appendChild(el("p",null,"'+ 새 사람'을 누르고 자격증·졸업증명서·경력증명서를 한꺼번에 올리면 경력을 채우고 초임 호봉을 계산해요. 호봉이 바뀌어 이미 준 급여를 맞춰야 하면 나이스 급여 파일로 달마다 정산까지 이어 가요."));
-      e.appendChild(btn("+ 새 사람","btn",function(){ C=newCase(); CASES.unshift(C); save(); go({v:"c"}); })); app.appendChild(e); return; }
+      e.appendChild(btn("+ 새 사람","btn",function(){ C=newCase(); CASES.unshift(C); save(); go({v:"c"}); })); e.appendChild(el("p","cv-law","이름·경력·급여는 이 PC 브라우저에만 저장돼요. 공용 PC에서는 다 쓴 뒤 지우세요.")); app.appendChild(e); return; }
     function kill(b,c){ if(TK().delX) TK().delX(b,cTitle(c),function(){ CASES=CASES.filter(function(x){ return x!==c; }); lsSet("hb.cases",CASES); if(C===c) C=null; draw(); }); }
     function cards(list,title){ if(!list.length) return; app.appendChild(el("div","cv-h",title)); var g=el("div","cv-cases"); app.appendChild(g);
       list.forEach(function(c){ var b=btn("","cv-case",function(){ C=c; go({v:"c"}); }), i=curIdx(c), r=calc(c);
@@ -5557,7 +5592,9 @@ function build(root){
         b.appendChild(el("p",null,i<STG.length?"지금: "+STG[i][2]:"끝났어요")); kill(b,c); g.appendChild(b); }); }
     cards(open,"진행 중"); var fin=CASES.filter(function(c){ return open.indexOf(c)<0; });
     if(fin.length){ var dt=el("details","cv-more"); dt.appendChild(el("summary",null,"끝난 사람 "+fin.length+"명")); var g=el("div","cv-cases"); g.style.marginTop="8px"; dt.appendChild(g); app.appendChild(dt);
-      fin.forEach(function(c){ var b=btn("","cv-case",function(){ C=c; go({v:"c"}); }), r=calc(c); b.appendChild(el("h4",null,cTitle(c))); b.appendChild(el("p",null,(r&&r.유효?r.호봉+"호봉 · ":"")+(c.asof?kd(c.asof):""))); kill(b,c); g.appendChild(b); }); }
+      fin.forEach(function(c){ var b=btn("","cv-case",function(){ C=c; go({v:"c"}); }), r=calc(c); b.appendChild(el("h4",null,cTitle(c))); b.appendChild(el("p",null,(r&&r.유효?r.호봉+"호봉 · ":"")+(c.asof?kd(c.asof):""))); kill(b,c); g.appendChild(b); }); }    var pv=el("div","cv-next"); pv.style.marginTop="24px"; app.appendChild(pv);
+    pv.appendChild(el("small","cv-law","이름·경력·급여는 이 PC 브라우저에만 저장돼요. 공용 PC에서는 다 쓴 뒤 지우세요."));
+    pv.appendChild(btn("이 PC 기록 모두 지우기","cv-x",function(){ if(!confirm("이 PC에 저장된 호봉 기록 "+CASES.length+"명을 모두 지울까요? 되돌릴 수 없어요.")) return; CASES=[]; C=null; try{ localStorage.removeItem("hb.cases"); }catch(e){} draw(); }));
   }
 
   /* ================= 한 사람 ================= */
@@ -5645,9 +5682,14 @@ function build(root){
       var sl=el("select"), o0=el("option",null,"경력 종류 고르기"); o0.value=""; sl.appendChild(o0);
       Object.keys(groups).forEach(function(gk){ var og=el("optgroup"); og.label=gk; groups[gk].forEach(function(p){ var o=el("option",null,p[1].t+" · "+p[1].r+"%"); o.value=p[1].t; og.appendChild(o); }); sl.appendChild(og); });
       var oc=el("option",null,"직접 정하기"); oc.value="*"; sl.appendChild(oc); sl.value=row.t||(row.r!==""?"*":"");
-      sl.onchange=function(){ if(sl.value==="*"||!sl.value){ row.t=sl.value==="*"?"":""; row.b=""; } else { var x=(RATES.목록||[]).filter(function(y){ return y.t===sl.value; })[0]; row.t=x.t; row.r=String(x.r); row.b=x.b; } save(); draw(); };
+      sl.onchange=function(){ if(sl.value==="*"||!sl.value){ row.t=sl.value==="*"?"":""; row.b=""; } else { var x=(RATES.목록||[]).filter(function(y){ return y.t===sl.value; })[0]; row.t=x.t; row.r=String(x.r); row.b=x.b; if(hbHas(row)) row.r=String(hbKr(row.h,hbD(row.s))); } save(); draw(); };
       b2.appendChild(sl);
       var rt=el("label","rt"), ri=el("input"); ri.type="number"; ri.min=0; ri.max=100; ri.value=row.r; ri.oninput=function(){ row.r=ri.value; save(); }; ri.onchange=function(){ draw(); }; rt.appendChild(ri); rt.appendChild(document.createTextNode("%")); b2.appendChild(rt);
+      if(hbKang(row)){ var hw=el("div","hb-w"), hl=el("label","rt"), hi=el("input"); hi.type="number"; hi.min=0; hi.max=60; hi.step="0.5"; hi.style.width="70px"; hi.value=row.h||""; hi.placeholder="시간";
+        hi.onchange=function(){ row.h=hi.value.trim(); if(+row.h>0) row.r=String(hbKr(row.h,hbD(row.s))); save(); draw(); };
+        hl.appendChild(document.createTextNode("주당 강의시간 ")); hl.appendChild(hi); hw.appendChild(hl);
+        var bs0=hbD(row.s), bs1=hbD(row.e); if(bs0!=null) hw.appendChild(document.createTextNode(" · 기준 "+hbBase(bs0)+"시간"+(bs1!=null&&hbBase(bs1)!==hbBase(bs0)?"~"+hbBase(bs1)+"시간(바뀌는 날에서 나눠 셈)":"")+" · 12시간 이하·불명확은 30%"));
+        box.appendChild(hw); }
       var lx=el("div","lx"), q=rr[i]; if(q&&q.기간) lx.appendChild(document.createTextNode("기간 "+ymd(q.기간))); if(q&&q.환산){ lx.appendChild(document.createTextNode(" → 환산 ")); lx.appendChild(el("b",null,ymd(q.환산))); }
       if(q&&q.오류) lx.appendChild(el("span",null,q.오류)); var xl=el("label"), xc=el("input"); xc.type="checkbox"; xc.checked=!!row.x; xc.onchange=function(){ row.x=xc.checked; save(); draw(); }; xl.appendChild(xc); xl.appendChild(document.createTextNode(" 제외")); lx.appendChild(xl); b2.appendChild(lx);
       if(!row.t&&row.r===""&&RATES.검색){ var sg=RATES.검색([row.org,row.job].join(" ")).slice(0,3); if(sg.length){ var sw=el("div","hb-sug"); sg.forEach(function(x){ sw.appendChild(btn(x.t+" "+x.r+"%",null,function(){ row.t=x.t; row.r=String(x.r); row.b=x.b; save(); draw(); })); }); box.appendChild(sw); } }
@@ -5655,8 +5697,9 @@ function build(root){
       rows.appendChild(box); });
     var bar=el("div","hb-bar"); pn.appendChild(bar);
     bar.appendChild(btn("+ 경력","hb-add",function(){ c.rows.push({org:"",job:"",s:"",e:"",r:"",t:"",b:"",x:false}); save(); draw(); }));
-    if(r&&r.중복&&r.중복.length) r.중복.forEach(function(o){ pn.appendChild(el("div","hb-note",(o.a+1)+"번과 "+(o.b+1)+"번 경력이 "+kd(o.시작)+"~"+kd(o.종료)+"("+ymd(o.기간)+") 겹쳐요. "+(/강사/.test((c.rows[o.a]||{}).t||"")&&/강사/.test((c.rows[o.b]||{}).t||"")?"같은 기간 여러 학교 시간강사는 겹침이 아니라 주당 시간을 합쳐 환산율을 정해요.":"유리한 경력 하나만 인정하니 환산율이 낮은 "+(o.낮은쪽+1)+"번에서 겹친 기간을 빼고 계산했어요."))); });
-    law(pn,"근거: 공무원보수규정 별표 22(교원 등의 초임호봉 획정), 교육공무원 호봉획정시 경력환산율표의 적용 등에 관한 예규 [별표 1]. 시작일·종료일을 모두 넣어 기간을 셉니다(양편넣기).");
+    if(r&&r.중복&&r.중복.length) r.중복.forEach(function(o){ pn.appendChild(el("div","hb-note",(o.a+1)+"번과 "+(o.b+1)+"번 경력이 "+kd(o.시작)+"~"+kd(o.종료)+"("+ymd(o.기간)+") 겹쳐요. "+(/강사/.test((c.rows[o.a]||{}).t||"")&&/강사/.test((c.rows[o.b]||{}).t||"")?(hbHas(c.rows[o.a]||{})&&hbHas(c.rows[o.b]||{})?"같은 기간 여러 학교 시간강사는 겹침이 아니라 강의시간을 합쳐 계산했어요.":"같은 기간 여러 학교 시간강사는 겹침이 아니라 강의시간을 합쳐요. 두 경력에 주당 강의시간을 넣으면 합산해 계산해요."):"유리한 경력 하나만 인정해요. 겹친 기간은 인정 기간이 더 긴(환산율이 높은) 쪽에만 넣고 다른 쪽에서 뺐어요."))); });
+    if(r&&r.강사합산&&r.강사합산.length) r.강사합산.forEach(function(o){ pn.appendChild(el("div","hb-note",kd(hbS(o.a))+"~"+kd(hbS(o.b))+" 강의시간 합계 "+o.H+"시간 ÷ 기준 "+o.base+"시간 → "+o.rt+"% ("+o.rows.map(function(i){ return (i+1)+"번"; }).join("·")+" 합산, "+(o.rows[0]+1)+"번에 넣음)")); });
+    law(pn,"근거: 공무원보수규정 제8조②(경력끼리 겹치면 유리한 경력 하나만), 별표 22, 교육공무원 호봉획정시 경력환산율표의 적용 등에 관한 예규(교육부 예규 제97호) Ⅱ.1·[별표 1] 3.가(강사 기준시간). 시작일·종료일을 모두 넣어 기간을 셉니다(양편넣기).");
   };
   /* 3. 호봉 */
   ST.hob=function(pn,c){

@@ -1567,6 +1567,7 @@ function floorRate(c){ var t=tp(c), a=amount(c.est)||0;   /* 입찰 낙찰하한
   if(t==="용역") return a<2e8?89.745:a<5e8?88.745:a<1e9?87.495:81.995;
   if(c.kind==="c1") return a<1e9?89.745:a<5e9?88.745:a<1e10?87.495:a<3e10?81.995:null;
   return a<3e8?89.745:null; }
+function quoteOpen(c){ return c.qd?workDays(c.qd,4):""; }   /* 2인 견적: 게시일+공고기간 3일(토·공휴일 빼고)+개찰일 = 게시 5일 이상 */
 function s2bOk(c){ var a=amount(c.est)||0, L={c1:4e8,c2:2e8,c3:1.6e8}[c.kind]||1e8; return a<=L; }
 function curStage(c){ var s=STAGES(c); c.done=c.done||{}; for(var i=0;i<s.length;i++) if(!c.done[s[i][0]]) return i; return s.length; }
 /* 하자: 준공(검사)일 + 기간 */
@@ -1582,7 +1583,7 @@ function halves(c){ /* 준공 후 반기마다 1번(연 2회 이상), 마지막�
 /* 다음에 할 일과 기한 */
 function nextTodo(c){
   var s=STAGES(c), i=curStage(c); if(i>=s.length) return null; var id=s[i][0], t=tp(c);
-  if(id==="vendor") return {t:c.m&&c.m.n===2?"견적 안내공고 내고 견적 받기":"견적서 받고 업체 확인하기",due:""};
+  if(id==="vendor") return c.m&&c.m.n===2?(c.qd?{t:"견적 마감·개찰하기",due:c.qe||quoteOpen(c)}:{t:"견적 안내공고 내기",due:""}):{t:"견적서 받고 업체 확인하기",due:""};
   if(id==="notice") return c.nd?{t:"입찰 마감·개찰 기다리기",due:c.od||bidEarliest(c)}:{t:"입찰 공고 올리기",due:""};
   if(id==="award"){ if(!c.req) return {t:"개찰하고 적격심사 서류 요구하기",due:c.od||""}; var sd=addDays(c.req,subDays(c));
     return c.subm?{t:"적격심사하고 낙찰자 정하기",due:addDays(c.subm,7)}:{t:"적격심사 서류 받기",due:sd}; }
@@ -1594,6 +1595,59 @@ function nextTodo(c){
     for(var j=0;j<hs.length;j++){ if(c.hj[hs[j].k]) continue; if(hs[j].to<d) continue; return {t:hs[j].t+" 하자검사",due:hs[j].to,from:hs[j].from}; }
     return {t:"하자 기간이 끝났어요 · 정리하기",due:""}; }
   return null;
+}
+
+/* 입찰공고문 초안(한글) — 시행령 제36조 공고 사항 순서. 블록은 학운위 도구의 한글 만들기(window.TKHX) 형식 */
+function noticeDoc(c){
+  var t=tp(c), est=amount(c.est)||0, sc=LS.get("school","")||"○○학교", re=c.fails&&c.fails.length, fr=floorRate(c), sd=subDays(c);
+  var P=function(x,o){ return Object.assign({t:"p",text:x,size:12,lh:1.6,font:"m"},o||{}); }, BL={t:"p",text:"",size:8};
+  var H=function(x){ return P(x,{b:true,size:13}); }, L=function(x){ return P(x,{ind:4,hang:3}); };
+  var cell=function(x,o){ return Object.assign({t:x,al:"left",size:11},o||{}); }, th=function(x){ return cell(x,{b:true,al:"center",bg:"#EDEDED"}); };
+  var kd=function(s){ return s?kdate(s):"○○○○. ○○. ○○."; };
+  var lim=t==="공사"?"제한경쟁입찰 (지역제한: 경상남도)":"제한경쟁입찰 (○○ 제한)";
+  var per="계약일부터 ○○일";
+  var pass=t==="공사"?(est<1e10?"95점":"92점"):t==="물품"?"85점":"○○점";
+  var site=s2bOk(c)?"학교장터(S2B) 또는 나라장터(G2B)":"나라장터(G2B)";
+  return [
+    P(sc+" 공고 제"+(c.nd?c.nd.slice(0,4):"○○○○")+"-○○호",{size:11}), BL,
+    P((re?"재 ":"")+"입 찰 공 고",{al:"center",b:true,size:22}), BL,
+    P("「"+c.name+"」 "+(re?"재":"")+"입찰을 다음과 같이 공고합니다.",{al:"center"}), BL,
+    P(kd(c.nd),{al:"center"}), P(sc+"장",{al:"center",b:true,size:15}), BL,
+    H("1. 입찰에 부치는 사항"),
+    {t:"tbl",w:[38,132],font:"m",size:11,pad:1.2,rows:[
+      [th("건    명"),cell(c.name)],
+      [th("기초금액"),cell(est?"금 "+comma(Math.round(est*1.1))+"원 (부가가치세 포함)":"금 ○○○원 (부가가치세 포함)")],
+      [th("추정가격"),cell(est?"금 "+comma(est)+"원":"금 ○○○원")],
+      [th(t==="물품"?"납품기한":"계약기간"),cell(per)],
+      [th(t==="물품"?"납품장소":"현    장"),cell(sc+" ○○")]]}, BL,
+    H("2. 입찰 및 낙찰 방식"),
+    L("가. "+lim+", 총액 입찰, "+site+" 전자입찰"),
+    L("나. 예정가격: 기초금액의 ±3% 범위에서 만든 복수예비가격 15개 중 개찰 때 4개를 추첨해 산술평균"),
+    L("다. 낙찰자 결정: 예정가격 이하로 입찰한 자 중 최저가격 입찰자부터 차례로 「지방자치단체 입찰시 낙찰자 결정기준」의 적격심사를 하여 종합평점 "+pass+" 이상인 자"),
+    L("라. 낙찰하한율: 예정가격의 "+(fr?fr+"%":"○○%")+" 이상"),
+    L("마. 적격심사 서류: 제출 요구일부터 "+sd+"일 안에 제출 (기한 안에 내지 않으면 심사에서 제외)"), BL,
+    H("3. 입찰참가자격"),
+    L("가. 「지방자치단체를 당사자로 하는 계약에 관한 법률 시행령」 제13조에 따른 자격을 갖추고 나라장터에 경쟁입찰참가자격을 등록한 자"),
+    L("나. ○○업(업종코드 ○○○○)을 등록한 자"),
+    t==="공사"?L("다. 입찰공고일 180일 전부터 입찰일까지 법인등기부상 본점 소재지(개인은 사업장 소재지)가 경상남도인 자"):L("다. 그 밖의 제한: ○○"),
+    L("라. 부정당업자 제재를 받고 있는 자는 참가할 수 없음"), BL,
+    H("4. 입찰 일정"),
+    {t:"tbl",w:[60,110],font:"m",size:11,pad:1.2,rows:[
+      [th("구    분"),th("일    시")],
+      [cell("입찰공고",{al:"center"}),cell(kd(c.nd))],
+      [cell("입찰서 제출 마감",{al:"center"}),cell(kd(c.od)+" ○○:○○")],
+      [cell("개    찰",{al:"center"}),cell(kd(c.od)+" ○○:○○ (마감 직후, 입찰집행관 PC)")]]}, BL,
+    H("5. 입찰보증금 및 입찰의 무효"),
+    L("가. 입찰보증금은 입찰금액의 100분의 5 이상이며, 전자입찰서의 지급각서로 갈음합니다. 낙찰자가 정당한 이유 없이 계약을 맺지 않으면 학교에 귀속합니다."),
+    L("나. 「지방자치단체를 당사자로 하는 계약에 관한 법률 시행규칙」 제42조에 해당하는 입찰은 무효로 합니다."), BL,
+    H("6. 계약 체결"),
+    L("가. 낙찰자는 낙찰 통지를 받은 날부터 10일 안에 계약을 맺어야 합니다."),
+    t!=="물품"?L("나. 국민연금·건강보험·노인장기요양보험료는 사후정산하며, 산업안전보건 관련 의무를 지켜야 합니다."):L("나. 계약 서류: 계약보증금 지급각서, 청렴계약 이행서약서 등"), BL,
+    H("7. 기타"),
+    L("가. 이 공고에 없는 사항은 지방계약법령, 「지방자치단체 입찰 및 계약 집행기준」, 「지방자치단체 입찰시 낙찰자 결정기준」을 따릅니다."),
+    L("나. 나라장터 게시 내용과 이 공고문이 다르면 이 공고문이 우선합니다."),
+    L("다. 문의: "+sc+" 행정실 (055-○○○-○○○○)")
+  ];
 }
 
 function build(root){
@@ -1809,15 +1863,24 @@ function build(root){
       :(t!=="공사"&&est<2e6?"추정가격 200만 원 미만 물품·용역이라 견적서 제출을 생략할 수 있어요(신용카드 구매 포함). 업체 확인은 그대로 해요."
       :"업체 한 곳에서 견적서를 받아요. 신용도·기술능력·경험을 보고 예정가격 이하로 금액을 협의해 정해요.");
     b.appendChild(el("p","cv-say",say));
-    if(two) b.appendChild(el("p","cv-law","낙찰하한율: "+(t==="공사"?"예정가격의 89.745%":"예정가격의 88%")+" · 시행령 제30조②, 경남 업무흐름도"));
+    if(two){ var qg=el("div","tkgridf"); b.appendChild(qg); var qc=el("div","cv-calc");
+      fld(qg,"안내공고 올린 날",c.qd,function(v){ c.qd=v; put(); qre(); },{type:"date"});
+      fld(qg,"견적 마감·개찰일",c.qe,function(v){ c.qe=v; put(); qre(); },{type:"date"});
+      b.appendChild(qc);
+      var qre=function(){ var e=quoteOpen(c), bad=c.qe&&e&&c.qe<e;
+        nums(qc,[{l:"공고기간",v:"3일 이상",s:"토·공휴일 빼고 · 게시부터 개찰까지 5일 이상"},
+          {l:"가장 빠른 개찰일",v:e?kdate(e):"공고일을 넣으면",c:bad?"bad":c.qe?"ok":"",s:bad?"개찰일이 너무 빨라요":e?"견적 마감 "+kdate(workDays(c.qd,3))+" 이후 · 임시공휴일은 직접 빼 주세요":"게시일+3일+개찰일"},
+          {l:"낙찰하한율",v:t==="공사"?"89.745%":(est<=2e7?"90%":"88%"),s:"예정가격 대비 · 시행령 제30조②"}]); };
+      qre(); }
     else b.appendChild(el("p","cv-law","근거: 지방계약법 시행령 제30조, 시행규칙 제33조 · 경남 업무흐름도 '견적서 징구·계약상대자 결정'"));
 
     bizBox(c,b,"vendor");
-    nextBar(b,c,"vendor",state,"업체 정했어요",function(){ if(!c.biz.bizname) return "업체명을 넣어 주세요."; if(c.ok.san===false||c.ok.nts===false) return "조회 결과 계약할 수 없는 업체예요. 다른 업체를 정해 주세요."; return ""; });
+    nextBar(b,c,"vendor",state,"업체 정했어요",function(){ if(two&&c.qe&&quoteOpen(c)&&c.qe<quoteOpen(c)) return "견적 공고기간이 모자라요. 개찰일을 "+kdate(quoteOpen(c))+" 이후로 잡아 주세요."; if(!c.biz.bizname) return "업체명을 넣어 주세요."; if(c.ok.san===false||c.ok.nts===false) return "조회 결과 계약할 수 없는 업체예요. 다른 업체를 정해 주세요."; return ""; });
   };
   /* 입찰 2. 공고 */
   STAGE.notice=function(c,b,state){
     var t=tp(c), est=amount(c.est)||0; c.nk=c.nk||{};
+    if(c.fails&&c.fails.length) b.appendChild(el("p","cv-say","재공고 "+c.fails.length+"번째예요 (지난 개찰 "+c.fails.map(function(f){ return f.od?kdate(f.od):"-"; }).join(", ")+" 유찰). 예정가격·참가자격은 바꿀 수 없고, 바꾸려면 새로운 입찰로 해요."));
     b.appendChild(el("p","cv-say",(s2bOk(c)?"나라장터(G2B)나 학교장터(S2B)":"나라장터(G2B)")+"에 입찰공고를 올리고 기초금액을 넣어요. 공고일과 마감일을 넣으면 공고기간이 모자라지 않은지 바로 봐요."));
     var g=el("div","tkgridf"); b.appendChild(g); var calc=el("div","cv-calc");
     fld(g,"공고일",c.nd,function(v){ c.nd=v; put(); re(); },{type:"date"});
@@ -1837,6 +1900,9 @@ function build(root){
     L.push(["n3","공고문 작성","낙찰하한율·참가자격(지역제한은 경상남도)·국민연금·건강보험료 사후정산을 적어요 (시행령 제36조)"],["n4","기초금액 입력","공고문 금액과 똑같이"+(t==="공사"?" · A값·순공사원가도":"")],["n5","복수예비가격 15개 작성","기초금액 ±3% 안 · 개찰 때 4개를 뽑아 평균"]);
     if(t==="공사") L.push(["n6","현장설명","필요한 공사만 · 현장설명일 전날부터 7일 전 공고"]);
     ticks(b,L,c.nk);
+    var hr=el("div","cv-next"), hm=el("div","tkmsg"); b.appendChild(hr); b.appendChild(hm);
+    hr.appendChild(btn("공고문 초안 한글로","btn ghost",function(){ var H=window.TKHX; if(!H||!H.build){ msg(hm,"한글 만들기 부품을 불러오지 못했어요. 새로고침해 주세요.","warn"); return; }
+      saveFile(H.build([{blocks:noticeDoc(c)}],c.name+" 입찰공고"),c.name+"_"+(c.fails&&c.fails.length?"재":"")+"입찰공고문(초안).hwpx").then(function(){ msg(hm,"공고문 초안을 내려받았어요. ○○ 자리를 채워 쓰세요.","ok"); },function(e){ msg(hm,e.message,"warn"); }); }));
     b.appendChild(el("p","cv-law","공고를 고치면(정정공고) 남은 기간에 5일 이상을 더해요. 근거: 지방계약법 시행령 제33조~제36조 · 경남 업무흐름도 '견적·입찰 공고'"));
     nextBar(b,c,"notice",state,"공고 올렸어요",function(){ if(!c.nd||!c.od) return "공고일과 마감일을 넣어 주세요."; var e=bidEarliest(c); return c.od<e?"공고기간이 모자라요. 마감일을 "+kdate(e)+" 이후로 잡아 주세요.":""; });
   };
@@ -1861,6 +1927,9 @@ function build(root){
     b.appendChild(el("div","cv-sub","낙찰자"));
     bizBox(c,b,"award");
     b.appendChild(el("p","cv-law","같은 값이 2곳 이상이면 심사 점수가 높은 곳, 점수도 같으면 추첨. 부적격이면 다음 순위를 심사해요. 재심사 요청은 통보일부터 3일 안, 5일 안에 재심사. 근거: 지방계약법 시행령 제40조·제42조, 지방자치단체 입찰시 낙찰자 결정기준 · 경남 업무흐름도 '개찰', '적격심사·낙찰자 결정'"));
+    if(state!=="done"){ var fr2=el("div","cv-next"); b.appendChild(fr2);
+      fr2.appendChild(btn("유찰 · 재공고하기","btn ghost",function(){ if(!confirm("유찰로 기록하고 공고 단계를 재공고(5일)로 다시 열까요?")) return;
+        c.fails=c.fails||[]; c.fails.push({nd:c.nd||"",od:c.od||"",at:today()}); c.urg=true; ["nd","od","req","subm","awardD"].forEach(function(k){ delete c[k]; }); c.nk={}; reopen(c,"notice"); })); }
     nextBar(b,c,"award",state,"낙찰자 정했어요",function(){ if(!c.biz.bizname) return "낙찰자 업체명을 넣어 주세요."; if(c.ok.san===false||c.ok.nts===false) return "조회 결과 계약할 수 없는 업체예요. 다음 순위를 심사해 주세요."; if(!c.awardD) return "낙찰 통지한 날을 넣어 주세요."; if(c.bidAmt&&!c.amount) c.amount=c.bidAmt, c.guar=Math.floor(c.bidAmt*0.1); return ""; });
   };
   /* 3. 계약 맺기 */
@@ -4040,6 +4109,8 @@ const TIPS={
 
 /* ---------- 이동 ---------- */
 
+/* 다른 도구(계약 장부 공고문 등)가 같이 쓰는 한글 만들기 */
+window.TKHX={build:buildHwpx};
 /* ===== 엔진 끝 ===== */
 
 var TK=function(){ return window.TKCV||{}; };

@@ -34,6 +34,7 @@ var CSS=[
 ".bus-bar .bus-f{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}.bus-bar .bus-lb{font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap}.bus-bar .bus-unit{font-size:11.5px}",
 ".bus-bar .bus-in{height:30px;font-size:12.5px;padding:0 6px}.bus-bar .bus-btn{height:30px;padding:0 10px}.bus-bar .bus-sep{width:1px;align-self:stretch;background:var(--line)}",
 ".bus-bar .bus-tabs{margin:0;gap:4px}",
+".bus-find{margin-left:auto;display:flex;gap:4px;flex:1 1 200px;max-width:320px}.bus-find .bus-in{flex:1;min-width:0}",
 ".bus-drop{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border:1.5px dashed var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}.bus-drop:hover,.bus-drop.on{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}",
 ".bus-msg{position:absolute;left:10px;top:60px;z-index:6;max-width:min(460px,calc(100% - 20px));margin:0!important;padding-right:30px!important;box-shadow:0 6px 18px rgba(15,23,42,.14)}.bus-msg .x{position:absolute;right:6px;top:5px;border:0;background:none;cursor:pointer;color:inherit;font-size:13px;opacity:.7}",
 ".bus-vt{margin-top:10px}.bus-vt:empty{display:none}",
@@ -118,6 +119,10 @@ function build(root){
   bar.appendChild(grp("#운행",tt,ti,"대기",wd,"분")); bar.appendChild(el("span","bus-sep"));
   var vb=btn("자동 배분","bus-btn",split); vb.title="가까운 정류장끼리 묶어 여러 대로 나눠요(출발·도착은 공통)";
   bar.appendChild(grp("#차량",vk,"대",vc,vb)); bar.appendChild(vtabs);
+  /* 검색: 주소·지명·건물명 → 지도 이동 + 정류장 추가 */
+  var fq=el("input","bus-in"); fq.type="search"; fq.placeholder="주소·지명·건물명 검색"; fq.title="찾은 곳으로 지도가 옮겨 가고 노선 끝에 정류장으로 더해져요";
+  var fb=btn("추가","bus-btn",find), fw=el("div","bus-find"); fw.appendChild(fq); fw.appendChild(fb); bar.appendChild(fw);
+  fq.onkeydown=function(e){ if(e.key==="Enter"&&!e.isComposing){ e.preventDefault(); find(); } };
   msg.classList.add("bus-msg");
 
   /* 지도·결과 */
@@ -146,6 +151,18 @@ function build(root){
         if(x===s||(x.name==="위치 찾는 중…"&&x.lat===s.lat&&x.lng===s.lng)){ x.address=ad; x.name=nm; } }); draw(); }
     draw(); }, function(e){ mapBox.textContent=""; mapBox.appendChild(el("div","bus-hint",e.message)); });
   draw();
+
+  function find(){ var q=fq.value.trim(); if(!q) return fq.focus(); if(!map) return say("지도를 불러오는 중이에요.","bad");
+    fb.disabled=true; var isAddr=/(로|길|동|리|가)\s*\d/.test(q)||/(시|군|구|읍|면|동|리)$/.test(q);   /* 주소·행정동 이름이면 주소 먼저, 아니면 장소 이름 먼저 */
+    (isAddr?addrOf(q).then(function(r){ return r||poiOf(q); }):poiOf(q).then(function(r){ return r||addrOf(q); })).then(function(r){ fb.disabled=false;
+      if(!r) return say("'"+q+"'을(를) 찾지 못했어요. 시·구 이름을 붙여 보세요.","bad");
+      S.stops.push({id:"s"+(++seq),name:r.name||shortName(r.address||q),address:r.address||q,lat:r.lat,lng:r.lng,isPass:false,pax:0,guess:r.guess}); dirty();
+      try{ map.setCenter(new Tmapv2.LatLng(r.lat,r.lng)); map.setZoom(16); }catch(e){}
+      fq.value=""; say("'"+(r.name||q)+"'을(를) "+S.stops.length+"번째 정류장으로 더했어요.","ok"); }); }
+  function addrOf(q){ return geocode(q).then(function(r){ if(r){ r.address=q; } return r; }); }
+  function poiOf(q){ return fetch(API+"pois?version=1&format=json&searchKeyword="+encodeURIComponent(q)+"&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1&centerLat=35.2280&centerLon=128.6811&appKey="+KEY).then(function(r){ return r.ok&&r.status!==204?r.json():null; })
+      .then(function(d){ var p=d&&d.searchPoiInfo&&d.searchPoiInfo.pois.poi[0]; if(!p) return null; var na=p.newAddressList&&p.newAddressList.newAddress&&p.newAddressList.newAddress[0];
+        return {lat:parseFloat(p.noorLat),lng:parseFloat(p.noorLon),name:p.name,address:na&&na.fullAddressRoad||[p.upperAddrName,p.middleAddrName,p.lowerAddrName,p.detailAddrName].filter(Boolean).join(" ")}; }).catch(function(){ return null; }); }
 
   /* ---- 엑셀 ---- */
   function readXlsx(file){ needXLSX().then(function(){ return file.arrayBuffer(); }).then(function(buf){

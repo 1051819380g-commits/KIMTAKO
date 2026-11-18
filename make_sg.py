@@ -11,6 +11,7 @@ js=max(re.findall(r"<script>(.*?)</script>",s,re.S),key=len)
 css=re.sub(r":root\{[^}]*\}","",css,count=1)
 js=js.replace("document.querySelectorAll(","W.querySelectorAll(").replace("document.querySelector(","W.querySelector(")   # 화면이 아직 문서에 붙기 전에도 찾게
 # 2026-11-17 공개 전 검토 반영(원본 화면·계산은 그대로, 아래만 고침)
+PREV_JS='/* 기존 송금내역서(이 도구·예전 프로그램이 만든 엑셀: A 은행코드, B 계좌번호, C 금액, D 항목, E 받는 분)로 설정 채우기\n   - 고정 항목은 항목 이름(기본 이름·지금 표시 이름)으로 찾음. 대여금 계좌는 매달 바뀌어 은행코드·받는 분만\n   - 나머지 줄은 급여대장 공제 항목: \'공무직소득세\' 줄 뒤(또는 \'공무직\'으로 시작)는 공무직, 앞은 교직원.\n     지금 설정에 같은 표시 이름이 있으면 그 항목, 없으면 올린 급여대장의 같은 이름 열, 그것도 없으면 이름 그대로 새 항목 */\nfunction normL(v){ return String(v==null?"":v).replace(/[\\s·ㆍ()（）\\[\\]_\\-]/g,""); }\nfunction cellS(v){ return v==null?"":String(v).trim(); }\nfunction fillFromPrev(raw){\n  var nf=0, ni=0, gong=false, cols={"교직원":[],"공무직":[]}, byFix={};\n  [["edu","교직원"],["gong","공무직"]].forEach(function(p){ if(FILES[p[0]]) cols[p[1]]=FILES[p[0]].cols; });\n  FIXED.forEach(function(f){ byFix[normL(f[1])]=f[0]; byFix[normL(CFG.fixed[f[0]].label)]=f[0]; });\n  byFix[normL("사학연금법인부담")]="schP"; byFix[normL("사학연금(개인부담)")]="schP";\n  raw.forEach(function(row){\n    var bank=cellS(row[0]), acct=cellS(row[1]), lab=cellS(row[3]), recv=cellS(row[4]);\n    if(!lab||/신규 항목|^\\[/.test(lab)||!(bank||acct)) return;\n    if(/^\\d{1,2}$/.test(bank)) bank=("00"+bank).slice(-3);   /* 숫자로 저장돼 앞 0이 빠진 은행코드 */\n    var k=byFix[normL(lab)];\n    if(k){ var x=CFG.fixed[k]; if(k==="gTax") gong=true; x.bank=bank; if(k!=="loan") x.acct=acct; x.recv=recv; x.label=lab; nf++; return; }\n    var led=gong||/^공무직/.test(lab)?"공무직":"교직원", base=led==="공무직"?lab.replace(/^공무직\\s*/,""):lab;\n    var key=Object.keys(CFG.items).filter(function(q){ return q.split("|")[0]===led&&normL(CFG.items[q].label)===normL(lab); })[0];\n    if(!key){ var c=cols[led].filter(function(c){ return normL(c)===normL(base)||normL(c)===normL(lab); })[0]; key=itemKey(led,c||base); }\n    CFG.items[key]=Object.assign(CFG.items[key]||blankItem.apply(null,key.split("|")),{bank:bank,acct:acct,label:lab,recv:recv}); ni++; });\n  return {f:nf,i:ni};\n}\n$("#prevBtn").onclick=function(){ $("#prevFile").click(); };\n$("#prevFile").addEventListener("change",function(){ var f=this.files[0]; this.value=""; if(!f) return;\n  if(!window.JSZip){ $("#cfgMsg").textContent="엑셀 읽기 도구를 불러오는 중입니다. 잠시 뒤 다시 눌러 주세요."; return; }\n  f.arrayBuffer().then(readXlsx).then(function(T){ var r=fillFromPrev(T.raw||[]);\n    if(!r.f&&!r.i){ $("#cfgMsg").textContent="송금내역서에서 은행코드·계좌가 있는 줄을 찾지 못했습니다(A 은행코드, B 계좌번호, D 항목, E 받는 분)."; return; }\n    saveCfg(); renderCfg(); $("#cfgDet").open=true;\n    $("#cfgMsg").textContent="기존 송금내역서로 고정 항목 "+r.f+"개, 급여대장 공제 항목 "+r.i+"개를 채웠습니다. 대여금 상환 계좌는 매달 바뀌어 채우지 않습니다."; })\n  .catch(function(e){ $("#cfgMsg").textContent="송금내역서를 읽지 못했습니다: "+(e&&e.message||e); }); });\n'
 JSFIX=[
  # ① '고등학교' 행만 읽던 것 → 급여대장의 학교급(기관분류)을 찾아 씀. 여러 개면 고등학교 우선(원본과 같음), 나머지는 알려 줌
  ('function getSummary(T){ return T.rows.filter(function(r){ return r["기관분류"]==="고등학교"&&r["직종"]==="전체"; })[0]||null; }',
@@ -41,8 +42,23 @@ JSFIX=[
  ('try{ store().removeItem(LS); }catch(e){} CFG=blankCfg();','try{ store().removeItem(LS); store().removeItem(LS_ACCT); }catch(e){} $("#vAcct").value=""; CFG=blankCfg();'),
  # ④ 개발용 전역 노출 제거
  ('window.__sg={readXlsx:readXlsx,parseTp:parseTp,pdfText:pdfText,buildRows:buildRows,writeXlsx:writeXlsx,setCfg:function(c){CFG=c;}};',''),
+ # ⑦ (11-18 Junho) 급여대장 공제 항목 표: 고정 항목 표와 같은 순서(송금내역서 표시 | 은행코드 | 계좌번호 | 받는 분)
+ ('    tr.appendChild(inpCell(o.bank,function(v){o.bank=v})); tr.appendChild(inpCell(o.acct,function(v){o.acct=v}));\n    tr.appendChild(inpCell(o.label,function(v){o.label=v||p[1]})); tr.appendChild(inpCell(o.recv,function(v){o.recv=v}));',
+  '    tr.appendChild(inpCell(o.label,function(v){o.label=v||p[1]})); tr.appendChild(inpCell(o.bank,function(v){o.bank=v}));\n    tr.appendChild(inpCell(o.acct,function(v){o.acct=v})); tr.appendChild(inpCell(o.recv,function(v){o.recv=v}));'),
+ ("<th>금액</th><th>은행코드</th><th>계좌번호</th><th>송금내역서 표시</th><th>받는 분</th></tr>';","<th>금액</th><th>송금내역서 표시</th><th>은행코드</th><th>계좌번호</th><th>받는 분</th></tr>';"),
+ ("""<td><input type="text" class="nb" maxlength="3" value="'+esc(it.bank)+'"></td><td><input type="text" class="na" value="'+esc(it.acct)+'"></td><td><input type="text" class="nl" value="'+esc(it.label)+'"></td>""",
+  """<td><input type="text" class="nl" value="'+esc(it.label)+'"></td><td><input type="text" class="nb" maxlength="3" value="'+esc(it.bank)+'"></td><td><input type="text" class="na" value="'+esc(it.acct)+'"></td>"""),
+ # ⑧ (11-18 Junho) 기존 송금내역서(엑셀)를 넣으면 설정을 채움: 첫 줄도 읽게 readXlsx가 raw(머리글 포함 모든 줄)를 함께 돌려줌
+ ('        var head=(rows.shift()||[])','        var raw=rows.slice(), head=(rows.shift()||[])'),
+ ('        return {cols:head.filter(Boolean), rows:data};','        return {cols:head.filter(Boolean), rows:data, raw:raw};'),
+ ('\nrenderCfg();\nif(FIXED.every(', PREV_JS + '\nrenderCfg();\nif(FIXED.every('),
+
 ]
-BODYFIX=[('— 세금·건강보험·기간제 4대보험·사학연금 법인부담·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)</small>',
+BODYFIX=[
+ ('<th>급여대장</th><th>열 이름</th><th>은행코드</th><th>계좌번호</th><th>송금내역서 표시</th><th>받는 분</th><th></th>','<th>급여대장</th><th>열 이름</th><th>송금내역서 표시</th><th>은행코드</th><th>계좌번호</th><th>받는 분</th><th></th>'),
+ ('      <button class="btn" type="button" id="optAdd">항목 직접 추가</button>','      <button class="btn" type="button" id="prevBtn">기존 송금내역서로 채우기</button><input type="file" id="prevFile" accept=".xlsx" hidden>\n      <button class="btn" type="button" id="optAdd">항목 직접 추가</button>'),
+ ("    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름).</p>","    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름). 예전에 만든 송금내역서 엑셀이 있으면 '기존 송금내역서로 채우기'로 은행코드·계좌·받는 분을 한 번에 채울 수 있습니다.</p>"),
+ ('— 세금·건강보험·기간제 4대보험·사학연금 법인부담·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)</small>',
   '— 세금·건강보험·기간제 4대보험·사학연금·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)<br>사학연금(개인부담) 줄의 송금액(C)은 개인부담금(G)이에요. 법인부담분은 F·H 칸, 공단 송금 총액은 F예요.</small>')]
 for _a,_b in BODYFIX:
     assert body.count(_a)==1,("sg 화면 고칠 자리",_a[:40]); body=body.replace(_a,_b)
@@ -51,16 +67,16 @@ for _a,_b in JSFIX:
 css=css.replace("#fff","var(--surface)").replace("#F5F8FF","var(--accent-soft)").replace("#F7F9FB","var(--surface-2)").replace("#E6F3EF","var(--accent-soft)")
 # Junho 11-17: 원본은 고정 항목 표의 '송금내역서 표시' 칸이 64px로 좁고 은행코드 칸이 넓었음 → 은행코드는 좁게(숫자 3자리), 표시는 넓게
 FIX=("\n.cfgtbl td:nth-child(2) input{width:100%}"
-     "\n#cfgBody td:nth-child(3),#optBody td:nth-child(3){width:72px}#cfgBody td:nth-child(3) input,#optBody td:nth-child(3) input{width:64px;text-align:center}"
-     "\n#cfgBody td:nth-child(2){width:28%}#optBody td:nth-child(5){width:24%}"
+     "\n#cfgBody td:nth-child(3),#optBody td:nth-child(4){width:72px}#cfgBody td:nth-child(3) input,#optBody td:nth-child(4) input{width:64px;text-align:center}"
+     "\n#cfgBody td:nth-child(2){width:28%}#optBody td:nth-child(3){width:24%}"
      "\n.newbox input.nb{width:56px;text-align:center}"
      # 휴대폰: 표를 칸마다 이름 붙인 카드로(가로로 밀리지 않게)
      "\n@media (max-width:640px){.cfgtbl thead{display:none}.cfgtbl,.cfgtbl tbody{display:block}.cfgtbl tr{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 8px;padding:8px 0;border-bottom:1px solid var(--line)}"
      ".cfgtbl td{display:block;border:0;padding:0;width:auto!important}.cfgtbl td.k{grid-column:1/-1;font-weight:600}.cfgtbl td input{width:100%!important}"
-     "#cfgBody td:nth-child(2){grid-column:1/-1}#cfgBody td:nth-child(5){grid-column:1/-1}#optBody td:nth-child(5),#optBody td:nth-child(6){grid-column:1/-1}"
+     "#cfgBody td:nth-child(2){grid-column:1/-1}#cfgBody td:nth-child(5){grid-column:1/-1}#optBody td:nth-child(3),#optBody td:nth-child(6){grid-column:1/-1}"
      ".cfgtbl td:not(.k)::before{display:block;font-size:11.5px;color:var(--sub)}"
      "#cfgBody td:nth-child(2)::before{content:'송금내역서 표시'}#cfgBody td:nth-child(3)::before{content:'은행코드'}#cfgBody td:nth-child(4)::before{content:'계좌번호'}#cfgBody td:nth-child(5)::before{content:'받는 분'}"
-     "#optBody td:nth-child(3)::before{content:'은행코드'}#optBody td:nth-child(4)::before{content:'계좌번호'}#optBody td:nth-child(5)::before{content:'송금내역서 표시'}#optBody td:nth-child(6)::before{content:'받는 분'}#optBody td:nth-child(7)::before{content:none}}")
+     "#optBody td:nth-child(3)::before{content:'송금내역서 표시'}#optBody td:nth-child(4)::before{content:'은행코드'}#optBody td:nth-child(5)::before{content:'계좌번호'}#optBody td:nth-child(6)::before{content:'받는 분'}#optBody td:nth-child(7)::before{content:none}}")
 css=re.sub(r"(^|\n|\})\s*html,body\{","\\1:host{display:block;",css)
 css=re.sub(r"(^|\n|\})\s*body\{","\\1:host{",css)
 vars=(":host{--sub:var(--ink-2);--line2:var(--line-strong);--canvas:var(--surface-2);--navy:var(--accent);--navy-d:var(--accent);--mint:var(--accent-soft);"

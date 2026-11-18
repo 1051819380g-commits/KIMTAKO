@@ -38,7 +38,7 @@ JSFIX=[
   '  Object.keys(c.fixed).forEach(function(k){ if(s.fixed&&s.fixed[k]) c.fixed[k]=Object.assign(c.fixed[k],s.fixed[k]); });\n  if(c.fixed.schP&&c.fixed.schP.label==="사학연금법인부담") c.fixed.schP.label="사학연금(개인부담)";'),
  # ⑥ '사학연금'이 든 열을 모두 더함(사학연금소급 등). 대여금 열은 상환 쪽이라 뺌
  ('function findColSum(T,rows,kw){ var col=T.cols.filter(function(c){return c.indexOf(kw)>=0})[0]; if(!col) return 0; return Math.trunc(rows.reduce(function(s,r){ return s+(isna(r[col])?0:+r[col]); },0)); }',
-  'function findColSum(T,rows,kw){ var cols=T.cols.filter(function(c){ return c.indexOf(kw)>=0&&!(kw==="사학연금"&&/대여/.test(c))&&!TOTAL_COLUMNS[c]; }); return Math.trunc(rows.reduce(function(s,r){ return s+cols.reduce(function(t,col){ return t+(isna(r[col])?0:+r[col]); },0); },0)); }'),
+  'function findColSum(T,rows,kw){ var cols=T.cols.filter(function(c){ return c.indexOf(kw)>=0&&!(kw==="사학연금"&&/대여|군소급/.test(c))&&!TOTAL_COLUMNS[c]; }); return Math.trunc(rows.reduce(function(s,r){ return s+cols.reduce(function(t,col){ return t+(isna(r[col])?0:+r[col]); },0); },0)); }'),
  # ③ 설정 지우기에 대여금 계좌도 포함
  ('try{ store().removeItem(LS); }catch(e){} CFG=blankCfg();','try{ store().removeItem(LS); store().removeItem(LS_ACCT); }catch(e){} $("#vAcct").value=""; CFG=blankCfg();'),
  # ④ 개발용 전역 노출 제거
@@ -50,6 +50,12 @@ JSFIX=[
  ('  preview(B); LAST=B; $("#dl").disabled=false;','  B.rows.forEach(function(row){ var k=rowKey(row[8]); if(k in OVR&&typeof row[2]==="number") row[2]=OVR[k]; });   /* 미리보기에서 고친 금액 유지 */\n  preview(B); LAST=B; $("#dl").disabled=false;'),
  ('function invalidate(){ if(!LAST) return;','function invalidate(){ OVR={}; if(!LAST) return;'),
  ('FILES[k]=T;','T.fname=f.name; FILES[k]=T;'),
+ # ⑪ (11-18 Junho) 2026-11 고지서는 '군소급부담금'(개인 없이)으로 적힘 → 군소급도 읽어 급여대장과 대조
+ ('d=after(/^타법인소급부담금$/,3); if(d&&tok.indexOf("군소급개인부담금")>=0) r.army=d[1]; else { d=after(/^군소급개인부담금$/,1); if(d) r.army=d[0]; }',
+  '/* 머리(합산반납금·군소급(개인)부담금·타법인소급부담금) 뒤 첫 숫자 묶음. 2026-11 고지서는 머리 줄 끝 오른쪽 칸 숫자(전월과오납)가 앞에 붙어 4개 → 끝에서 둘째가 군소급 */\n'
+  '  var hi=-1; tok.forEach(function(t,i){ if(hi<0&&/^타법인소급부담금$/.test(t)) hi=i; });\n'
+  '  if(hi>=0&&/군소급(개인)?부담금/.test(flat)){ var run=[]; for(var j=hi+1;j<tok.length;j++){ if(isNum(tok[j])) run.push(toN(tok[j])); else if(run.length>=3) break; else run=[]; } if(run.length>=3) r.army=run[run.length-2]; }\n'
+  '  else { d=after(/^군소급(개인)?부담금$/,1); if(d) r.army=d[0]; }'),
  # ⑩ (11-18 Junho) '1. 파일 올리기'에 지난 송금내역서 칸. 급여대장 칸에 잘못 올려도 송금내역서 꼴이면 그쪽으로 읽음
  ('    return readXlsx(buf).then(function(T){',
   '    return readXlsx(buf).then(function(T){\n'

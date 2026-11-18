@@ -168,7 +168,7 @@
   </div>
   <div class="bar noprint">
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
-    <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
+    <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
     <button id="undo">되돌리기</button>
     <button id="syncBtn" hidden></button>
     <label class="zoom push">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
@@ -300,7 +300,7 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
-let cur = home(), allView = false, view = 'use', sel = null, editing = false; const undoStack = [];
+let cur = home(), allView = false, view = 'use', sel = null, editing = true; const undoStack = [];
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 function snapshot() { undoStack.push(JSON.stringify({ floors: state.floors, log: state.log })); if (undoStack.length > 40) undoStack.shift(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };

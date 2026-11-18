@@ -458,6 +458,7 @@ function renderLog() {
 // 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
 const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
+if (/^#[A-Za-z0-9_-]+$/.test(location.hash)) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
 const syncMsg = t => { $('syncBtn').textContent = t; };
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 function askPw() {

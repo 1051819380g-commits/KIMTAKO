@@ -316,46 +316,58 @@ function roomsOf(f) {
     for (let j = 0; j < s.walls.length - 1; j++) {
       const a = s.walls[j], b = s.walls[j + 1], i = s.rooms[a], x0 = s.x0 + a * s.unit, x1 = s.x0 + b * s.unit;
       const calc = (b - a) * s.unit * s.depth;
-      out.push({ key: `s${si}:${a}`, info: i, pts: rect(x0, 0, x1, -s.depth).map(TF[s.tf]), calc, area: i.area !== '' ? +i.area : calc, units: b - a, w: x1 - x0 });
+      out.push({ key: `s${si}:${a}`, info: i, pts: rect(x0, 0, x1, -s.depth).map(TF[s.tf]), calc, area: i.area !== '' ? +i.area : calc, units: b - a, w: x1 - x0,
+        ids: [...(a === 0 ? [`s${si}a`] : []), ...(b === s.n ? [`s${si}b`] : [])] }); // 띠의 양 끝 실만 가운데 구역과 맞닿는다
     }
   });
-  // 고정 실: 벽을 허문(f.open) 이웃끼리는 한 실로 묶는다. 이름·에어컨 등은 묶음의 첫 실 것을 쓰고, 나머지 실 정보는 그대로 둬서 벽을 다시 세우면 돌아온다.
-  const pairs = (f.open || []).map(s => s.split('|')), seen = new Set();
   for (const x of f.fixed) {
-    if (seen.has(x.id)) continue;
-    const g = [x]; seen.add(x.id);
-    for (let i = 0; i < g.length; i++) for (const [a, b] of pairs) {
-      const o = a === g[i].id ? b : b === g[i].id ? a : null, y = o && !seen.has(o) && f.fixed.find(z => z.id === o);
-      if (y) { seen.add(o); g.push(y); }
-    }
-    const parts = g.map(z => z.pts.map(TF[z.tf])), calc = g.reduce((a, z) => a + shoelace(z.pts), 0), xs = parts.flat().map(p => p[0]);
-    out.push({ key: 'f:' + x.id, ids: g.map(z => z.id), info: x.info, pts: parts.flat(), parts, calc, area: x.info.area !== '' ? +x.info.area : calc, units: 0, w: Math.max(...xs) - Math.min(...xs) });
+    const pts = x.pts.map(TF[x.tf]), calc = shoelace(x.pts), xs = pts.map(p => p[0]);
+    out.push({ key: 'f:' + x.id, ids: [x.id], info: x.info, pts, calc, area: x.info.area !== '' ? +x.info.area : calc, units: 0, w: Math.max(...xs) - Math.min(...xs) });
   }
-  return out;
+  // 벽을 허문(f.open = ['실|실']) 이웃끼리는 한 실로 묶는다. 이름·에어컨 등은 묶음의 첫 실 것을 쓰고, 나머지 실 정보는 그대로 둬서 벽을 다시 세우면 돌아온다.
+  const pairs = (f.open || []).map(s => s.split('|')), seen = new Set(), res = [];
+  for (const r of out) {
+    if (seen.has(r)) continue;
+    const g = [r]; seen.add(r);
+    for (let i = 0; i < g.length; i++) for (const [a, b] of pairs) {
+      const o = g[i].ids.includes(a) ? b : g[i].ids.includes(b) ? a : null, y = o && out.find(z => !seen.has(z) && z.ids.includes(o));
+      if (y) { seen.add(y); g.push(y); }
+    }
+    if (g.length > 1) {
+      r.parts = g.map(z => z.pts); r.pts = r.parts.flat(); r.ids = g.flatMap(z => z.ids); r.units = 0;
+      r.calc = g.reduce((a, z) => a + z.calc, 0); r.area = r.info.area !== '' ? +r.info.area : r.calc;
+      const xs = r.pts.map(p => p[0]); r.w = Math.max(...xs) - Math.min(...xs);
+    }
+    res.push(r);
+  }
+  return res;
 }
-// 가운데 구역(기울지 않은 고정 실)끼리 맞닿은 벽 → [{id:'실|실', p, q}]. 위치는 못 옮기고 허물기·세우기만 된다.
+// 가운데 구역(기울지 않은 고정 실)끼리, 그리고 날개 끝 실과 가운데 구역이 맞닿은 벽 → [{id:'실|실', p, q}]. 위치는 못 옮기고 허물기·세우기만 된다.
 function fixedWalls(f) {
-  const out = [], F = f.fixed.filter(x => x.tf === '');
-  for (let i = 0; i < F.length; i++) for (let j = i + 1; j < F.length; j++) {
-    const P = F[i].pts, Q = F[j].pts;
-    P.forEach((p0, m) => {
-      const p1 = P[(m + 1) % P.length], len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), ux = (p1[0] - p0[0]) / len, uy = (p1[1] - p0[1]) / len;
+  const out = [], edges = P => P.map((p, m) => [p, P[(m + 1) % P.length]]);
+  const T = f.fixed.filter(x => x.tf === '').map(x => ({ id: x.id, segs: edges(x.pts) }));
+  f.strips.forEach((s, si) => { for (const [e, x] of [['a', s.x0], ['b', s.x0 + s.n * s.unit]]) T.push({ id: `s${si}${e}`, end: 1, segs: [[[x, 0], [x, -s.depth]].map(TF[s.tf])] }); });
+  for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) {
+    if (T[i].end && T[j].end) continue;
+    for (const [p0, p1] of T[i].segs) {
+      const len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), ux = (p1[0] - p0[0]) / len, uy = (p1[1] - p0[1]) / len;
       const off = q => Math.abs((q[0] - p0[0]) * uy - (q[1] - p0[1]) * ux), along = q => (q[0] - p0[0]) * ux + (q[1] - p0[1]) * uy;
-      Q.forEach((q0, n) => {
-        const q1 = Q[(n + 1) % Q.length]; if (off(q0) > .1 || off(q1) > .1) return;
+      for (const [q0, q1] of T[j].segs) {
+        if (off(q0) > .1 || off(q1) > .1) continue;
         const lo = Math.max(0, Math.min(along(q0), along(q1))), hi = Math.min(len, Math.max(along(q0), along(q1)));
-        if (hi - lo > .5) out.push({ id: F[i].id + '|' + F[j].id, p: [p0[0] + ux * lo, p0[1] + uy * lo], q: [p0[0] + ux * hi, p0[1] + uy * hi] });
-      });
-    });
+        if (hi - lo > .5) out.push({ id: T[i].id + '|' + T[j].id, p: [p0[0] + ux * lo, p0[1] + uy * lo], q: [p0[0] + ux * hi, p0[1] + uy * hi] });
+      }
+    }
   }
   return out;
 }
 function toggleFixed(f, id, quiet) {
-  f.open ||= []; const i = f.open.indexOf(id), ids = id.split('|'), nm = ids.map(k => f.fixed.find(x => x.id === k).info.name || '(이름 없음)');
-  const reset = () => { for (const r of roomsOf(f)) if (r.ids && r.ids.some(k => ids.includes(k))) r.info.area = ''; };
-  reset(); if (i < 0) f.open.push(id); else f.open.splice(i, 1); reset(); // 직접 넣은 면적은 벽이 바뀌면 자동 계산으로 되돌린다
+  f.open ||= []; const i = f.open.indexOf(id), ids = id.split('|');
+  const names = () => ids.map(k => roomsOf(f).find(r => r.ids.includes(k)).info.name || '(이름 없음)');
+  const reset = () => { for (const r of roomsOf(f)) if (r.ids.some(k => ids.includes(k))) r.info.area = ''; };
+  reset(); let nm = i < 0 && names(); if (i < 0) f.open.push(id); else f.open.splice(i, 1); reset(); nm ||= names(); // 직접 넣은 면적은 벽이 바뀌면 자동 계산으로 되돌린다
   if (quiet) return;
-  const r = roomsOf(f).find(r => r.ids && r.ids.includes(ids[0]));
+  const r = roomsOf(f).find(r => r.ids.includes(ids[0]));
   log(i < 0 ? `벽 철거(가운데): ${nm[0]} + ${nm[1]} → ${r.info.name} ${fmt(r.area)}㎡` : `벽 설치(가운데): ${nm[0]} | ${nm[1]} 다시 나눔`);
 }
 
@@ -406,7 +418,7 @@ function drawFloor(fi) {
   for (const r of rooms) {
     const on = fi === cur && sel === r.key;
     for (const pts of r.parts || [r.pts]) h_ += `<polygon class="room${on ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info)}" points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
-    if (r.ids) for (const w of fw) if (open.has(w.id) && r.ids.includes(w.id.split('|')[0])) {
+    if (r.parts) for (const w of fw) if (open.has(w.id) && r.ids.includes(w.id.split('|')[0])) {
       const d = Math.hypot(w.q[0] - w.p[0], w.q[1] - w.p[1]), e = (on ? .3 : .12) / d, at = t => [w.p[0] + (w.q[0] - w.p[0]) * t, w.p[1] + (w.q[1] - w.p[1]) * t].map(n => n.toFixed(2)), a = at(e), b = at(1 - e);
       t_ += `<line stroke="${fill(r.info)}" stroke-width="${on ? .7 : .3}" pointer-events="none" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
     }
@@ -658,6 +670,9 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   const fwN = fixedWalls(f).length; toggleFixed(f, 'front|ccor', true);
   console.assert(fwN >= 5 && roomsOf(f).length === n0 && Math.abs(sum() - a0) < 1e-9, '가운데 벽 철거 후 실 수·면적 합이 어긋남'); // 위에서 날개 실이 하나 늘어 n0+1 → 하나 묶여 n0
   toggleFixed(f, 'front|ccor', true); console.assert(roomsOf(f).length === n0 + 1, '가운데 벽을 다시 세워도 실 수가 안 돌아옴');
+  const bf = fl('신관', '지하 1층'), ba = roomsOf(bf).reduce((a, r) => a + r.area, 0), bn = roomsOf(bf).length;
+  toggleFixed(bf, 'front|s0b', true); toggleFixed(bf, 'front|s1a', true); const dining = roomsOf(bf).find(r => r.info.name === '식당(왼쪽)');
+  console.assert(roomsOf(bf).length === bn - 2 && Math.abs(dining.area - (32 + 18) * 10.7 - shoelace(bf.fixed[0].pts)) < 1e-9 && Math.abs(roomsOf(bf).reduce((a, r) => a + r.area, 0) - ba) < 1e-9, '식당 세 조각 합치기 실패');
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

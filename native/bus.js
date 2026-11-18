@@ -21,7 +21,7 @@ function needMap(){ if(window.Tmapv2&&window.Tmapv2.Map) return Promise.resolve(
     LIB.m=loadJs(base+"tmapjs2.min.js?version=20231206&appKey="+KEY).catch(function(){ LIB.m=null; throw new Error("지도를 불러오지 못했어요. 인터넷 연결을 확인해 주세요."); }); }
   return LIB.m; }
 
-var CSS=".bus-map{position:relative;height:480px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;margin:10px 0;background:var(--surface-2)}"+
+var CSS=".bus-top{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.bus-top .tksec{margin:0}"+".bus-map{position:relative;margin:10px 0}.bus-hold{height:640px;border:1px solid var(--line-strong);border-radius:12px;overflow:hidden;background:var(--surface-2)}"+".bus-panel{position:absolute;top:10px;right:10px;z-index:5;width:min(560px,calc(100% - 20px));max-height:calc(100% - 20px);overflow:auto;margin:0!important;box-shadow:0 8px 24px rgba(0,0,0,.18)}"+".bus-panel .tksech{position:sticky;top:0;background:var(--surface);z-index:1;align-items:center;padding:10px 14px}.bus-panel .tksech>div{flex:1}.bus-panel.fold .tksecb{display:none}.bus-panel.fold .tksech{border-bottom:0}"+"@media(max-width:760px){.bus-top{grid-template-columns:1fr}.bus-hold{height:420px}.bus-panel{position:static;width:auto;max-height:none;box-shadow:none;margin-top:10px!important}}"+
 ".bus-map .bus-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}"+
 ".bus-mk{display:flex;align-items:center;justify-content:center;width:28px;height:28px;background:#facc15;border:2px solid #fff;border-radius:50%;box-shadow:0 3px 6px rgba(0,0,0,.3);font-weight:900;color:#451a03;font-size:13px;white-space:nowrap}"+
 ".bus-mk.pass{width:22px;height:22px;background:#94a3b8;color:#fff;font-size:10px}"+
@@ -32,7 +32,7 @@ var CSS=".bus-map{position:relative;height:480px;border:1px solid var(--line-str
 ".bus-tb td.nm{text-align:left}.bus-tb td.nm small{display:block;color:var(--muted);font-size:11px}.bus-tb tr.pass td{color:var(--muted)}.bus-tb tr.max td{color:var(--neg);font-weight:700}"+
 ".bus-tb .x{border:0;background:none;cursor:pointer;color:var(--muted);font:inherit;padding:2px 4px}.bus-tb .x:hover{color:var(--ink)}.bus-tb .x:disabled{opacity:.3;cursor:default}"+
 ".bus-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.bus-drop{border:2px dashed var(--line-strong);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer}.bus-drop.on{border-color:var(--accent);background:var(--accent-soft)}"+
-"@media print{.bus-noprint{display:none!important}}";
+"@media print{.bus-noprint{display:none!important}.bus-panel{position:static;width:auto;max-height:none;box-shadow:none}}";
 
 /* ---- 거리·순서 ---- */
 var dist=function(a,b){ return Math.hypot((a.lat-b.lat)*111,(a.lng-b.lng)*91); };   /* km 근사(위도 35°) */
@@ -70,19 +70,20 @@ function build(root){
   sec1.appendChild(h1); sec1.appendChild(b1);
 
   /* 지도·결과 */
-  var mapWrap=el("div","bus-map"), mapBox=el("div"); mapBox.id="busmap"; mapBox.style.height="100%"; mapWrap.appendChild(mapBox); mapBox.appendChild(el("div","bus-hint","지도를 불러오는 중이에요…"));   /* Tmap이 지도 칸 높이를 100%로 바꾸므로 높이는 바깥 칸에 */
-  var sec2=el("section","tksec"), h2=el("div","tksech"), b2=el("div","tksecb");
-  h2.appendChild(el("div")).appendChild(el("h3",null,"2. 노선 결과"));
+  var mapWrap=el("div","bus-map"), hold=el("div","bus-hold"), mapBox=el("div"); mapBox.id="busmap"; mapBox.style.height="100%"; hold.appendChild(mapBox); mapWrap.appendChild(hold); mapBox.appendChild(el("div","bus-hint","지도를 불러오는 중이에요…"));   /* Tmap이 지도 칸 높이를 100%로 바꾸므로 높이는 바깥 칸에 */
+  var sec2=el("section","tksec bus-panel"), h2=el("div","tksech"), b2=el("div","tksecb");   /* 노선 결과: 지도 위에 띄우는 창(휴대폰은 지도 아래) */
+  h2.appendChild(el("div")).appendChild(el("h3",null,"노선 결과"));
+  var fold=btn("접기","btn ghost bus-noprint",function(){ var f=sec2.classList.toggle("fold"); fold.textContent=f?"펼치기":"접기"; }); fold.style.cssText="padding:3px 10px;font-size:12px"; h2.appendChild(fold);
   var acts=el("div","tkrow bus-noprint");
   acts.appendChild(btn("순서 최적화","btn ghost",optimize)); acts.appendChild(btn("경로 계산","btn",function(){ calc(); }));
   acts.appendChild(btn("엑셀로 복사","btn ghost",copyTsv)); acts.appendChild(btn("인쇄","btn ghost",function(){ window.print(); }));
   acts.appendChild(btn("모두 지우기","btn ghost",function(){ if(!S.stops.length||!confirm("정류장을 모두 지울까요?")) return; S.stops=[]; S.veh=null; S.vst=[]; dirty(); }));
   var sum=el("div","bus-sum"), tbw=el("div");
-  b2.appendChild(acts); b2.appendChild(sum); b2.appendChild(tbw); sec2.appendChild(h2); sec2.appendChild(b2);
+  b2.appendChild(acts); b2.appendChild(sum); b2.appendChild(tbw); sec2.appendChild(h2); sec2.appendChild(b2); mapWrap.appendChild(sec2);
 
   /* 차량 나누기 */
   var sec3=el("section","tksec bus-noprint"), h3=el("div","tksech"), b3=el("div","tksecb");
-  h3.appendChild(el("div")).appendChild(el("h3",null,"3. 차량 나누기"));
+  h3.appendChild(el("div")).appendChild(el("h3",null,"2. 차량 나누기"));
   h3.firstChild.appendChild(el("p",null,"가까운 정류장끼리 묶어 여러 대로 나눠요. 출발지·도착지는 모든 차량이 같이 써요."));
   var vr=el("div","tkrow"), vk=el("input"); vk.type="number"; vk.min=2; vk.max=20; vk.value=2; vk.style.width="70px";
   var vc=el("input"); vc.type="number"; vc.min=1; vc.placeholder="비우면 제한 없음"; vc.style.width="140px";
@@ -91,7 +92,8 @@ function build(root){
   b3.appendChild(vr); b3.appendChild(el("p","note","엑셀에 '인원' 열이 있으면 정원을 인원 합계로, 없으면 정류장 수로 따져요.")); b3.appendChild(vtabs); b3.appendChild(vtb);
   sec3.appendChild(h3); sec3.appendChild(b3);
 
-  root.appendChild(msg); root.appendChild(sec1); root.appendChild(mapWrap); root.appendChild(sec2); root.appendChild(sec3);
+  var top=el("div","bus-top"); top.appendChild(sec1); top.appendChild(sec3);
+  root.appendChild(msg); root.appendChild(top); root.appendChild(mapWrap);
 
   needMap().then(function(){ if(!root.isConnected) return; mapBox.textContent="";
     map=new Tmapv2.Map("busmap",{center:new Tmapv2.LatLng(35.2280,128.6811),zoom:12,zoomControl:true,scrollwheel:true,width:"100%",height:"100%"});
@@ -182,7 +184,7 @@ function build(root){
   /* ---- 그리기 ---- */
   function move(i,d){ var s=S.stops, j=i+d; if(j<0||j>=s.length) return; var x=s[i]; s[i]=s[j]; s[j]=x; dirty(); }
   function draw(fit){
-    h2.firstChild.firstChild.textContent="2. 노선 결과 ("+S.stops.length+"곳)"+(S.veh?" — "+(S.av+1)+"호차":"");
+    sec2.hidden=!S.stops.length; h2.firstChild.firstChild.textContent="노선 결과 ("+S.stops.length+"곳)"+(S.veh?" — "+(S.av+1)+"호차":"");
     sum.textContent=""; [["총 소요 시간",S.calc?S.tot.time+"분":"-"],["총 이동 거리",S.calc?S.tot.dist.toFixed(1)+"km":"-"]].forEach(function(x){ var d=el("div",null,x[0]); d.appendChild(el("b",null,x[1])); sum.appendChild(d); });
     tbw.textContent="";
     if(S.stops.length){ var tb=el("table","bus-tb"), hr=tb.createTHead().insertRow();

@@ -5937,7 +5937,10 @@ var CSS=[
 ".bus-bar .bus-f{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}.bus-bar .bus-lb{font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap}.bus-bar .bus-unit{font-size:11.5px}",
 ".bus-bar .bus-in{height:30px;font-size:12.5px;padding:0 6px}.bus-bar .bus-btn{height:30px;padding:0 10px}.bus-bar .bus-sep{width:1px;align-self:stretch;background:var(--line)}",
 ".bus-bar .bus-tabs{margin:0;gap:4px}",
-".bus-find{margin-left:auto;display:flex;gap:4px;flex:1 1 200px;max-width:320px}.bus-find .bus-in{flex:1;min-width:0}",
+".bus-find{position:relative;margin-left:auto;display:flex;gap:4px;flex:1 1 200px;max-width:320px}.bus-find .bus-in{flex:1;min-width:0}",
+".bus-sug{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:9;max-height:320px;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 28px rgba(15,23,42,.18);padding:4px}.bus-sug:empty{display:none}",
+".bus-sug button{display:block;width:100%;text-align:left;border:0;background:none;border-radius:7px;padding:7px 9px;font:inherit;cursor:pointer;color:var(--ink)}.bus-sug button:hover,.bus-sug button.on{background:var(--accent-soft)}",
+".bus-sug b{display:block;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bus-sug b i{font-style:normal;font-size:10.5px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:5px;padding:0 4px;margin-right:5px}.bus-sug small{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bus-sug .no{padding:8px 9px;font-size:12px;color:var(--muted)}",
 ".bus-drop{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border:1.5px dashed var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}.bus-drop:hover,.bus-drop.on{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}",
 ".bus-msg{position:absolute;left:10px;top:60px;z-index:6;max-width:min(460px,calc(100% - 20px));margin:0!important;padding-right:30px!important;box-shadow:0 6px 18px rgba(15,23,42,.14)}.bus-msg .x{position:absolute;right:6px;top:5px;border:0;background:none;cursor:pointer;color:inherit;font-size:13px;opacity:.7}",
 ".bus-vt{margin-top:10px}.bus-vt:empty{display:none}",
@@ -6023,9 +6026,15 @@ function build(root){
   var vb=btn("자동 배분","bus-btn",split); vb.title="가까운 정류장끼리 묶어 여러 대로 나눠요(출발·도착은 공통)";
   bar.appendChild(grp("#차량",vk,"대",vc,vb)); bar.appendChild(vtabs);
   /* 검색: 주소·지명·건물명 → 지도 이동 + 정류장 추가 */
-  var fq=el("input","bus-in"); fq.type="search"; fq.placeholder="주소·지명·건물명 검색"; fq.title="찾은 곳으로 지도가 옮겨 가고 노선 끝에 정류장으로 더해져요";
-  var fb=btn("추가","bus-btn",find), fw=el("div","bus-find"); fw.appendChild(fq); fw.appendChild(fb); bar.appendChild(fw);
-  fq.onkeydown=function(e){ if(e.key==="Enter"&&!e.isComposing){ e.preventDefault(); find(); } };
+  var fq=el("input","bus-in"); fq.type="search"; fq.placeholder="주소·지명·건물명 검색"; fq.title="입력하면 추천 목록이 펼쳐져요. 고르면 지도가 그곳으로 옮겨 가고 노선 끝에 정류장으로 더해져요";
+  var fb=btn("찾기","bus-btn",function(){ suggest(true); }), fw=el("div","bus-find"), sug=el("div","bus-sug"); fw.appendChild(fq); fw.appendChild(fb); fw.appendChild(sug); bar.appendChild(fw);
+  var sugT=0, sugN=0, sugL=[], sugI=-1;
+  fq.oninput=function(){ clearTimeout(sugT); sugT=setTimeout(suggest,350); };
+  fq.onkeydown=function(e){ if(e.isComposing) return;
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){ if(!sugL.length) return; e.preventDefault(); sugI=(sugI+(e.key==="ArrowDown"?1:-1)+sugL.length)%sugL.length; mark(); }
+    else if(e.key==="Enter"){ e.preventDefault(); if(sugI>=0&&sugL[sugI]) pickSug(sugL[sugI]); else suggest(true); }
+    else if(e.key==="Escape"){ closeSug(); } };
+  document.addEventListener("mousedown",function(e){ if(!fw.contains(e.composedPath?e.composedPath()[0]:e.target)) closeSug(); });
   msg.classList.add("bus-msg");
 
   /* 지도·결과 */
@@ -6055,17 +6064,23 @@ function build(root){
     draw(); }, function(e){ mapBox.textContent=""; mapBox.appendChild(el("div","bus-hint",e.message)); });
   draw();
 
-  function find(){ var q=fq.value.trim(); if(!q) return fq.focus(); if(!map) return say("지도를 불러오는 중이에요.","bad");
-    fb.disabled=true; var isAddr=/(로|길|동|리|가)\s*\d/.test(q)||/(시|군|구|읍|면|동|리)$/.test(q);   /* 주소·행정동 이름이면 주소 먼저, 아니면 장소 이름 먼저 */
-    (isAddr?addrOf(q).then(function(r){ return r||poiOf(q); }):poiOf(q).then(function(r){ return r||addrOf(q); })).then(function(r){ fb.disabled=false;
-      if(!r) return say("'"+q+"'을(를) 찾지 못했어요. 시·구 이름을 붙여 보세요.","bad");
-      S.stops.push({id:"s"+(++seq),name:r.name||shortName(r.address||q),address:r.address||q,lat:r.lat,lng:r.lng,isPass:false,pax:0,guess:r.guess}); dirty();
-      try{ map.setCenter(new Tmapv2.LatLng(r.lat,r.lng)); map.setZoom(16); }catch(e){}
-      fq.value=""; say("'"+(r.name||q)+"'을(를) "+S.stops.length+"번째 정류장으로 더했어요.","ok"); }); }
+  function closeSug(){ sug.textContent=""; sugL=[]; sugI=-1; }
+  function mark(){ [].forEach.call(sug.querySelectorAll("button"),function(b,i){ b.classList.toggle("on",i===sugI); if(i===sugI) b.scrollIntoView({block:"nearest"}); }); }
+  function suggest(now){ clearTimeout(sugT); var q=fq.value.trim(), n=++sugN; if(q.length<2){ closeSug(); if(now) fq.focus(); return; }
+    var isAddr=/(로|길|동|리|가)\s*\d/.test(q)||/(시|군|구|읍|면|동|리)$/.test(q);   /* 주소·행정동 이름이면 주소 결과를 맨 위에 */
+    Promise.all([isAddr?addrOf(q):null,poiOf(q)]).then(function(r){ if(n!==sugN) return;
+      var L=(r[0]?[Object.assign(r[0],{name:r[0].address,kind:"주소"})]:[]).concat(r[1]||[]); sugL=L; sugI=-1; sug.textContent="";
+      if(!L.length){ sug.appendChild(el("div","no","찾는 곳이 없어요. 시·구 이름을 붙여 보세요.")); return; }
+      L.forEach(function(x){ var b=el("button"); b.type="button"; var h=el("b"); if(x.kind) h.appendChild(el("i",null,x.kind)); h.appendChild(document.createTextNode(x.name)); b.appendChild(h);
+        if(x.address&&x.address!==x.name) b.appendChild(el("small",null,x.address)); b.onclick=function(){ pickSug(x); }; sug.appendChild(b); }); }); }
+  function pickSug(r){ if(!map) return say("지도를 불러오는 중이에요.","bad"); closeSug(); fq.value="";
+    S.stops.push({id:"s"+(++seq),name:r.kind?shortName(r.address):r.name,address:r.address,lat:r.lat,lng:r.lng,isPass:false,pax:0,guess:r.guess}); dirty();
+    try{ map.setCenter(new Tmapv2.LatLng(r.lat,r.lng)); map.setZoom(16); }catch(e){}
+    say("'"+r.name+"'을(를) "+S.stops.length+"번째 정류장으로 더했어요.","ok"); }
   function addrOf(q){ return geocode(q).then(function(r){ if(r){ r.address=q; } return r; }); }
-  function poiOf(q){ return fetch(API+"pois?version=1&format=json&searchKeyword="+encodeURIComponent(q)+"&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1&centerLat=35.2280&centerLon=128.6811&appKey="+KEY).then(function(r){ return r.ok&&r.status!==204?r.json():null; })
-      .then(function(d){ var p=d&&d.searchPoiInfo&&d.searchPoiInfo.pois.poi[0]; if(!p) return null; var na=p.newAddressList&&p.newAddressList.newAddress&&p.newAddressList.newAddress[0];
-        return {lat:parseFloat(p.noorLat),lng:parseFloat(p.noorLon),name:p.name,address:na&&na.fullAddressRoad||[p.upperAddrName,p.middleAddrName,p.lowerAddrName,p.detailAddrName].filter(Boolean).join(" ")}; }).catch(function(){ return null; }); }
+  function poiOf(q){ return fetch(API+"pois?version=1&format=json&searchKeyword="+encodeURIComponent(q)+"&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=8&centerLat=35.2280&centerLon=128.6811&appKey="+KEY).then(function(r){ return r.ok&&r.status!==204?r.json():null; })
+      .then(function(d){ return ((d&&d.searchPoiInfo&&d.searchPoiInfo.pois.poi)||[]).map(function(p){ var na=p.newAddressList&&p.newAddressList.newAddress&&p.newAddressList.newAddress[0];
+        return {lat:parseFloat(p.noorLat),lng:parseFloat(p.noorLon),name:p.name,address:na&&na.fullAddressRoad||[p.upperAddrName,p.middleAddrName,p.lowerAddrName,p.detailAddrName].filter(Boolean).join(" ")}; }); }).catch(function(){ return []; }); }
 
   /* ---- 엑셀 ---- */
   function readXlsx(file){ needXLSX().then(function(){ return file.arrayBuffer(); }).then(function(buf){

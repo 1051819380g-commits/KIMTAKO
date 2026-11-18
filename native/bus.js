@@ -28,23 +28,22 @@ var CSS=[
 ".bus-map .bus-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}",
 /* 떠 있는 창 */
 ".bus-panel{position:absolute;top:12px;z-index:5;max-height:calc(100% - 24px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08);font-size:13px;color:var(--ink)}",
-".bus-left{left:12px;right:12px}.bus-right{right:12px;top:150px;width:min(520px,calc(100% - 24px))}",
-/* 위쪽 가로 띠: 엑셀 | 운행 시간 | 차량 나누기 */
-".bus-left .bus-pb{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;padding:10px 12px 12px}.bus-left .bus-pb>.tkmsg{flex:1 0 100%;margin:0}",
-".bus-left .bus-c1{flex:0 1 250px;min-width:200px;display:flex;flex-direction:column}.bus-left .bus-c1 .bus-drop{flex:1;padding:10px;justify-content:center}",
-".bus-left .bus-grp{margin-top:0}.bus-left .bus-g1{flex:1 1 230px}.bus-left .bus-g2{flex:1.4 1 320px}.bus-left .bus-g2 .bus-in2{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}.bus-left .bus-g2 .bus-vt{flex:1 1 200px;min-width:0}",
-".bus-left .bus-g2 .bus-tabs{margin:8px 0 0}.bus-left .bus-g2 .bus-vt .bus-tb{font-size:11.5px}.bus-left .bus-g2 .bus-vt .bus-tb th{position:static;padding:3px}.bus-left .bus-g2 .bus-vt .bus-tb td{padding:3px}",
+".bus-right{right:10px;top:60px;width:min(520px,calc(100% - 20px))}",
+/* 위쪽 한 줄 띠: 엑셀 | 운행 시간 | 차량 나누기 */
+".bus-bar{position:absolute;top:10px;left:10px;right:10px;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 18px rgba(15,23,42,.14);font-size:12.5px;color:var(--ink)}",
+".bus-bar .bus-f{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}.bus-bar .bus-lb{font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap}.bus-bar .bus-unit{font-size:11.5px}",
+".bus-bar .bus-in{height:30px;font-size:12.5px;padding:0 6px}.bus-bar .bus-btn{height:30px;padding:0 10px}.bus-bar .bus-sep{width:1px;align-self:stretch;background:var(--line)}",
+".bus-bar .bus-tabs{margin:0;gap:4px}",
+".bus-drop{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 12px;border:1.5px dashed var(--accent);border-radius:8px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;white-space:nowrap;cursor:pointer}.bus-drop:hover,.bus-drop.on{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}",
+".bus-msg{position:absolute;left:10px;top:60px;z-index:6;max-width:min(460px,calc(100% - 20px));margin:0!important;padding-right:30px!important;box-shadow:0 6px 18px rgba(15,23,42,.14)}.bus-msg .x{position:absolute;right:6px;top:5px;border:0;background:none;cursor:pointer;color:inherit;font-size:13px;opacity:.7}",
+".bus-vt{margin-top:10px}.bus-vt:empty{display:none}",
 ".bus-ph{display:flex;align-items:center;gap:8px;padding:11px 10px 11px 14px;border-bottom:1px solid var(--line);flex:0 0 auto}",
 ".bus-ph h3{margin:0;flex:1;font-size:14px;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bus-ph h3 em{font-style:normal;color:var(--accent);margin-left:4px}",
 ".bus-fold{flex:0 0 auto;border:0;background:none;width:28px;height:28px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:17px;line-height:1}.bus-fold:hover{background:var(--surface-3);color:var(--ink)}",
 ".bus-pb{padding:12px 14px 14px;overflow:auto;min-height:0}.bus-panel.fold .bus-pb{display:none}.bus-panel.fold .bus-ph{border-bottom:0}",
 ".bus-pb .tkmsg{font-size:12.5px;margin:0 0 10px;padding:7px 10px}",
 /* 왼쪽 창 */
-".bus-drop{display:flex;flex-direction:column;align-items:center;gap:3px;padding:14px 10px;border:1.5px dashed var(--accent);border-radius:12px;background:var(--accent-soft);color:var(--ink-2);text-align:center;cursor:pointer;transition:background .15s}",
-".bus-drop:hover,.bus-drop.on{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}.bus-drop .ic{font-size:18px;line-height:1;color:var(--accent)}.bus-drop b{color:var(--accent);font-size:13px}.bus-drop small{color:var(--muted);font-size:11px}",
 ".bus-hint2{margin:5px 2px 0;font-size:11.5px;color:var(--muted)}",
-".bus-grp{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}",
-".bus-gt{display:flex;justify-content:space-between;align-items:baseline;gap:6px;margin:0 0 8px;font-size:12px;font-weight:800;color:var(--ink-2)}.bus-gt small{font-weight:500;color:var(--muted);font-size:11px}",
 ".bus-row{display:flex;gap:6px;align-items:center}.bus-row>*{min-width:0}",
 ".bus-in{height:34px;box-sizing:border-box;border:1px solid var(--line-strong);border-radius:8px;padding:0 8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink)}.bus-in:focus{outline:2px solid var(--accent-line,var(--accent));outline-offset:-1px}",
 ".bus-unit{font-size:12px;color:var(--muted);font-weight:700}",
@@ -74,7 +73,7 @@ var CSS=[
 ".bus-mk.pass{width:22px;height:22px;background:#94a3b8;color:#fff;font-size:10px}",
 ".bus-mk.st,.bus-mk.en{width:auto;border-radius:6px;padding:0 10px;color:#fff;font-size:12px}.bus-mk.st{background:#3b82f6}.bus-mk.en{background:#ef4444}",
 ".bus-tip{background:rgba(255,255,255,.95);color:#333;border:1px solid #e2e8f0;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;white-space:nowrap}.bus-tip.pass{color:#64748b}",
-"@media(max-width:760px){.bus-map{display:flex;flex-direction:column;gap:10px}.bus-left{order:-1}.bus-left .bus-c1,.bus-left .bus-grp{flex:1 1 100%}.bus-hold{height:420px}.bus-panel{position:static;width:auto;max-height:none}.bus-tb th{top:0}.bus-right .bus-tb{min-width:510px}}",
+"@media(max-width:760px){.bus-map{display:flex;flex-direction:column;gap:10px}.bus-bar{position:static;order:-1}.bus-msg{position:static;max-width:none;order:-1}.bus-hold{height:420px}.bus-panel{position:static;width:auto;max-height:none}.bus-tb th{top:0}.bus-right .bus-tb{min-width:510px}}",
 "@media print{.bus-noprint{display:none!important}.bus-panel{position:static;width:auto;max-height:none;box-shadow:none;border:0}.bus-pb{overflow:visible}}"
 ].join("");
 
@@ -94,34 +93,32 @@ function build(root){
   if(!document.getElementById("bus-css")){ var st=el("style"); st.id="bus-css"; st.textContent=CSS; document.head.appendChild(st); }
   var S={stops:[],res:[],calc:false,veh:null,av:0,vst:[],orig:null,mk:0}, map=null, items=[], seq=0;
   var msg=el("div","tkmsg");
-  function say(t,k){ msg.className="tkmsg on "+(k||"ok"); msg.textContent=t; }
+  var sayT=0; function say(t,k){ clearTimeout(sayT); msg.className="tkmsg bus-msg on "+(k||"ok"); msg.textContent=t; var x=btn("✕","x",function(){ msg.className="tkmsg bus-msg"; }); x.title="닫기"; msg.appendChild(x);
+    if((k||"ok")==="ok") sayT=setTimeout(function(){ msg.className="tkmsg bus-msg"; },6000); }
 
   /* 정류장·차량: 지도 왼쪽 위에 띄우는 창(휴대폰은 지도 위) */
   function panel(cls,title){ var sec=el("section","bus-panel "+cls), h=el("div","bus-ph"), hh=el("h3",null,title), body=el("div","bus-pb");
     var f=btn("▴","bus-fold bus-noprint",function(){ var x=sec.classList.toggle("fold"); f.textContent=x?"▾":"▴"; f.title=x?"펼치기":"접기"; }); f.title="접기";
     h.appendChild(hh); h.appendChild(f); sec.appendChild(h); sec.appendChild(body); return {sec:sec,h3:hh,body:body}; }
-  var P1=panel("bus-left bus-noprint","정류장·차량"), b1=P1.body;
+  var bar=el("div","bus-bar bus-noprint");
   var fi=el("input"); fi.type="file"; fi.accept=".xlsx,.xls,.csv"; fi.hidden=true;
-  var drop=el("label","bus-drop"); drop.appendChild(el("span","ic","⇪")); drop.appendChild(el("b",null,"엑셀 파일 고르기"));
-  drop.appendChild(el("small",null,"또는 여기로 끌어 놓기 · B 순번 · C 약칭 · D 주소")); drop.appendChild(fi);
+  var drop=el("label","bus-drop","⇪ 엑셀 파일"); drop.title="눌러서 고르거나 끌어 놓기 — B열 순번, C열 약칭, D열 주소. 첫 줄 출발, 끝 줄 도착. 지도 빈 곳을 눌러도 정류장이 더해져요"; drop.appendChild(fi);
   drop.ondragover=function(e){ e.preventDefault(); drop.classList.add("on"); }; drop.ondragleave=function(){ drop.classList.remove("on"); };
   drop.ondrop=function(e){ e.preventDefault(); drop.classList.remove("on"); if(e.dataTransfer.files[0]) readXlsx(e.dataTransfer.files[0]); };
   fi.onchange=function(){ if(fi.files[0]) readXlsx(fi.files[0]); fi.value=""; };
-  var tt=el("select","bus-in"); [["start","출발 시간"],["end","도착 시간"]].forEach(function(o){ var op=el("option",null,o[1]); op.value=o[0]; tt.appendChild(op); });
-  var ti=el("input","bus-in"); ti.type="time"; ti.value="08:00"; ti.style.flex="1"; tt.onchange=ti.onchange=function(){ if(S.calc) calc(); };
-  var g1=el("div","bus-grp"), gt1=el("div","bus-gt","운행 시간 기준"); gt1.appendChild(el("small",null,"승하차마다 200m 추가")); g1.appendChild(gt1);
-  var tr=el("div","bus-row"); tr.appendChild(tt); tr.appendChild(ti); g1.appendChild(tr);
-  var wd=el("input","bus-in"); wd.type="number"; wd.min=0; wd.max=60; wd.value=2; wd.style.cssText="width:52px;text-align:center"; wd.onchange=function(){ if(!(num(wd.value)>=0)) wd.value=2; dirty(); if(S.stops.length>1) calc(); };
-  var wr=el("div","bus-row"); wr.style.marginTop="6px"; wr.appendChild(el("span","bus-unit","정류장마다 기본 대기")); wr.appendChild(wd); wr.appendChild(el("span","bus-unit","분")); g1.appendChild(wr);
-  g1.appendChild(el("p","bus-hint2","정류장별 대기는 결과 표의 '대기' 칸에서 바꿔요."));
-  var vk=el("input","bus-in"); vk.type="number"; vk.min=2; vk.max=20; vk.value=2; vk.style.cssText="width:48px;text-align:center";
-  var vc=el("input","bus-in"); vc.type="number"; vc.min=1; vc.placeholder="정원(선택)"; vc.style.cssText="flex:1;width:0";
-  var g2=el("div","bus-grp"), gt2=el("div","bus-gt","차량 나누기"); gt2.appendChild(el("small",null,"출발·도착은 공통")); g2.appendChild(gt2);
-  var vr=el("div","bus-row"); vr.appendChild(vk); vr.appendChild(el("span","bus-unit","대")); vr.appendChild(vc); vr.appendChild(btn("자동 배분","bus-btn",split));
-  var vtabs=el("div","bus-tabs"), vtb=el("div","bus-vt"), in2=el("div","bus-in2"), vl=el("div"); vl.appendChild(vr); vl.appendChild(vtabs); in2.appendChild(vl); in2.appendChild(vtb); g2.appendChild(in2);
-  var c1=el("div","bus-c1"); c1.appendChild(drop); c1.appendChild(el("p","bus-hint2","첫 줄 출발, 끝 줄 도착 · 지도 빈 곳을 눌러도 더해져요"));
-  g1.classList.add("bus-g1"); g2.classList.add("bus-g2");
-  b1.appendChild(msg); b1.appendChild(c1); b1.appendChild(g1); b1.appendChild(g2);
+  var tt=el("select","bus-in"); [["start","출발"],["end","도착"]].forEach(function(o){ var op=el("option",null,o[1]); op.value=o[0]; tt.appendChild(op); }); tt.title="시각이 출발 시각인지 도착 시각인지";
+  var ti=el("input","bus-in"); ti.type="time"; ti.value="08:00"; tt.onchange=ti.onchange=function(){ if(S.calc) calc(); };
+  var wd=el("input","bus-in"); wd.type="number"; wd.min=0; wd.max=60; wd.value=2; wd.style.cssText="width:44px;text-align:center"; wd.title="승하차 정류장마다 기본 대기(분). 정류장별로는 결과 표의 '대기' 칸에서. 승하차마다 200m 추가";
+  wd.onchange=function(){ if(!(num(wd.value)>=0)) wd.value=2; dirty(); if(S.stops.length>1) calc(); };
+  var vk=el("input","bus-in"); vk.type="number"; vk.min=2; vk.max=20; vk.value=2; vk.style.cssText="width:42px;text-align:center";
+  var vc=el("input","bus-in"); vc.type="number"; vc.min=1; vc.placeholder="정원"; vc.style.cssText="width:58px;text-align:center"; vc.title="차량 정원(선택). 엑셀에 '인원' 열이 있으면 인원 기준, 없으면 정류장 수 기준";
+  var vtabs=el("div","bus-tabs"), vtb=el("div","bus-vt");
+  function grp(){ var g=el("div","bus-f"); [].slice.call(arguments).forEach(function(x){ g.appendChild(typeof x==="string"?el("span",x.charAt(0)==="#"?"bus-lb":"bus-unit",x.replace(/^#/,"")):x); }); return g; }
+  bar.appendChild(drop); bar.appendChild(el("span","bus-sep"));
+  bar.appendChild(grp("#운행",tt,ti,"대기",wd,"분")); bar.appendChild(el("span","bus-sep"));
+  var vb=btn("자동 배분","bus-btn",split); vb.title="가까운 정류장끼리 묶어 여러 대로 나눠요(출발·도착은 공통)";
+  bar.appendChild(grp("#차량",vk,"대",vc,vb)); bar.appendChild(vtabs);
+  msg.classList.add("bus-msg");
 
   /* 지도·결과 */
   var mapWrap=el("div","bus-map"), hold=el("div","bus-hold"), mapBox=el("div"); mapBox.id="busmap"; mapBox.style.height="100%"; hold.appendChild(mapBox); mapWrap.appendChild(hold); mapBox.appendChild(el("div","bus-hint","지도를 불러오는 중이에요…"));   /* Tmap이 지도 칸 높이를 100%로 바꾸므로 높이는 바깥 칸에 */
@@ -131,11 +128,11 @@ function build(root){
   acts.appendChild(btn("엑셀 복사","bus-btn gh sm",copyTsv)); acts.appendChild(btn("인쇄","bus-btn gh sm",function(){ window.print(); }));
   acts.appendChild(btn("비우기","bus-btn gh sm",function(){ if(!S.stops.length||!confirm("정류장을 모두 지울까요?")) return; S.stops=[]; S.veh=null; S.vst=[]; dirty(); }));
   var sum=el("div","bus-sum"), tbw=el("div");
-  b2.appendChild(acts); b2.appendChild(sum); b2.appendChild(tbw);
-  mapWrap.appendChild(P1.sec); mapWrap.appendChild(sec2);
+  b2.appendChild(acts); b2.appendChild(vtb); b2.appendChild(sum); b2.appendChild(tbw);
+  mapWrap.appendChild(bar); mapWrap.appendChild(msg); mapWrap.appendChild(sec2);
   /* 결과 창은 위쪽 띠 바로 아래에서 시작(띠 높이가 바뀌면 따라감). 휴대폰(쌓기)에서는 손대지 않음 */
-  function place(){ var t=P1.sec.offsetHeight+22; if(getComputedStyle(sec2).position!=="absolute"){ sec2.style.top=sec2.style.maxHeight=""; return; } sec2.style.top=t+"px"; sec2.style.maxHeight="calc(100% - "+(t+12)+"px)"; }
-  if(window.ResizeObserver) new ResizeObserver(place).observe(P1.sec); window.addEventListener("resize",place); setTimeout(place,0);
+  function place(){ var t=bar.offsetHeight+18; if(getComputedStyle(sec2).position!=="absolute"){ sec2.style.top=sec2.style.maxHeight=msg.style.top=""; return; } sec2.style.top=msg.style.top=t+"px"; sec2.style.maxHeight="calc(100% - "+(t+10)+"px)"; }
+  if(window.ResizeObserver) new ResizeObserver(place).observe(bar); window.addEventListener("resize",place); setTimeout(place,0);
   root.appendChild(mapWrap);
 
   needMap().then(function(){ if(!root.isConnected) return; mapBox.textContent="";

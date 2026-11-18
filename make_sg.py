@@ -55,9 +55,13 @@ JSFIX=[
 
 ]
 BODYFIX=[
+ # (11-18 Junho) 고정 항목 표는 뺌: 기존 송금내역서로 채우므로. 줄은 그대로 만들고 계좌는 설정(CFG.fixed)에 남음
+ ('<h3 style="font-size:15px;margin:10px 0 6px">고정 항목','<h3 style="display:none">고정 항목'),
+ ('<table class="cfgtbl"><thead><tr><th>항목</th><th>송금내역서 표시</th>','<table class="cfgtbl" style="display:none"><thead><tr><th>항목</th><th>송금내역서 표시</th>'),
+ ('<h3 style="font-size:15px;margin:16px 0 6px">급여대장 공제 항목','<h3 style="font-size:15px;margin:10px 0 6px">급여대장 공제 항목'),
  ('<th>급여대장</th><th>열 이름</th><th>은행코드</th><th>계좌번호</th><th>송금내역서 표시</th><th>받는 분</th><th></th>','<th>급여대장</th><th>열 이름</th><th>송금내역서 표시</th><th>은행코드</th><th>계좌번호</th><th>받는 분</th><th></th>'),
  ('      <button class="btn" type="button" id="optAdd">항목 직접 추가</button>','      <button class="btn" type="button" id="prevBtn">기존 송금내역서로 채우기</button><input type="file" id="prevFile" accept=".xlsx" hidden>\n      <button class="btn" type="button" id="optAdd">항목 직접 추가</button>'),
- ("    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름).</p>","    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름). 예전에 만든 송금내역서 엑셀이 있으면 '기존 송금내역서로 채우기'로 은행코드·계좌·받는 분을 한 번에 채울 수 있습니다.</p>"),
+ ("    '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다(비우면 기본 이름).</p>","    세금·건강보험·사학연금·공무직 기본 같은 고정 줄의 은행코드·계좌·받는 분은 <b>'기존 송금내역서로 채우기'</b>에 지난 송금내역서 엑셀을 넣어 채웁니다. 아래 표는 급여대장 공제 항목이고, '송금내역서 표시'는 엑셀 항목 칸에 적히는 이름입니다.</p>"),
  ('— 세금·건강보험·기간제 4대보험·사학연금 법인부담·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)</small>',
   '— 세금·건강보험·기간제 4대보험·사학연금·대여금 상환·공무직 기본(직종별로 나뉘거나 합계 수식이 걸린 줄)<br>사학연금(개인부담) 줄의 송금액(C)은 개인부담금(G)이에요. 법인부담분은 F·H 칸, 공단 송금 총액은 F예요.</small>')]
 for _a,_b in BODYFIX:

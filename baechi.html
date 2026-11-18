@@ -169,7 +169,6 @@
   <div class="bar noprint">
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
-    <button id="undo">되돌리기</button>
     <button id="syncBtn" hidden></button>
     <label class="zoom push">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
@@ -300,9 +299,8 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
-let cur = home(), allView = false, view = 'use', sel = null, editing = true; const undoStack = [];
+let cur = home(), allView = false, view = 'use', sel = null, editing = true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
-function snapshot() { undoStack.push(JSON.stringify({ floors: state.floors, log: state.log })); if (undoStack.length > 40) undoStack.shift(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }
 
@@ -537,7 +535,7 @@ function applyRemote() {
   if (!remote) return; const s = remote; remote = null;
   if (s !== JSON.stringify(state)) {
     if (!lsv(KEY + '-synced') && lsv(KEY)) lsv(KEY + '-before-sync', lsv(KEY)); // 처음 이어질 때 이 기기에 있던 자료는 따로 남겨 둔다
-    state = migrate(JSON.parse(s)); undoStack.length = 0; cur = Math.min(cur, state.floors.length - 1); if (!findSel()) sel = null;
+    state = migrate(JSON.parse(s)); cur = Math.min(cur, state.floors.length - 1); if (!findSel()) sel = null;
     lsv(KEY, s); render();
   }
   lsv(KEY + '-synced', '1');
@@ -559,12 +557,11 @@ $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; al
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
 $('zoom').oninput = () => { $('plan').style.width = $('zoom').value + '%'; };
-$('undo').onclick = () => { const s = undoStack.pop(); if (!s) return; Object.assign(state, JSON.parse(s)); save(); render(); };
 $('plan').onclick = e => {
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;
-  if (t.dataset.w) { const [si, k] = t.dataset.w.split(':').map(Number); snapshot(); toggleWall(state.floors[cur].strips[si], k); sel = null; save(); render(); }
-  else if (t.dataset.fw) { snapshot(); toggleFixed(state.floors[cur], t.dataset.fw); sel = null; save(); render(); }
+  if (t.dataset.w) { const [si, k] = t.dataset.w.split(':').map(Number); toggleWall(state.floors[cur].strips[si], k); sel = null; save(); render(); }
+  else if (t.dataset.fw) { toggleFixed(state.floors[cur], t.dataset.fw); sel = null; save(); render(); }
   else if (t.dataset.k) { sel = t.dataset.k; render(); }
 };
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
@@ -573,12 +570,12 @@ addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg')
 $('panel').onchange = e => {
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, r = findSel(); if (!k || !r) return;
-  snapshot(); const v = e.target.value.trim();
+  const v = e.target.value.trim();
   if (k === 'area' && v !== String(r.info.area)) log(`면적 직접 수정: ${r.info.name} ${fmt(r.area)}㎡ → ${v === '' ? '자동 계산 ' + fmt(r.calc) : fmt(+v)}㎡`);
   r.info[k] = k === 'acN' ? Math.max(0, +v || 0) : v; save(); render();
 };
-$('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); snapshot(); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
-$('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { snapshot(); state.log.splice(+i, 1); save(); render(); } };
+$('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
+$('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
 
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 $('saveBtn').onclick = () => download(`실배치도_${today()}.json`, JSON.stringify(state), 'application/json');

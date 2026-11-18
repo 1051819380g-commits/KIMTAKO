@@ -4962,7 +4962,7 @@ function readXlsx(buf){
 /* ───────── 기존 프로그램과 같은 계산 ───────── */
 function isna(v){ return v==null||(typeof v==="number"&&isNaN(v)); }
 function safeCol(row,name){ if(!row) return 0; var v=row[name]; if(isna(v)) return 0; return Math.trunc(+v)||0; }
-function findColSum(T,rows,kw){ var cols=T.cols.filter(function(c){ return c.indexOf(kw)>=0&&!(kw==="사학연금"&&/대여/.test(c))&&!TOTAL_COLUMNS[c]; }); return Math.trunc(rows.reduce(function(s,r){ return s+cols.reduce(function(t,col){ return t+(isna(r[col])?0:+r[col]); },0); },0)); }
+function findColSum(T,rows,kw){ var cols=T.cols.filter(function(c){ return c.indexOf(kw)>=0&&!(kw==="사학연금"&&/대여|군소급/.test(c))&&!TOTAL_COLUMNS[c]; }); return Math.trunc(rows.reduce(function(s,r){ return s+cols.reduce(function(t,col){ return t+(isna(r[col])?0:+r[col]); },0); },0)); }
 function orgs(T){ var L=[]; T.rows.forEach(function(r){ var o=r["기관분류"]; if(r["직종"]==="전체"&&typeof o==="string"&&/학교$/.test(o)&&L.indexOf(o)<0) L.push(o); }); return L; }
 function ORG(T){ var L=orgs(T); return L.indexOf("고등학교")>=0?"고등학교":(L[0]||"고등학교"); }
 function getSummary(T){ var g=ORG(T); return T.rows.filter(function(r){ return r["기관분류"]===g&&r["직종"]==="전체"; })[0]||null; }
@@ -5158,7 +5158,10 @@ function parseTp(raw){
   /* 재해보상부담금 '산출액'(법인부담) = 기존 프로그램의 '재해보상 법인부담금' 칸 */
   d=after(/^산출액$/,1); if(d) r.dCorp=d[0];
   /* 군소급 개인부담금(급여대장 대조용): 수납확인서는 '합산반납금 · 군소급개인부담금 · 타법인소급부담금' 머리 뒤에 숫자 3개 */
-  d=after(/^타법인소급부담금$/,3); if(d&&tok.indexOf("군소급개인부담금")>=0) r.army=d[1]; else { d=after(/^군소급개인부담금$/,1); if(d) r.army=d[0]; }
+  /* 머리(합산반납금·군소급(개인)부담금·타법인소급부담금) 뒤 첫 숫자 묶음. 2026-11 고지서는 머리 줄 끝 오른쪽 칸 숫자(전월과오납)가 앞에 붙어 4개 → 끝에서 둘째가 군소급 */
+  var hi=-1; tok.forEach(function(t,i){ if(hi<0&&/^타법인소급부담금$/.test(t)) hi=i; });
+  if(hi>=0&&/군소급(개인)?부담금/.test(flat)){ var run=[]; for(var j=hi+1;j<tok.length;j++){ if(isNum(tok[j])) run.push(toN(tok[j])); else if(run.length>=3) break; else run=[]; } if(run.length>=3) r.army=run[run.length-2]; }
+  else { d=after(/^군소급(개인)?부담금$/,1); if(d) r.army=d[0]; }
   /* 고지서에 납부 계좌(가상계좌)가 있으면 */
   m=/(가상계좌|납부계좌|입금계좌)[:：]?([0-9][0-9-]{8,})/.exec(flat); if(m) r.payAcct=m[2];
   return r;

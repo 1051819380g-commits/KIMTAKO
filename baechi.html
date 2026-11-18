@@ -170,6 +170,7 @@
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="undo">되돌리기</button>
+    <button id="syncBtn" hidden></button>
     <label class="zoom push">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
 </header>
@@ -199,6 +200,7 @@
 <script>
 'use strict';
 const KEY = 'cwn-baechi-v1';
+const DB = 'https://cwnamhs-bcd-default-rtdb.firebaseio.com'; // 함께 쓰기: Firebase Realtime Database 주소(끝에 / 없이). 비우면 이 기기에만 저장한다.
 const USES = { '교실':'#d2e2f7', '특별실':'#d4ead0', '관리':'#f6e3b8', '지원':'#ecd4e6', '화장실':'#cde2e0', '공용':'#eceef1', '창고':'#e2dbcf' };
 const AC_FILL = { on:'#b9d4f3', off:'#f6cdbb', na:'#f1f3f5' };
 const AC_NEED = ['교실','특별실','관리','지원'];           // 에어컨 보기에서 "미설치"로 강조할 용도
@@ -299,7 +301,7 @@ let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
 let cur = home(), allView = false, view = 'use', sel = null, editing = false; const undoStack = [];
-function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 function snapshot() { undoStack.push(JSON.stringify({ floors: state.floors, log: state.log })); if (undoStack.length > 40) undoStack.shift(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }
@@ -450,6 +452,53 @@ function renderLog() {
   $('log').innerHTML = state.log.length ? `<ul class="log">${state.log.map((l, i) => `<li><time>${l.d}</time><span class="w">${esc(l.w)}</span><span>${esc(l.t)}</span><button class="noprint" data-del="${i}">지움</button></li>`).join('')}</ul>` : '<span class="hint">벽을 허물거나 세우면, 또는 면적을 직접 고치면 여기에 날짜와 함께 기록됩니다.</span>';
 }
 
+// ── 함께 쓰기(Firebase Realtime Database, REST + EventSource) ──
+// ponytail: 자료 전체를 한 덩어리(JSON 글자)로 올려 나중에 저장한 쪽이 이긴다. 두 사람이 1초 안에 따로 고치면 한쪽이 사라질 수 있고,
+// 끊긴 동안 고친 것은 다시 이어질 때 덮인다. 잦아지면 실 단위 경로로 나눠 올린다.
+// 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
+const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
+const syncMsg = t => { $('syncBtn').textContent = t; };
+const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+function askPw() {
+  const v = (prompt('편집 암호를 넣으면 고친 내용이 다른 사람 화면에도 바로 반영됩니다.\n비워 두면 이 기기에서만 보이고, 다른 사람이 고치면 사라집니다.') || '').trim();
+  if (v && !/^[A-Za-z0-9_-]+$/.test(v)) { alert('편집 암호는 영문·숫자만 씁니다.'); return false; }
+  if (v) { pw = v; lsv(KEY + '-pw', pw); } return !!v;
+}
+function queuePush() {
+  if (!pw && !asked) { asked = true; askPw(); }
+  if (!pw) return syncMsg('함께 쓰기: 이 기기에만 저장됨 — 눌러서 편집 암호 넣기');
+  clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…');
+}
+async function push() {
+  const t = Date.now();
+  try {
+    const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ baechi: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }) });
+    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); return syncMsg('편집 암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
+    if (!r.ok) throw new Error(r.status);
+    syncMsg('함께 쓰기: 저장됨');
+  } catch (e) { syncMsg('함께 쓰기: 올리지 못함 — 눌러서 다시 시도'); }
+}
+function applyRemote() {
+  if (!remote) return; const s = remote; remote = null;
+  if (s !== JSON.stringify(state)) {
+    if (!lsv(KEY + '-synced') && lsv(KEY)) lsv(KEY + '-before-sync', lsv(KEY)); // 처음 이어질 때 이 기기에 있던 자료는 따로 남겨 둔다
+    state = migrate(JSON.parse(s)); undoStack.length = 0; cur = Math.min(cur, state.floors.length - 1); if (!findSel()) sel = null;
+    lsv(KEY, s); render();
+  }
+  lsv(KEY + '-synced', '1');
+}
+if (DB) {
+  $('syncBtn').hidden = false; syncMsg('함께 쓰기: 잇는 중…');
+  $('syncBtn').onclick = () => { if (pw || askPw()) { syncMsg('함께 쓰기: 올리는 중…'); push(); } };
+  const es = new EventSource(DB + '/baechi.json');
+  const on = e => { const d = JSON.parse(e.data); if (d.path === '/' && d.data && d.data.s) { remote = d.data.s; if (!typing()) applyRemote(); }
+    syncMsg(pw ? '함께 쓰기: 켜짐' : '함께 쓰기: 보기만 — 눌러서 편집 암호 넣기'); };
+  es.addEventListener('put', on); es.addEventListener('patch', on);
+  es.onerror = () => syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…');
+  $('panel').addEventListener('focusout', () => setTimeout(() => { if (!typing()) applyRemote(); }));
+}
+
 // ── 조작 ──
 $('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b) { cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
 $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
@@ -467,6 +516,7 @@ $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { c
 $('panel').onclick = e => { if (e.target.dataset.close != null) { sel = null; render(); } };
 addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => {
+  applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, r = findSel(); if (!k || !r) return;
   snapshot(); const v = e.target.value.trim();
   if (k === 'area' && v !== String(r.info.area)) log(`면적 직접 수정: ${r.info.name} ${fmt(r.area)}㎡ → ${v === '' ? '자동 계산 ' + fmt(r.calc) : fmt(+v)}㎡`);

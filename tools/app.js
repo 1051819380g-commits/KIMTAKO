@@ -5926,7 +5926,7 @@ function needMap(){ if(window.Tmapv2&&window.Tmapv2.Map) return Promise.resolve(
   return LIB.m; }
 
 var CSS=[
-".bus-map{position:relative;margin:10px 0}",
+".bus-map{position:relative;isolation:isolate;margin:10px 0}",
 ".bus-hold{height:max(620px,calc(100vh - 200px));border:1px solid var(--line-strong);border-radius:14px;overflow:hidden;background:var(--surface-2)}",
 ".bus-map .bus-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}",
 /* 떠 있는 창 */

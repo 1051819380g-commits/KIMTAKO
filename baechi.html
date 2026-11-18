@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>창원남고 실 배치도</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  /* 배치: 위에 도구 막대, 가운데에 도면 종이(왼쪽)와 실 정보(오른쪽), 아래에 표. 도면은 제도 용지처럼, 나머지는 조용하게. */
+  :root {
+    --paper:#eef1f5; --surface:#fff; --sheet:#fbfcfe; --ink:#16212e; --sub:#5d6a7a; --faint:#8793a2;
+    --line:#d6dce4; --line-strong:#a9b4c1; --wall:#1c2836; --accent:#1b4f9c; --accent-soft:#e2ebf8;
+    --warn:#b4401a; --warn-soft:#fbe6dc;
+    --font:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+    --r:8px;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 var(--font); color:var(--ink); background:var(--paper); -webkit-font-smoothing:antialiased; }
+  button, select, input, textarea { font:inherit; color:inherit; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+
+  header { background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; padding:8px 20px; }
+  .bar + .bar { border-top:1px solid var(--line); background:var(--sheet); padding-block:6px; }
+  .brand { display:flex; flex-direction:column; line-height:1.15; margin-right:6px; }
+  .brand small { font-size:11px; letter-spacing:.08em; color:var(--faint); font-weight:500; }
+  .brand h1 { font-size:17px; font-weight:700; margin:0; letter-spacing:-.01em; }
+  .grp { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .push { margin-left:auto; }
+
+  button { border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:5px 11px; cursor:pointer; font-weight:500; transition:background .12s, border-color .12s; }
+  button:hover { background:var(--accent-soft); border-color:var(--line-strong); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover { background:#163f7d; }
+  .seg { display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:2px; }
+  .seg button { border:0; background:transparent; border-radius:6px; padding:4px 12px; color:var(--sub); }
+  .seg button:hover { color:var(--ink); background:transparent; }
+  .seg button.on { background:var(--surface); color:var(--accent); font-weight:700; box-shadow:0 1px 2px rgba(22,33,46,.14); }
+  label.chk { display:flex; gap:6px; align-items:center; padding:4px 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); cursor:pointer; font-weight:500; }
+  label.chk.on { background:var(--warn-soft); border-color:var(--warn); color:var(--warn); }
+  .zoom { display:flex; gap:6px; align-items:center; color:var(--sub); font-size:12px; }
+  .zoom input { width:110px; accent-color:var(--accent); }
+
+  .stats { display:flex; flex-wrap:wrap; gap:6px 34px; padding:14px 20px 4px; }
+  .stat { display:flex; flex-direction:column; }
+  .stat b { font-size:24px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.15; }
+  .stat b small { font-size:13px; font-weight:500; color:var(--sub); margin-left:2px; }
+  .stat span { font-size:12px; color:var(--sub); }
+  .stat.warn b { color:var(--warn); }
+
+  main { padding:10px 20px 14px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); }
+  #sheet { display:flex; flex-direction:column; min-width:0; }
+  .sheet-head { display:flex; align-items:baseline; gap:10px; padding:10px 14px 0; }
+  .sheet-head b { font-size:18px; font-weight:700; letter-spacing:-.01em; }
+  .sheet-head span { color:var(--sub); font-size:12px; }
+  #planbox { overflow:auto; max-height:66vh; padding:8px 10px; margin:8px 10px 0; border:1px solid var(--line); border-radius:4px;
+    background-color:var(--sheet);
+    background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:28px 28px; background-position:-1px -1px; }
+  #plan { display:block; margin:auto; }
+  #legend { display:flex; flex-wrap:wrap; gap:4px 14px; padding:8px 14px 10px; font-size:12px; color:var(--sub); }
+  .sw { display:inline-block; width:11px; height:11px; border:1px solid var(--line-strong); border-radius:2px; vertical-align:-1px; margin-right:5px; }
+
+  /* 실 정보는 도면 위에 뜨는 창 */
+  #panel { position:fixed; z-index:8; right:20px; top:112px; width:min(330px, calc(100vw - 32px)); max-height:calc(100vh - 132px); overflow:auto; padding:14px 16px 16px; border-color:var(--line-strong); box-shadow:0 14px 40px rgba(22,33,46,.22); }
+  #panel[hidden] { display:none; }
+  .p-close { position:absolute; top:8px; right:8px; width:28px; height:28px; padding:0; border:0; font-size:18px; line-height:1; color:var(--sub); }
+  .p-eyebrow { font-size:11px; letter-spacing:.06em; color:var(--faint); font-weight:500; }
+  .p-name { font-size:19px; font-weight:700; letter-spacing:-.01em; margin:1px 0 8px; text-wrap:balance; }
+  .p-area { display:flex; align-items:baseline; flex-wrap:wrap; gap:2px 8px; padding:9px 12px; background:var(--accent-soft); border-radius:6px; margin-bottom:14px; }
+  .p-area b { font-size:24px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+  .p-area span { font-size:12px; color:var(--sub); }
+  h2 { font-size:13px; font-weight:700; margin:0 0 8px; }
+  #panel h2 { margin-top:16px; padding-top:12px; border-top:1px solid var(--line); }
+  .f { display:grid; grid-template-columns:70px minmax(0,1fr); gap:6px 8px; align-items:center; }
+  .f label { font-size:12px; color:var(--sub); }
+  .f input, .f select, .f textarea { width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+  .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
+  .f textarea { resize:vertical; }
+  .f .row3 { display:grid; grid-template-columns:minmax(0,1fr) 58px 70px; gap:6px; }
+  .hint { color:var(--sub); font-size:12px; line-height:1.6; }
+
+  section { margin:0 20px 14px; padding:14px 16px; }
+  .sec-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; margin-bottom:10px; }
+  .sec-head h2 { margin:0; font-size:15px; }
+  .sum { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
+  .scroll { overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:6px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { padding:6px 10px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--line); }
+  th { background:var(--sheet); position:sticky; top:0; font-size:12px; font-weight:600; color:var(--sub); border-bottom:1px solid var(--line-strong); z-index:1; }
+  tbody tr:last-child td { border-bottom:0; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  td.fl { color:var(--sub); }
+  td.nm { font-weight:500; }
+  td.memo { white-space:normal; color:var(--sub); min-width:160px; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover td { background:var(--sheet); }
+  tbody tr.sel td { background:var(--accent-soft); }
+  tbody tr.first td { border-top:1px solid var(--line-strong); }
+  .pill { display:inline-block; padding:0 8px; border-radius:10px; font-size:12px; font-weight:500; line-height:20px; }
+  .pill.ac { background:var(--accent-soft); color:var(--accent); }
+  .pill.none { background:var(--warn-soft); color:var(--warn); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { border:1px solid var(--line); border-radius:14px; padding:2px 11px; background:var(--sheet); cursor:pointer; font-size:12px; }
+  .chip:hover { border-color:var(--accent); color:var(--accent); }
+  .chip b { color:var(--faint); font-weight:500; margin-left:4px; }
+  ul.log { margin:0; padding:0; list-style:none; font-size:13px; }
+  ul.log li { display:grid; grid-template-columns:86px 120px minmax(0,1fr) auto; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); align-items:baseline; }
+  ul.log li:last-child { border-bottom:0; }
+  ul.log time { color:var(--sub); font-variant-numeric:tabular-nums; }
+  ul.log .w { font-weight:500; }
+  ul.log button { padding:0 8px; font-size:11px; color:var(--sub); }
+  .note { margin:12px 0 0; padding-top:10px; border-top:1px solid var(--line); max-width:78ch; }
+
+  svg text { font-family:var(--font); text-anchor:middle; pointer-events:none; fill:var(--ink); }
+  svg text.nm { font-weight:600; }
+  svg text.ar { fill:var(--sub); }
+  svg text.acb { fill:var(--accent); font-weight:700; }
+  svg text.dim { fill:var(--sub); text-anchor:start; }
+  svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; }
+  #planbox.all { max-height:none; }
+  .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
+  .room:hover { filter:brightness(.95); }
+  .room.sel { stroke:var(--accent); stroke-width:.55; }
+  .col { fill:var(--wall); pointer-events:none; }
+  .scale { stroke:var(--sub); stroke-width:.12; fill:none; }
+  .hit { stroke:transparent; stroke-width:.9; cursor:pointer; }
+  .hit.has:hover { stroke:rgba(180,64,26,.8); }
+  .hit.no { stroke-dasharray:.5 .4; }
+  .hit.no:hover { stroke:var(--accent); stroke-width:.35; }
+  dialog { border:1px solid var(--line); border-radius:12px; padding:20px; min-width:360px; color:var(--ink); box-shadow:0 12px 40px rgba(22,33,46,.25); }
+  dialog::backdrop { background:rgba(22,33,46,.35); }
+  dialog h2 { font-size:16px; margin-bottom:12px; }
+  dialog .acts { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
+
+  @media (max-width: 960px) { #panel { right:16px; top:auto; bottom:16px; max-height:60vh; } ul.log li { grid-template-columns:86px minmax(0,1fr) auto; } ul.log .w { display:none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
+  @media print {
+    .noprint, #panel { display:none !important; }
+    header { position:static; border:0; } body { background:#fff; }
+    main { display:block; padding:0 0 8px; } .card { border:0; }
+    #planbox { max-height:none; overflow:visible; background:none; border:0; } #plan { width:100% !important; }
+    .scroll { max-height:none; overflow:visible; border:0; } section { margin:0; padding:8px 0; }
+    /* 도면만 인쇄: 제목·도면·범례만 한 장에 */
+    body.plan-only header, body.plan-only .stats, body.plan-only section { display:none !important; }
+    body.plan-only .sheet-head b::before { content:"창원남고 "; }
+    body.plan-only #plan { max-height:var(--print-h); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><small>시설 관리</small><h1>창원남고 실 배치도</h1></div>
+    <div class="seg" id="bldTabs"></div>
+    <div class="seg" id="floorTabs"></div>
+    <div class="grp push noprint">
+      <button id="itemBtn" class="primary">물품대장 넣기</button>
+      <button id="csvBtn">엑셀(CSV)로</button>
+      <button id="saveBtn">저장파일 내보내기</button>
+      <button id="loadBtn">불러오기</button>
+      <button id="printPlan">도면만 인쇄</button>
+      <button onclick="print()">전체 인쇄</button>
+      <input type="file" id="loadFile" accept=".json" hidden>
+      <input type="file" id="itemFile" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+  </div>
+  <div class="bar noprint">
+    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
+    <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
+    <button id="undo">되돌리기</button>
+    <label class="zoom push">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
+  </div>
+</header>
+
+<div class="stats" id="stats"></div>
+<main>
+  <div class="card" id="sheet">
+    <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span></div>
+    <div id="planbox"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="legend"></div>
+  </div>
+  <aside class="card" id="panel"></aside>
+</main>
+<section class="card"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
+<section class="card noprint"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
+<section class="card"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
+  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다.</p>
+</section>
+
+<dialog id="mapDlg"><form method="dialog">
+  <h2>물품대장의 어느 열을 쓸까요?</h2>
+  <div class="f" id="mapF"></div>
+  <p class="hint" id="mapInfo"></p>
+  <div class="acts"><button value="cancel">취소</button><button value="ok" class="primary">넣기</button></div>
+</form></dialog>
+
+<script>
+'use strict';
+const KEY = 'cwn-baechi-v1';
+const USES = { '교실':'#d2e2f7', '특별실':'#d4ead0', '관리':'#f6e3b8', '지원':'#ecd4e6', '화장실':'#cde2e0', '공용':'#eceef1', '창고':'#e2dbcf' };
+const AC_FILL = { on:'#b9d4f3', off:'#f6cdbb', na:'#f1f3f5' };
+const AC_NEED = ['교실','특별실','관리','지원'];           // 에어컨 보기에서 "미설치"로 강조할 용도
+const AC_TYPES = ['', '천장형', '스탠드', '벽걸이', '기타'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => String(s ?? '').replace(/\s/g, '');
+
+function guessUse(n) {
+  if (/화장실/.test(n)) return '화장실';
+  if (/계단|복도|홀$/.test(n)) return '공용';
+  if (/창고|문서고|확인 필요/.test(n)) return '창고';
+  if (/^\d-\d+$|^교실/.test(n)) return '교실';
+  if (/보건|식당|조리|도서|쉼터/.test(n)) return '지원';
+  if (/행정|교무|교장|이사장|당직|인쇄|평가|서버|전산|방송|학년실|회의|교과실|성품/.test(n)) return '관리';
+  return '특별실';
+}
+
+// ── 도형: 좌표 단위는 m. 신관은 두 날개가 15° 기울어진 ∧ 모양 ──
+const rot = deg => { const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); return ([x, y]) => [x * c - y * s, x * s + y * c]; };
+const rL = rot(-15), rR = rot(15);
+const TF = { '': p => p, L: p => { const q = rL(p); return [q[0] - 4, q[1]]; }, R: p => { const q = rR(p); return [q[0] + 4, q[1]]; } };
+const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+const shoelace = pts => Math.abs(pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
+
+// ── 초기 자료 ──
+const info = (name, memo = '') => ({ name, use: guessUse(name), acType: '', acN: 0, acYear: '', memo, alias: '', area: '' });
+// 띠(strip): 벽을 세울 수 있는 칸(unit)이 n개 늘어선 실 줄. walls = 벽이 있는 칸 경계, rooms[시작칸] = 실 정보
+function strip(tf, x0, unit, depth, n, list, memo) {
+  const walls = [0], rooms = {}; let a = 0;
+  for (const [end, name] of list) { rooms[a] = info(name, /계단/.test(name) ? '' : memo); walls.push(end); a = end; }
+  return { tf, x0, unit, depth, n, walls, rooms };
+}
+const fx = (id, name, tf, pts) => ({ id, tf, pts, info: info(name) });
+
+function mainFloor(name, L, R, front, core, pods) {
+  const H = 7.73, C = 10.34, D = 17.84, est = '가운데 부분 면적은 도면 어림값';
+  const fixed = [];
+  if (front.length === 1) fixed.push(fx('front', front[0], '', [[-4, 0], [4, 0], [6.07, -H], [-6.07, -H]]));
+  else { const sx = front[2];
+    fixed.push(fx('front1', front[0], '', [[-4, 0], [sx, 0], [sx, -H], [-6.07, -H]]), fx('front2', front[1], '', [[sx, 0], [4, 0], [6.07, -H], [sx, -H]])); }
+  fixed.push(fx('ccor', '복도', '', [[-6.07, -H], [6.07, -H], [6.77, -C], [-6.77, -C]]));
+  core.forEach((n, i) => fixed.push(fx('core' + i, n, '', rect(-6.75 + i * 4.5, -D, -2.25 + i * 4.5, -C))));
+  fixed.push(fx('podL', pods[0], 'L', rect(-6.2, -18.3, -0.5, -10.7)), fx('podR', pods[1], 'R', rect(0.5, -18.3, 6.2, -10.7)));
+  fixed.push(fx('corL', '복도', 'L', rect(-36, -10.7, 0, -8)), fx('corR', '복도', 'R', rect(0, -10.7, 36, -8)));
+  fixed.forEach(f => { if (!/^cor[LR]$/.test(f.id)) f.info.memo = est; });
+  return { bld: '신관', name, strips: [strip('L', -36, 2, 8, 18, L), strip('R', 0, 2, 8, 18, R)], fixed };
+}
+function longFloor(name, p) {
+  const c = i => `교실 ${p}${String(i).padStart(2, '0')}`, seq = (from, to, k0) => Array.from({ length: (to - from) / 4 }, (_, i) => [from + 4 * (i + 1), c(k0 + i)]);
+  const list = p === 1 ? [[2, '계단실'], [4, '1학년실 101'], [6, '수학실 102'], ...seq(6, 26, 3), [28, '계단실·창고 108'], ...seq(28, 52, 9), [54, '계단실·창고 115']]
+    : [[2, '계단실'], ...seq(2, 26, 1), [28, '계단실·창고'], ...seq(28, 52, 7), [54, '계단실·창고']];
+  const memo = p === 1 ? '' : '1층 도면을 본뜬 추정 — 확인 필요';
+  const fixed = [fx('wcL', '화장실', '', rect(0, -14, 3.1, 0)), fx('cor', '복도', '', rect(3.1, -9.9, 124.6, -7.2)), fx('wcR', '화장실', '', rect(120.1, -14, 124.6, -9.9))];
+  if (memo) fixed.forEach(f => f.info.memo = memo);
+  return { bld: '본관', name, strips: [strip('', 3.1, 2.25, 7.2, 54, list, memo)], fixed };
+}
+const ST = '계단실';
+// 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
+// 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
+function basement() {
+  const f = mainFloor('지하 1층', [[2, ST], [18, '식당(왼쪽)']], [[9, '식당(오른쪽)'], [16, '조리장'], [18, ST]], ['식당(가운데)'], ['화장실', ST, ''], ['', '']);
+  f.strips.forEach(s => s.depth = 10.7);
+  f.fixed = f.fixed.filter(x => ['front', 'core0', 'core1'].includes(x.id));
+  f.fixed[0].pts = [[-4, 0], [4, 0], [6.77, -10.34], [-6.77, -10.34]];
+  for (const r of [...f.strips.flatMap(s => Object.values(s.rooms)), ...f.fixed.map(x => x.info)])
+    r.memo = /식당/.test(r.name) ? '식당 B101은 한 공간(왼쪽·가운데·오른쪽 세 조각의 합)' : r.name === '조리장' ? '조리장 B102' : '';
+  return f;
+}
+// 예전 저장분을 지금 이름과 층 구성으로 옮긴다 (v1: V자형=본관, 1자형=1자형 교사동·지하 있음 / v2: 신관 지하가 추정 배치)
+function migrate(s) {
+  if (s.v === 1) {
+    s.floors = s.floors.filter(f => !(f.bld === '1자형 교사동' && f.name === '지하 1층'));
+    for (const f of s.floors) f.bld = f.bld === '본관' ? '신관' : f.bld === '1자형 교사동' ? '본관' : f.bld;
+  }
+  if (s.v < 3) { s.floors = s.floors.filter(f => !(f.bld === '신관' && f.name === '지하 1층')); s.floors.unshift(basement()); s.v = 3; }
+  s.items ||= []; s.log ||= []; return s;
+}
+function defaults() {
+  return { v: 3, items: [], log: [], floors: [
+    basement(),
+    mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
+      [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
+    mainFloor('2층', [[2, ST], [4, 'vision실(소)'], [10, 'vision실'], [12, '인터라운지'], [14, '성품실'], [18, '이사장실']],
+      [[4, '3-6'], [8, '3-7'], [12, '3-8'], [16, '3-9'], [18, ST]], ['국어교과실', '방송실', 1.5], ['화장실', ST, '교사쉼터'], ['화장실(남)', '화장실(남)']),
+    mainFloor('3층', [[2, ST], [6, '3-5'], [10, '3-4'], [14, '3-3'], [18, '특별실C']],
+      [[4, '특별실A'], [8, '3-2'], [12, '3-1'], [16, '3-10'], [18, ST]], ['3학년실'], ['교사회의실', ST, '독서실A'], ['화장실(남)', '화장실(교사)']),
+    mainFloor('4층', [[2, ST], [8, '물리화학실험실'], [12, '일반실험실'], [18, '생명과학실험실']],
+      [[4, '수학전용실'], [12, '사회교과전용교실C'], [16, '미술실'], [18, ST]], ['지구과학실'], ['동아리실', ST, '특별실D'], ['화장실(남)', '화장실(남)']),
+    mainFloor('5층', [[2, ST], [6, '전산실'], [18, '창의융합과학실']],
+      [[6, '가사실'], [10, '특별실E'], [16, '체육실A'], [18, ST]], ['체육실B', '준비실', 2.5], ['창고', ST, '종교수업실'], ['화장실(남)', '화장실']),
+    longFloor('1층', 1), longFloor('2층', 2), longFloor('3층', 3),
+  ] };
+}
+
+// ── 상태 ──
+let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+state = state && state.floors ? migrate(state) : defaults();
+const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
+let cur = home(), allView = false, view = 'use', sel = null, editing = false; const undoStack = [];
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } }
+function snapshot() { undoStack.push(JSON.stringify({ floors: state.floors, log: state.log })); if (undoStack.length > 40) undoStack.shift(); }
+const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }
+
+const unitLabel = u => { const r = u / 4; return r === 0.25 ? '1/4실' : r === 0.5 ? '1/2실' : r === 0.75 ? '3/4실' : (Math.round(r * 100) / 100) + '실'; };
+const fmt = a => a.toFixed(1);
+
+// 한 층의 모든 실 → {key, info, pts(화면 좌표), area, units}
+function roomsOf(f) {
+  const out = [];
+  f.strips.forEach((s, si) => {
+    for (let j = 0; j < s.walls.length - 1; j++) {
+      const a = s.walls[j], b = s.walls[j + 1], i = s.rooms[a], x0 = s.x0 + a * s.unit, x1 = s.x0 + b * s.unit;
+      const calc = (b - a) * s.unit * s.depth;
+      out.push({ key: `s${si}:${a}`, info: i, pts: rect(x0, 0, x1, -s.depth).map(TF[s.tf]), calc, area: i.area !== '' ? +i.area : calc, units: b - a, w: x1 - x0 });
+    }
+  });
+  for (const x of f.fixed) {
+    const pts = x.pts.map(TF[x.tf]), calc = shoelace(x.pts), xs = pts.map(p => p[0]);
+    out.push({ key: 'f:' + x.id, info: x.info, pts, calc, area: x.info.area !== '' ? +x.info.area : calc, units: 0, w: Math.max(...xs) - Math.min(...xs) });
+  }
+  return out;
+}
+
+// 벽 철거/설치. 철거하면 오른쪽 실이 왼쪽 실에 합쳐지고(에어컨 대수는 더함), 설치하면 오른쪽에 새 실이 생긴다.
+function toggleWall(s, k, quiet) {
+  const i = s.walls.indexOf(k), a2 = n => fmt(n * s.unit * s.depth);
+  if (i > 0 && i < s.walls.length - 1) {
+    const A = s.rooms[s.walls[i - 1]], B = s.rooms[k];
+    if (!quiet) log(`벽 철거: ${A.name}(${a2(k - s.walls[i - 1])}㎡) + ${B.name}(${a2(s.walls[i + 1] - k)}㎡) → ${A.name} ${a2(s.walls[i + 1] - s.walls[i - 1])}㎡`);
+    A.acN = (+A.acN || 0) + (+B.acN || 0); A.acType = A.acType || B.acType; A.area = '';
+    if (B.alias || B.name !== A.name) A.alias = [A.alias, B.name, B.alias].filter(Boolean).join(',');
+    delete s.rooms[k]; s.walls.splice(i, 1);
+  } else if (i < 0 && k > 0 && k < s.n) {
+    const j = s.walls.findIndex(w => w > k), left = s.walls[j - 1], A = s.rooms[left];
+    s.rooms[k] = { ...info(A.name + '-2'), use: A.use }; A.area = '';
+    if (!quiet) log(`벽 설치: ${A.name}(${a2(s.walls[j] - left)}㎡) → ${A.name} ${a2(k - left)}㎡ + ${A.name}-2 ${a2(s.walls[j] - k)}㎡`);
+    s.walls.splice(j, 0, k);
+  }
+}
+
+// ── 물품 ──
+function itemIndex() {                       // 위치명 → 물품 목록
+  const m = new Map(); for (const it of state.items) { const k = norm(it.loc); if (!m.has(k)) m.set(k, []); m.get(k).push(it); } return m;
+}
+const roomKeys = i => [i.name, ...String(i.alias || '').split(',')].map(norm).filter(Boolean);
+const itemsFor = (i, idx) => roomKeys(i).flatMap(k => idx.get(k) || []);
+
+// ── 그리기 ──
+function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
+function renderTabs() {
+  const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
+  $('bldTabs').innerHTML = blds.map(x => `<button class="${x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
+  $('floorTabs').innerHTML = `<button class="${allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
+  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
+  $('editLbl').className = 'chk' + (editing ? ' on' : '');
+}
+function fill(i) {
+  if (view === 'use') return USES[i.use] || '#fff';
+  if (+i.acN > 0) return AC_FILL.on;
+  return AC_NEED.includes(i.use) ? AC_FILL.off : AC_FILL.na;
+}
+// 층 하나를 그려 {html, x0, y0, w, h}로 돌려준다
+function drawFloor(fi) {
+  const f = state.floors[fi], rooms = roomsOf(f), all = rooms.flatMap(r => r.pts);
+  const xs = all.map(p => p[0]), ys = all.map(p => p[1]), m = 1.5;
+  const x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m, w = Math.max(...xs) - x0 + m, h = Math.max(...ys) - y0 + m;
+  let h_ = '';
+  for (const r of rooms) {
+    h_ += `<polygon class="room${fi === cur && sel === r.key ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info)}" points="${r.pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
+    const cx = r.pts.reduce((a, p) => a + p[0], 0) / r.pts.length, cy = r.pts.reduce((a, p) => a + p[1], 0) / r.pts.length;
+    const nm = r.info.name, half = Math.ceil(nm.length / 2), lines = nm.length > 4 && r.w < nm.length * 1.3 ? [nm.slice(0, half), nm.slice(half)] : [nm], nameN = lines.length;
+    const fs = Math.max(0.5, Math.min(1.3, r.w * 0.88 / Math.max(3, ...lines.map(l => l.length))));
+    if (r.info.use !== '공용' || r.w > 6) lines.push(fmt(r.area) + '㎡');
+    if (+r.info.acN > 0) lines.push('❄' + r.info.acN);
+    lines.forEach((t, j) => { h_ += `<text class="${j < nameN ? 'nm' : t[0] === '❄' ? 'acb' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
+  }
+  // 기둥(신관 4m, 본관 9m 간격) — 도면다운 표시
+  for (const s of f.strips) for (let k = 0, step = s.unit === 2 ? 2 : 4; k <= s.n; k += step) for (const y of [0, -s.depth]) {
+    const c = TF[s.tf]([s.x0 + k * s.unit, y]); h_ += `<rect class="col" x="${(c[0] - .22).toFixed(2)}" y="${(c[1] - .22).toFixed(2)}" width=".44" height=".44"/>`; }
+  if (editing) f.strips.forEach((s, si) => {
+    for (let k = 1; k < s.n; k++) {
+      const a = TF[s.tf]([s.x0 + k * s.unit, 0]), b = TF[s.tf]([s.x0 + k * s.unit, -s.depth]), has = s.walls.includes(k);
+      h_ += `<line class="hit ${has ? 'has' : 'no'}" data-f="${fi}" data-w="${si}:${k}" x1="${a[0].toFixed(2)}" y1="${a[1].toFixed(2)}" x2="${b[0].toFixed(2)}" y2="${b[1].toFixed(2)}"><title>${has ? '눌러서 벽 철거' : '눌러서 벽 설치'}</title></line>`;
+    }
+  });
+  return { html: h_, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
+}
+// 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
+function renderPlan() {
+  const f = state.floors[cur], m = 1.5;
+  const ds = (allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
+  const x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0; let h = 0, h_ = '';
+  for (const d of ds) {
+    if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.6}" font-size="2">${esc(state.floors[d.i].name)}</text>`; }
+    h_ += `<g transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
+  }
+  const sy = h + 1.2, sx = x0 + m;
+  h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
+  $('sheetTitle').textContent = allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
+  $('planbox').classList.toggle('all', allView);
+  $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
+    : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
+  const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); svg.style.width = $('zoom').value + '%'; svg.innerHTML = h_;
+}
+function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }
+function renderPanel() {
+  const r = findSel(), p = $('panel');
+  p.hidden = !r; if (!r) return;
+  const i = r.info, its = itemsFor(i, itemIndex()), grp = new Map();
+  for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
+  p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
+  <div class="p-name">${esc(i.name)}</div>
+  <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
+  <div class="f">
+    <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
+    <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
+    <label for="i-area">면적 수정</label><input id="i-area" data-k="area" type="number" step="0.1" min="0" value="${esc(i.area)}" placeholder="비우면 자동 계산">
+    <label for="i-act">에어컨</label><div class="row3"><select id="i-act" data-k="acType" title="종류">${AC_TYPES.map(t => `<option value="${t}"${t === i.acType ? ' selected' : ''}>${t || '종류'}</option>`).join('')}</select><input data-k="acN" type="number" min="0" value="${esc(i.acN)}" title="대수" aria-label="에어컨 대수"><input data-k="acYear" value="${esc(i.acYear)}" placeholder="연도" title="설치연도" aria-label="에어컨 설치연도"></div>
+    <label for="i-memo">메모</label><textarea id="i-memo" data-k="memo" rows="3">${esc(i.memo)}</textarea>
+    <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
+  </div>
+  <h2>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</h2>
+  ${its.length ? `<table><tr><th>품명</th><th class="n">수량</th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n">${q}</td></tr>`).join('')}</table>`
+    : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
+}
+function renderTable() {
+  const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(); let ac = 0, noAc = 0, nRoom = 0, nItem = 0, rows = '';
+  state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { roomKeys(r.info).forEach(k => used.add(k)); if (f.bld !== b) continue;
+    const its = itemsFor(r.info, idx), i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
+    if (need) { nRoom++; if (!+i.acN) noAc++; }
+    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac">${esc(i.acType)} ${i.acN}대${i.acYear ? ' · ' + esc(i.acYear) : ''}</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
+  const total = Object.values(tot).reduce((a, b) => a + b, 0);
+  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${esc(b)} 전체 면적</span></div>
+    <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
+    <div class="stat"><b>${ac}<small>대</small></b><span>에어컨</span></div>
+    <div class="stat${noAc ? ' warn' : ''}"><b>${noAc}<small>실</small></b><span>에어컨 없는 실</span></div>
+    <div class="stat"><b>${nItem.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
+  $('tblTitle').textContent = `${b} 실별 면적표`;
+  $('sum').innerHTML = Object.keys(USES).filter(u => tot[u]).map(u => `<span><span class="sw" style="background:${USES[u]}"></span>${u} ${fmt(tot[u])}㎡</span>`).join('');
+  $('tbl').innerHTML = `<table><thead><tr><th>층</th><th>실명</th><th>용도</th><th class="n">면적(㎡)</th><th>크기</th><th>에어컨</th><th class="n">물품</th><th>메모</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const un = [...idx].filter(([k]) => !used.has(k)).sort((a, b) => b[1].length - a[1].length);
+  $('unm').innerHTML = !state.items.length ? '<span class="hint">물품대장을 아직 넣지 않았습니다.</span>'
+    : `<p class="hint">물품 ${state.items.length}건 중 실 이름과 맞지 않는 위치입니다. 실을 먼저 고른 뒤 이름을 누르면 그 실에 연결됩니다.</p><div class="chips">${un.map(([k, v]) => `<span class="chip" data-loc="${esc(v[0].loc)}">${esc(v[0].loc || '(위치 없음)')}<b>${v.length}</b></span>`).join('') || '모두 연결됨'}</div>`;
+}
+function renderLog() {
+  $('log').innerHTML = state.log.length ? `<ul class="log">${state.log.map((l, i) => `<li><time>${l.d}</time><span class="w">${esc(l.w)}</span><span>${esc(l.t)}</span><button class="noprint" data-del="${i}">지움</button></li>`).join('')}</ul>` : '<span class="hint">벽을 허물거나 세우면, 또는 면적을 직접 고치면 여기에 날짜와 함께 기록됩니다.</span>';
+}
+
+// ── 조작 ──
+$('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b) { cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
+$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
+$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
+$('edit').onchange = e => { editing = e.target.checked; render(); };
+$('zoom').oninput = () => { $('plan').style.width = $('zoom').value + '%'; };
+$('undo').onclick = () => { const s = undoStack.pop(); if (!s) return; Object.assign(state, JSON.parse(s)); save(); render(); };
+$('plan').onclick = e => {
+  const t = e.target;
+  if (t.dataset.f) cur = +t.dataset.f;
+  if (t.dataset.w) { const [si, k] = t.dataset.w.split(':').map(Number); snapshot(); toggleWall(state.floors[cur].strips[si], k); sel = null; save(); render(); }
+  else if (t.dataset.k) { sel = t.dataset.k; render(); }
+};
+$('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
+$('panel').onclick = e => { if (e.target.dataset.close != null) { sel = null; render(); } };
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open) { sel = null; render(); } });
+$('panel').onchange = e => {
+  const k = e.target.dataset.k, r = findSel(); if (!k || !r) return;
+  snapshot(); const v = e.target.value.trim();
+  if (k === 'area' && v !== String(r.info.area)) log(`면적 직접 수정: ${r.info.name} ${fmt(r.area)}㎡ → ${v === '' ? '자동 계산 ' + fmt(r.calc) : fmt(+v)}㎡`);
+  r.info[k] = k === 'acN' ? Math.max(0, +v || 0) : v; save(); render();
+};
+$('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); snapshot(); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
+$('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { snapshot(); state.log.splice(+i, 1); save(); render(); } };
+
+function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
+$('saveBtn').onclick = () => download(`실배치도_${today()}.json`, JSON.stringify(state), 'application/json');
+$('loadBtn').onclick = () => $('loadFile').click();
+$('loadFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; e.target.value = '';
+  try { const s = JSON.parse(await f.text()); if (!Array.isArray(s.floors)) throw new Error('배치도 저장파일이 아닙니다.');
+    if (!confirm('지금 화면의 내용을 이 파일 내용으로 바꿉니다. 계속할까요?')) return; state = migrate(s); cur = home(); sel = null; save(); render(); }
+  catch (err) { alert('불러오지 못했습니다: ' + err.message); } };
+$('csvBtn').onclick = () => { const idx = itemIndex(), q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+  const rows = [['건물', '층', '실명', '용도', '면적(㎡)', '크기', '에어컨 종류', '에어컨 대수', '설치연도', '물품 건수', '메모']];
+  for (const f of state.floors) for (const r of roomsOf(f)) rows.push([f.bld, f.name, r.info.name, r.info.use, fmt(r.area), r.units ? unitLabel(r.units) : '', r.info.acType, r.info.acN || '', r.info.acYear, itemsFor(r.info, idx).length || '', r.info.memo]);
+  download(`실별현황_${today()}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv'); };
+
+// ── 물품대장 읽기 (xlsx · csv · 엑셀로 저장된 html 표) ──
+async function readXlsx(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
+  let e = u8.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('엑셀(xlsx) 파일이 아닙니다.');
+  const files = {}; let p = dv.getUint32(e + 16, true);
+  for (let i = 0, n = dv.getUint16(e + 10, true); i < n; i++) {
+    const nl = dv.getUint16(p + 28, true);
+    files[td.decode(u8.subarray(p + 46, p + 46 + nl))] = { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  const get = async name => { const f = files[name]; if (!f) return null;
+    const s = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true), data = u8.subarray(s, s + f.size);
+    return f.method === 0 ? td.decode(data) : await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text(); };
+  const xml = s => new DOMParser().parseFromString(s, 'application/xml');
+  const ss = await get('xl/sharedStrings.xml');
+  const strs = ss ? [...xml(ss).getElementsByTagName('si')].map(si => [...si.getElementsByTagName('t')].filter(t => t.parentNode.localName !== 'rPh').map(t => t.textContent).join('')) : [];
+  const sheet = Object.keys(files).filter(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k)).sort((a, b) => a.length - b.length || a.localeCompare(b))[0];
+  const rows = [];
+  for (const r of xml(await get(sheet)).getElementsByTagName('row')) { const row = [];
+    for (const c of r.getElementsByTagName('c')) { let ci = 0; for (const ch of (c.getAttribute('r') || '').replace(/\d/g, '')) ci = ci * 26 + ch.charCodeAt(0) - 64;
+      const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+      row[ci - 1] = t === 's' ? strs[+v.textContent] : t === 'inlineStr' ? c.textContent : v ? v.textContent : ''; }
+    rows.push(Array.from(row, x => x ?? '')); }
+  return rows;
+}
+function readCsv(text) { const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < text.length; i++) { const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true; else if (c === ',' || c === '\t') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; } else if (c !== '\r') cell += c; }
+  if (cell || row.length) { row.push(cell); rows.push(row); } return rows; }
+async function readTable(file) {
+  const buf = await file.arrayBuffer(), u8 = new Uint8Array(buf);
+  if (u8[0] === 0x50 && u8[1] === 0x4b) return readXlsx(buf);
+  if (u8[0] === 0xd0 && u8[1] === 0xcf) throw new Error('옛 엑셀 형식(.xls)입니다. 엑셀에서 열어 "다른 이름으로 저장 → Excel 통합 문서(.xlsx)"로 저장한 뒤 다시 넣어 주세요.');
+  let text = new TextDecoder('utf-8').decode(buf); if (text.includes('�')) text = new TextDecoder('euc-kr').decode(buf);
+  if (/<table/i.test(text)) return [...new DOMParser().parseFromString(text, 'text/html').querySelectorAll('tr')].map(tr => [...tr.cells].map(c => c.textContent.trim()));
+  return readCsv(text);
+}
+let pending = null;
+// 도면만 인쇄: 한 층은 가로, 전체 층은 세로 용지 한 장에 맞춘다
+$('printPlan').onclick = () => {
+  const st = document.createElement('style'); st.textContent = `@page { size: A4 ${allView ? 'portrait' : 'landscape'}; margin: 10mm; }`;
+  document.head.append(st); document.body.classList.add('plan-only'); document.body.style.setProperty('--print-h', allView ? '250mm' : '160mm');
+  addEventListener('afterprint', () => { st.remove(); document.body.classList.remove('plan-only'); }, { once: true });
+  print();
+};
+$('itemBtn').onclick = () => $('itemFile').click();
+// 넣은 물품만 지운다. 실에 적어 둔 "물품 위치명"은 남겨서, 대장을 다시 넣으면 연결이 그대로 살아난다.
+$('itemClear').onclick = () => { if (!state.items.length) return alert('넣은 물품대장이 없습니다.');
+  if (!confirm(`넣어 둔 물품 ${state.items.length}건을 모두 지웁니다. 실에 적어 둔 "물품 위치명"은 그대로 둡니다. 계속할까요?`)) return;
+  state.items = []; save(); render(); };
+$('itemFile').onchange = async e => { const file = e.target.files[0]; if (!file) return; e.target.value = '';
+  try { const rows = await readTable(file); let h = rows.slice(0, 40).findIndex(r => r.some(c => /품명/.test(c))); if (h < 0) h = 0;
+    const head = rows[h].map(c => norm(c)), pick = (...res) => { for (const re of res) { const i = head.findIndex(c => re.test(c)); if (i >= 0) return i; } return -1; };
+    const fields = [['n', '물품명', pick(/^(물품|품)명$/, /품명/)], ['loc', '위치(실 이름)', pick(/설치장소|사용장소|보관장소/, /위치|장소/, /운용부서/, /부서/)], ['q', '수량', pick(/^수량$/, /수량/)], ['s', '규격', pick(/규격/)], ['d', '취득일', pick(/취득일/)]];
+    $('mapF').innerHTML = fields.map(([k, lab, g]) => `<label>${lab}</label><select data-m="${k}"><option value="-1">(없음)</option>${head.map((c, i) => `<option value="${i}"${i === g ? ' selected' : ''}>${esc(c || '열 ' + (i + 1))}</option>`).join('')}</select>`).join('');
+    $('mapInfo').textContent = `${file.name} · 제목 줄 ${h + 1}행 · 자료 ${rows.length - h - 1}행. "위치"는 실 이름이 들어 있는 열을 고르세요. 넣으면 이전에 넣은 물품대장은 새 것으로 바뀝니다.`;
+    pending = rows.slice(h + 1); $('mapDlg').showModal(); }
+  catch (err) { alert('물품대장을 읽지 못했습니다: ' + err.message); } };
+$('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) return;
+  const m = {}; document.querySelectorAll('#mapF select').forEach(s => m[s.dataset.m] = +s.value);
+  if (m.n < 0 || m.loc < 0) return alert('물품명과 위치 열은 꼭 골라야 합니다.');
+  const g = (r, k) => m[k] >= 0 ? String(r[m[k]] ?? '').trim() : '';
+  state.items = pending.filter(r => g(r, 'n')).map(r => ({ n: g(r, 'n'), loc: g(r, 'loc'), q: +g(r, 'q').replace(/,/g, '') || 1, s: g(r, 's'), d: g(r, 'd') }));
+  pending = null; save(); render(); alert(`물품 ${state.items.length}건을 넣었습니다.`); };
+
+// 자체 점검: 벽을 허물었다 다시 세워도 면적 합과 실 수가 그대로여야 한다
+(function selfCheck() {
+  const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl('신관', '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();
+  console.assert(Math.abs(roomsOf(f).filter(r => r.key.startsWith('s0')).reduce((a, r) => a + r.area, 0) - 36 * 8) < 1e-9, '신관 날개 면적 ≠ 288㎡');
+  toggleWall(f.strips[0], 6, true); console.assert(roomsOf(f).length === n0 - 1 && Math.abs(sum() - a0) < 1e-9, '벽 철거 후 면적 합이 달라짐');
+  toggleWall(f.strips[0], 6, true); toggleWall(f.strips[0], 7, true); console.assert(roomsOf(f).length === n0 + 1 && Math.abs(sum() - a0) < 1e-9, '벽 설치 후 면적 합이 달라짐');
+  console.assert(Math.abs(roomsOf(fl('신관', '지하 1층')).find(r => r.info.name === '조리장').area - 14 * 10.7) < 1e-9, '조리장 면적 ≠ 149.8㎡');
+  console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
+  console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
+  console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');
+})();
+render();
+</script>
+</body>
+</html>

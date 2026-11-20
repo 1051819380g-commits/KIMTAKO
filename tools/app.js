@@ -6120,7 +6120,7 @@ function build(root){
     s.push({id:"s"+(++seq),name:a.name,address:a.address,lat:a.lat,lng:a.lng,isPass:false,pax:0,guess:a.guess}); dirty();
     if(s.length>1) calc().then(function(){ say("도착지를 출발지와 같은 곳으로 정했어요.","ok"); }); }
   function waitOf(x){ return x.wait!=null?x.wait:(num(wd.value)>=0?num(wd.value):2); }
-  async function calc(){ var s=S.stops; if(s.length<2){ say("출발지와 도착지, 적어도 2곳이 있어야 해요.","bad"); return; }
+  async function calc(keep){ var s=S.stops; if(s.length<2){ say("출발지와 도착지, 적어도 2곳이 있어야 해요.","bad"); return; }
     s[0].isPass=false; s[s.length-1].isPass=false; say("경로를 계산하는 중이에요…","warn");
     var res=[{segTime:0,segDist:0,accTime:0,accDist:0,path:[]}], at=0, ad=0, bad=0;
     for(var i=0;i<s.length-1;i++){ var r=await seg(s[i],s[i+1]), t=r.time, d=r.dist; if(r.bad) bad++;
@@ -6131,7 +6131,7 @@ function build(root){
     if(s!==S.stops) return;   /* 계산 중에 정류장이 바뀜 */
     S.res=res; S.calc=true; S.tot={time:at,dist:ad};
     if(S.veh) S.vst[S.av]={time:at,dist:ad};
-    draw(true); say(bad?"경로를 못 찾은 구간이 "+bad+"곳 있어요(직선 1분·0.1km로 셈).":"노선을 계산했어요.",bad?"warn":"ok"); }
+    draw(!keep); say(bad?"경로를 못 찾은 구간이 "+bad+"곳 있어요(직선 1분·0.1km로 셈).":"노선을 계산했어요.",bad?"warn":"ok"); }
   function dirty(){ S.calc=false; S.res=[]; if(S.veh) S.vst[S.av]=null; draw(); }
 
   function optimize(){ var s=S.stops; if(s.length<4){ say("순서를 바꿀 중간 정류장이 2곳 이상 있어야 해요.","bad"); return; }
@@ -6165,7 +6165,7 @@ function build(root){
     var mids=[].concat.apply([],S.veh.map(function(v){ return v.slice(1,-1); })), at=function(x){ var k=o.indexOf(x); return k<0?1e9:k; };
     mids.sort(function(a,b){ return at(a)-at(b); });   /* 나누기 전 순서로(나눈 뒤 더한 곳은 끝에) */
     S.stops=[first].concat(mids,[last]); S.veh=null; S.vst=[]; S.av=0; S.orig=null; dirty(); calc().then(function(){ say("차량 나누기를 취소하고 한 노선으로 합쳤어요.","ok"); }); }
-  function pick(i){ S.veh[S.av]=S.stops; S.av=i; S.stops=S.veh[i]; S.calc=false; calc(); }
+  function pick(i){ S.veh[S.av]=S.stops; S.av=i; S.stops=S.veh[i]; S.calc=false; calc(true); }   /* 호차를 바꿀 땐 보고 있던 지도 그대로 */
 
   /* ---- 그리기 ---- */
   function move(i,d){ var s=S.stops, j=i+d; if(j<0||j>=s.length) return; var x=s[i]; s[i]=s[j]; s[j]=x; dirty(); }

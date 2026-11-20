@@ -6043,7 +6043,7 @@ function build(root){
   var acts=el("div","bus-acts bus-noprint");
   acts.appendChild(btn("순서 최적화","bus-btn gh sm",optimize)); acts.appendChild(btn("경로 계산","bus-btn sm",function(){ calc(); })); acts.appendChild(el("span","sp"));
   acts.appendChild(btn("엑셀 복사","bus-btn gh sm",copyTsv)); acts.appendChild(btn("인쇄","bus-btn gh sm",function(){ window.print(); }));
-  acts.appendChild(btn("비우기","bus-btn gh sm",function(){ if(!S.stops.length||!confirm("정류장을 모두 지울까요?")) return; S.stops=[]; S.veh=null; S.vst=[]; dirty(); }));
+  acts.appendChild(btn("비우기","bus-btn gh sm",function(){ if(!S.stops.length||!confirm("정류장을 모두 지울까요?")) return; S.stops=[]; S.veh=null; S.vst=[]; S.fitted=false; dirty(); }));
   var sum=el("div","bus-sum"), tbw=el("div");
   b2.appendChild(acts); b2.appendChild(vtb); b2.appendChild(sum); b2.appendChild(tbw);
   mapWrap.appendChild(bar); mapWrap.appendChild(msg); mapWrap.appendChild(sec2);
@@ -6098,7 +6098,7 @@ function build(root){
         r.guess=!c.newLat&&cs.slice(0,5).some(function(x){ return !(x.newLat||x.lat)||dist(r,P(x))>1; }); return r; }
       return fetch(API+"pois?version=1&format=json&searchKeyword="+q+"&resCoordType=WGS84GEO&reqCoordType=WGS84GEO&count=1&appKey="+KEY).then(function(r){ return r.ok?r.json():null; })
         .then(function(d){ var p=d&&d.searchPoiInfo&&d.searchPoiInfo.pois.poi[0]; return p?{lat:parseFloat(p.noorLat),lng:parseFloat(p.noorLon)}:null; }); }).catch(function(){ return null; }); }
-  async function geocodeAll(list){ S.stops=[]; S.veh=null; S.vst=[]; var miss=[], gs=[];
+  async function geocodeAll(list){ S.stops=[]; S.veh=null; S.vst=[]; S.fitted=false; var miss=[], gs=[];
     for(var i=0;i<list.length;i++){ say("주소를 찾는 중이에요… ("+(i+1)+"/"+list.length+")","warn"); var c=await geocode(list[i].address);
       if(c){ S.stops.push({id:"s"+(++seq),name:list[i].name||shortName(list[i].address),address:list[i].address,pax:list[i].pax,lat:c.lat,lng:c.lng,isPass:false,guess:c.guess}); if(c.guess) gs.push(list[i].name||list[i].address); }
       else miss.push(list[i].name||list[i].address); }
@@ -6131,7 +6131,8 @@ function build(root){
     if(s!==S.stops) return;   /* 계산 중에 정류장이 바뀜 */
     S.res=res; S.calc=true; S.tot={time:at,dist:ad};
     if(S.veh) S.vst[S.av]={time:at,dist:ad};
-    draw(!keep); say(bad?"경로를 못 찾은 구간이 "+bad+"곳 있어요(직선 1분·0.1km로 셈).":"노선을 계산했어요.",bad?"warn":"ok"); }
+    draw(!keep&&!S.fitted); S.fitted=true;   /* 지도는 노선을 처음 그릴 때만 맞추고, 그 뒤엔 보고 있던 시야 그대로 */
+    say(bad?"경로를 못 찾은 구간이 "+bad+"곳 있어요(직선 1분·0.1km로 셈).":"노선을 계산했어요.",bad?"warn":"ok"); }
   function dirty(){ S.calc=false; S.res=[]; if(S.veh) S.vst[S.av]=null; draw(); }
 
   function optimize(){ var s=S.stops; if(s.length<4){ say("순서를 바꿀 중간 정류장이 2곳 이상 있어야 해요.","bad"); return; }

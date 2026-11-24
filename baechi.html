@@ -54,6 +54,8 @@
   .sheet-head { display:flex; align-items:baseline; gap:10px; padding:10px 14px 0; }
   .sheet-head b { font-size:18px; font-weight:700; letter-spacing:-.01em; }
   .sheet-head span { color:var(--sub); font-size:12px; }
+  .sheet-head #acTot { margin-left:auto; display:flex; flex-wrap:wrap; gap:4px 6px; justify-content:flex-end; }
+  #acTot b { font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:1px 9px; white-space:nowrap; }
   #planbox { overflow:auto; max-height:66vh; padding:8px 10px; margin:8px 10px 0; border:1px solid var(--line); border-radius:4px;
     background-color:var(--sheet);
     background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
@@ -181,7 +183,7 @@
 <div class="stats" id="stats"></div>
 <main>
   <div class="card" id="sheet">
-    <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span></div>
+    <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span><span id="acTot"></span></div>
     <div id="planbox"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
     <div id="legend"></div>
   </div>
@@ -478,6 +480,9 @@ function renderPlan() {
   h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
   $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
+  // 보이는 층의 냉난방기를 종류별로 센다
+  const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
+  $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
@@ -510,7 +515,7 @@ function renderTable() {
   state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { roomKeys(r.info).forEach(k => used.add(k)); if (f.bld !== b) continue;
     const its = itemsFor(r.info, idx), i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
     if (need) { nRoom++; if (!+i.acN) noAc++; }
-    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac">${esc(acSum(i))}</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
+    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const total = Object.values(tot).reduce((a, b) => a + b, 0);
   $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${esc(b)} 전체 면적</span></div>
     <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>

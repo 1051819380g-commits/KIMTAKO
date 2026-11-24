@@ -85,6 +85,11 @@
   .acs-head button { padding:2px 9px; font-size:12px; }
   .acrow { display:grid; grid-template-columns:82px 58px minmax(0,1fr) 28px; gap:6px; }
   .acrow button { padding:0; color:var(--sub); }
+  #panel h2.it-head { display:flex; justify-content:space-between; align-items:center; }
+  .it-head button { padding:2px 9px; font-size:12px; font-weight:500; }
+  table.its th, table.its td { padding:4px 6px; }
+  table.its input { width:58px; padding:3px 6px; border:1px solid var(--line); border-radius:6px; text-align:right; }
+  table.its button { padding:0 7px; color:var(--sub); }
   .hint { color:var(--sub); font-size:12px; line-height:1.6; }
 
   section { margin:0 20px 14px; padding:14px 16px; }
@@ -425,8 +430,22 @@ function locKeys(loc) {
 function itemIndex() {                       // 열쇠 → 물품 목록
   const m = new Map(); for (const it of state.items) for (const k of locKeys(it.loc)) { if (!m.has(k)) m.set(k, []); m.get(k).push(it); } return m;
 }
-const roomKeys = i => [i.name, ...String(i.alias || '').split(',')].map(canon).filter(Boolean);
+const roomKeys = i => [i.name, ...String(i.alias || '').split(',')].map(canon).filter(Boolean).flatMap(k => [k, ...(k.match(/(?<!d)d{4}(?!d)/) || []).filter(n => n !== k)]);
 const itemsFor = (i, idx, f) => [...new Set(roomKeys(i).flatMap(k => [...(idx.get(k) || []), ...(idx.get(`@${f.bld}|${norm(f.name)}|${k}`) || [])]))];
+
+const roomItems = (r, name) => itemsFor(r.info, itemIndex(), state.floors[cur]).filter(it => name == null || it.n === name);
+function setItemQty(r, name, n) {
+  const rows = roomItems(r, name); let over = rows.reduce((a, it) => a + (+it.q || 1), 0) - Math.max(0, Math.round(n) || 0);
+  if (over < 0) { rows.at(-1).q = (+rows.at(-1).q || 1) - over; return; }
+  const drop = new Set();
+  for (let i = rows.length - 1; i >= 0 && over > 0; i--) { const q = +rows[i].q || 1; if (q <= over) { drop.add(rows[i]); over -= q; } else { rows[i].q = q - over; over = 0; } }
+  state.items = state.items.filter(it => !drop.has(it));
+}
+function addItem(r, name, n) {
+  const f = state.floors[cur];
+  if (roomItems(r, name).length) return setItemQty(r, name, roomItems(r, name).reduce((a, it) => a + (+it.q || 1), 0) + n);
+  state.items.push({ n: name, loc: `(${f.bld})(${f.name === '지하 1층' ? '지하' : f.name})${r.info.name}`, q: n, s: '', d: '' });
+}
 
 // ── 그리기 ──
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
@@ -522,8 +541,8 @@ function renderPanel() {
     <label for="i-memo">메모</label><textarea id="i-memo" data-k="memo" rows="3">${esc(i.memo)}</textarea>
     <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
   </div>
-  <h2>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</h2>
-  ${its.length ? `<table><tr><th>품명</th><th class="n">수량</th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n">${q}</td></tr>`).join('')}</table>`
+  <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
+  ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
 }
 function renderTable() {
@@ -614,8 +633,14 @@ $('plan').onclick = e => {
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
-  if (d.acadd == null && d.acdel == null) return;
+  if (d.acadd == null && d.acdel == null && d.itadd == null && d.itdel == null) return;
   applyRemote(); const r = findSel(); if (!r) return;
+  if (d.itdel != null) { if (!confirm(`이 실의 "${d.itdel}"을(를) 물품 목록에서 지웁니다. 계속할까요?`)) return; setItemQty(r, d.itdel, 0); save(); return render(); }
+  if (d.itadd != null) {
+    const name = (prompt('추가할 물품 이름') || '').trim(); if (!name) return;
+    const n = Math.round(+prompt(`"${name}" 수량`, '1')); if (!(n > 0)) return;
+    addItem(r, name, n); save(); return render();
+  }
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
@@ -624,10 +649,14 @@ $('panel').onchange = e => {
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;
   const v = e.target.value.trim();
+  if (e.target.dataset.itq != null) { setItemQty(r, e.target.dataset.itq, +v); save(); return render(); }
   if (ac != null && r.info.acs[ac]) { r.info.acs[ac][e.target.dataset.ak] = v; save(); return render(); }
   if (!k) return;
   if (k === 'area' && v !== String(r.info.area)) log(`면적 직접 수정: ${r.info.name} ${fmt(r.area)}㎡ → ${v === '' ? '자동 계산 ' + fmt(r.calc) : fmt(+v)}㎡`);
-  r.info[k] = v; save(); render();
+  const had = k === 'name' ? roomItems(r).length : 0, was = r.info.name;
+  r.info[k] = v;
+  if (had && roomItems(r).length < had) r.info.alias = [r.info.alias, was].filter(Boolean).join(',');
+  save(); render();
 };
 $('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
 $('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
@@ -733,6 +762,9 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   const cc = centroid([rect(0, 0, 3, 2), [[3, 0], [3, 2], [4, 2], [4, 0]]]); console.assert(Math.abs(cc[0] - 2) < 1e-9 && Math.abs(cc[1] - 1) < 1e-9, '합친 실의 면적 중심 계산 틀림'); // 방향이 다른 두 조각 = 4×2 사각형
   console.assert(locKeys('(신관)(4층)인터넷강의실A')[1] === '@신관|4층|인터넷강의실A' && locKeys('(신관)(2층)1204(3학년1반)')[1] === '@신관|2층|1204' && locKeys('(본관)(1층)1학년4반')[1] === '@본관|1층|1-4'
     && locKeys('(신관)(지하)조리실')[1] === '@신관|지하1층|조리실' && locKeys('교실공통').length === 1, '물품대장 설치장소 풀기 실패');
+  { const keep = [state, cur]; state = d; cur = d.floors.indexOf(fl('신관', '1층')); const rm = roomsOf(d.floors[cur]).find(r => r.info.name === '보건실'), q = n => roomItems(rm, n).reduce((a, it) => a + it.q, 0);
+    addItem(rm, '침대', 2); addItem(rm, '침대', 1); d.items.push({ n: '침대', loc: '(신관)(1층)보건실', q: 1 }); setItemQty(rm, '침대', 2);
+    console.assert(q('침대') === 2 && d.items.length === 1, '물품 수량 고치기 실패'); setItemQty(rm, '침대', 0); console.assert(d.items.length === 0, '물품 지우기 실패'); [state, cur] = keep; }
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

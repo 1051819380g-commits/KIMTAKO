@@ -143,6 +143,8 @@
   .hit.no:hover { stroke:var(--accent); stroke-width:.35; }
   dialog { border:1px solid var(--line); border-radius:12px; padding:20px; min-width:360px; color:var(--ink); box-shadow:0 12px 40px rgba(22,33,46,.25); }
   dialog::backdrop { background:rgba(22,33,46,.35); }
+  button:disabled { opacity:.45; cursor:default; pointer-events:none; }
+  #locDlg { width:min(460px, calc(100vw - 32px)); } #locList { max-height:46vh; margin-bottom:10px; }
   dialog h2 { font-size:16px; margin-bottom:12px; }
   dialog .acts { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
 
@@ -200,6 +202,13 @@
 <section class="card"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다.</p>
 </section>
+
+<dialog id="locDlg"><form method="dialog">
+  <h2 id="locTitle"></h2>
+  <div id="locList" class="scroll"></div>
+  <p class="hint" id="locInfo"></p>
+  <div class="acts"><button value="cancel">닫기</button><button value="ok" class="primary" id="locOk">연결하기</button></div>
+</form></dialog>
 
 <dialog id="mapDlg"><form method="dialog">
   <h2>물품대장의 어느 열을 쓸까요?</h2>
@@ -563,7 +572,7 @@ function renderTable() {
   const ung = new Map(); for (const it of state.items) if (!used.has(it)) { const k = norm(it.loc); if (!ung.has(k)) ung.set(k, []); ung.get(k).push(it); }
   const un = [...ung].sort((a, b) => b[1].length - a[1].length);
   $('unm').innerHTML = !state.items.length ? '<span class="hint">물품대장을 아직 넣지 않았습니다.</span>'
-    : `<p class="hint">물품 ${state.items.length}건 중 실 이름과 맞지 않는 위치입니다. 실을 먼저 고른 뒤 이름을 누르면 그 실에 연결됩니다.</p><div class="chips">${un.map(([k, v]) => `<span class="chip" data-loc="${esc(v[0].loc)}">${esc(v[0].loc || '(위치 없음)')}<b>${v.length}</b></span>`).join('') || '모두 연결됨'}</div>`;
+    : `<p class="hint">물품 ${state.items.length}건 중 실 이름과 맞지 않는 위치입니다. 이름을 누르면 어떤 물품인지 보여 줍니다. 실을 먼저 고른 뒤 누르면 그 실에 연결할 수 있습니다.</p><div class="chips">${un.map(([k, v]) => `<span class="chip" data-loc="${esc(v[0].loc)}">${esc(v[0].loc || '(위치 없음)')}<b>${v.length}</b></span>`).join('') || '모두 연결됨'}</div>`;
 }
 function renderLog() {
   $('log').innerHTML = state.log.length ? `<ul class="log">${state.log.map((l, i) => `<li><time>${l.d}</time><span class="w">${esc(l.w)}</span><span>${esc(l.t)}</span><button class="noprint" data-del="${i}">지움</button></li>`).join('')}</ul>` : '<span class="hint">벽을 허물거나 세우면, 또는 면적을 직접 고치면 여기에 날짜와 함께 기록됩니다.</span>';
@@ -644,7 +653,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => {
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;
@@ -658,7 +667,17 @@ $('panel').onchange = e => {
   if (had && roomItems(r).length < had) r.info.alias = [r.info.alias, was].filter(Boolean).join(',');
   save(); render();
 };
-$('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
+// 연결되지 않은 위치를 누르면 그 위치의 물품을 먼저 보여 주고, "연결하기"를 눌러야 고른 실에 이어진다
+let locPick = null;
+$('unm').onclick = e => { const chip = e.target.closest('[data-loc]'); if (!chip) return;
+  const loc = locPick = chip.dataset.loc, r = findSel(), f = state.floors[cur], grp = new Map();
+  for (const it of state.items) if (norm(it.loc) === norm(loc)) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
+  $('locTitle').textContent = `${loc || '(위치 없음)'} — ${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점`;
+  $('locList').innerHTML = `<table><tr><th>품명</th><th class="n">수량</th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n">${q}</td></tr>`).join('')}</table>`;
+  $('locInfo').textContent = r ? `"연결하기"를 누르면 이 물품들이 지금 고른 실 「${f.bld} ${f.name} ${r.info.name}」에 연결됩니다.` : '연결하려면 이 창을 닫고 배치도에서 실을 먼저 고른 뒤 다시 눌러 주세요.';
+  $('locOk').disabled = !r; $('locDlg').returnValue = ''; $('locDlg').showModal(); };
+$('locDlg').onclose = () => { const loc = locPick; if ($('locDlg').returnValue !== 'ok' || loc == null) return;
+  applyRemote(); const r = findSel(); if (!r) return; r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
 $('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
 
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
@@ -733,7 +752,7 @@ $('itemFile').onchange = async e => { const file = e.target.files[0]; if (!file)
     const fields = [['n', '물품명', pick(/^(물품|품)명$/, /품명/, /물품분류명/, /목록명/)], ['loc', '위치(실 이름)', pick(/설치장소|사용장소|보관장소/, /위치|장소/, /운용부서/, /부서/)], ['q', '수량', pick(/^수량$/, /수량/)], ['s', '규격', pick(/규격/, /목록명/)], ['d', '취득일', pick(/취득일/)]];
     $('mapF').innerHTML = fields.map(([k, lab, g]) => `<label>${lab}</label><select data-m="${k}"><option value="-1">(없음)</option>${head.map((c, i) => `<option value="${i}"${i === g ? ' selected' : ''}>${esc(c || '열 ' + (i + 1))}</option>`).join('')}</select>`).join('');
     $('mapInfo').textContent = `${file.name} · 제목 줄 ${h + 1}행 · 자료 ${rows.length - h - 1}행. "위치"는 실 이름이 들어 있는 열을 고르세요. 넣으면 이전에 넣은 물품대장은 새 것으로 바뀝니다.`;
-    pending = rows.slice(h + 1); $('mapDlg').showModal(); }
+    pending = rows.slice(h + 1); $('mapDlg').returnValue = ''; $('mapDlg').showModal(); }
   catch (err) { alert('물품대장을 읽지 못했습니다: ' + err.message); } };
 $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) return;
   const m = {}; document.querySelectorAll('#mapF select').forEach(s => m[s.dataset.m] = +s.value);

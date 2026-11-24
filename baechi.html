@@ -424,6 +424,13 @@ function fill(i) {
   if (+i.acN > 0) return AC_FILL.on;
   return AC_NEED.includes(i.use) ? AC_FILL.off : AC_FILL.na;
 }
+// 여러 조각으로 된 실의 면적 중심(이름을 놓을 자리). 꼭짓점 평균은 크기가 다른 조각을 합치면 한쪽으로 쏠린다.
+function centroid(parts) {
+  let A = 0, X = 0, Y = 0;
+  for (const P of parts) P.forEach((p, i) => { const q = P[(i + 1) % P.length], c = p[0] * q[1] - q[0] * p[1], s = Math.sign(P.reduce((a, u, j) => { const v = P[(j + 1) % P.length]; return a + u[0] * v[1] - v[0] * u[1]; }, 0)) || 1;
+    A += c * s; X += (p[0] + q[0]) * c * s; Y += (p[1] + q[1]) * c * s; });
+  return [X / (3 * A), Y / (3 * A)];
+}
 // 층 하나를 그려 {html, x0, y0, w, h}로 돌려준다
 function drawFloor(fi) {
   const f = state.floors[fi], rooms = roomsOf(f), all = rooms.flatMap(r => r.pts);
@@ -437,7 +444,7 @@ function drawFloor(fi) {
       const d = Math.hypot(w.q[0] - w.p[0], w.q[1] - w.p[1]), e = (on ? .3 : .12) / d, at = t => [w.p[0] + (w.q[0] - w.p[0]) * t, w.p[1] + (w.q[1] - w.p[1]) * t].map(n => n.toFixed(2)), a = at(e), b = at(1 - e);
       t_ += `<line stroke="${fill(r.info)}" stroke-width="${on ? .7 : .3}" pointer-events="none" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
     }
-    const cx = r.pts.reduce((a, p) => a + p[0], 0) / r.pts.length, cy = r.pts.reduce((a, p) => a + p[1], 0) / r.pts.length;
+    const [cx, cy] = centroid(r.parts || [r.pts]);
     const nm = r.info.name, half = Math.ceil(nm.length / 2), lines = nm.length > 4 && r.w < nm.length * 1.3 ? [nm.slice(0, half), nm.slice(half)] : [nm], nameN = lines.length;
     const fs = Math.max(0.5, Math.min(1.3, r.w * 0.88 / Math.max(3, ...lines.map(l => l.length))));
     if (r.info.use !== '공용' || r.w > 6) lines.push(fmt(r.area) + '㎡');
@@ -701,6 +708,7 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   console.assert(old.acs.length === 2 && old.acN === 2 && old.acs[1].t === '천장형' && acSum(old) === '천장형 2대 (2015)', '예전 에어컨 자료 옮기기 실패');
   const bk = roomsOf(fl('본관', '1층')), xOf = r => Math.min(...r.pts.map(q => q[0]));
   console.assert(xOf(bk[0]) > xOf(bk[5]) && Math.min(...bk.flatMap(r => r.pts).map(q => q[1])) > -14.01 && migrate({ v: 3, floors: [{ bld: '본관', name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors.at(-1).strips[0].tf === 'B', '본관 180° 돌리기 실패');
+  const cc = centroid([rect(0, 0, 3, 2), [[3, 0], [3, 2], [4, 2], [4, 0]]]); console.assert(Math.abs(cc[0] - 2) < 1e-9 && Math.abs(cc[1] - 1) < 1e-9, '합친 실의 면적 중심 계산 틀림'); // 방향이 다른 두 조각 = 4×2 사각형
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

@@ -99,6 +99,7 @@
   td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
   td.fl { color:var(--sub); }
   td.nm { font-weight:500; }
+  td.mdl { color:var(--sub); line-height:1.45; }
   td.memo { white-space:normal; color:var(--sub); min-width:160px; }
   tbody tr { cursor:pointer; }
   tbody tr:hover td { background:var(--sheet); }
@@ -213,7 +214,7 @@ const AC_TYPES = ['', '천장형', '스탠드', '벽걸이', '기타'];
 // 실의 냉난방기 모델명: 같은 모델은 한 번만, 여러 대면 "×2"
 function acModels(i) {
   const c = new Map(); for (const a of i.acs) if (a.m) c.set(a.m, (c.get(a.m) || 0) + 1);
-  return [...c].map(([m, n]) => n > 1 ? `${m} ×${n}` : m).join(', ');
+  return [...c].map(([m, n]) => n > 1 ? `${m} ×${n}` : m);
 }
 // 실의 냉난방기 요약: "천장형 2대 · 스탠드 1대 (2015, 2021)"
 function acSum(i) {
@@ -520,7 +521,7 @@ function renderTable() {
   state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { roomKeys(r.info).forEach(k => used.add(k)); if (f.bld !== b) continue;
     const its = itemsFor(r.info, idx), i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
     if (need) { nRoom++; if (!+i.acN) noAc++; }
-    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="memo">${esc(acModels(i))}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
+    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const total = Object.values(tot).reduce((a, b) => a + b, 0);
   $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${esc(b)} 전체 면적</span></div>
     <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>

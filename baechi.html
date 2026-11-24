@@ -78,7 +78,11 @@
   .f input, .f select, .f textarea { width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
-  .f .row3 { display:grid; grid-template-columns:minmax(0,1fr) 58px 70px; gap:6px; }
+  .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
+  .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
+  .acs-head button { padding:2px 9px; font-size:12px; }
+  .acrow { display:grid; grid-template-columns:82px 58px minmax(0,1fr) 28px; gap:6px; }
+  .acrow button { padding:0; color:var(--sub); }
   .hint { color:var(--sub); font-size:12px; line-height:1.6; }
 
   section { margin:0 20px 14px; padding:14px 16px; }
@@ -204,6 +208,12 @@ const USES = { '교실':'#d2e2f7', '특별실':'#d4ead0', '관리':'#f6e3b8', '�
 const AC_FILL = { on:'#b9d4f3', off:'#f6cdbb', na:'#f1f3f5' };
 const AC_NEED = ['교실','특별실','관리','지원'];           // 에어컨 보기에서 "미설치"로 강조할 용도
 const AC_TYPES = ['', '천장형', '스탠드', '벽걸이', '기타'];
+// 실의 냉난방기 요약: "천장형 2대 · 스탠드 1대 (2015, 2021)"
+function acSum(i) {
+  const c = new Map(); for (const a of i.acs) c.set(a.t || '냉난방기', (c.get(a.t || '냉난방기') || 0) + 1);
+  const ys = [...new Set(i.acs.map(a => a.y).filter(Boolean))];
+  return [...c].map(([t, n]) => `${t} ${n}대`).join(' · ') + (ys.length ? ` (${ys.join(', ')})` : '');
+}
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const norm = s => String(s ?? '').replace(/\s/g, '');
@@ -226,7 +236,7 @@ const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 const shoelace = pts => Math.abs(pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
 
 // ── 초기 자료 ──
-const info = (name, memo = '') => ({ name, use: guessUse(name), acType: '', acN: 0, acYear: '', memo, alias: '', area: '' });
+const info = (name, memo = '') => ({ name, use: guessUse(name), acs: [], acN: 0, memo, alias: '', area: '' });
 // 띠(strip): 벽을 세울 수 있는 칸(unit)이 n개 늘어선 실 줄. walls = 벽이 있는 칸 경계, rooms[시작칸] = 실 정보
 function strip(tf, x0, unit, depth, n, list, memo) {
   const walls = [0], rooms = {}; let a = 0;
@@ -276,6 +286,11 @@ function migrate(s) {
     for (const f of s.floors) f.bld = f.bld === '본관' ? '신관' : f.bld === '1자형 교사동' ? '본관' : f.bld;
   }
   if (s.v < 3) { s.floors = s.floors.filter(f => !(f.bld === '신관' && f.name === '지하 1층')); s.floors.unshift(basement()); s.v = 3; }
+  // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
+  for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
+    i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
+    i.acN = i.acs.length; delete i.acType; delete i.acYear;
+  }
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
@@ -375,7 +390,7 @@ function toggleWall(s, k, quiet) {
   if (i > 0 && i < s.walls.length - 1) {
     const A = s.rooms[s.walls[i - 1]], B = s.rooms[k];
     if (!quiet) log(`벽 철거: ${A.name}(${a2(k - s.walls[i - 1])}㎡) + ${B.name}(${a2(s.walls[i + 1] - k)}㎡) → ${A.name} ${a2(s.walls[i + 1] - s.walls[i - 1])}㎡`);
-    A.acN = (+A.acN || 0) + (+B.acN || 0); A.acType = A.acType || B.acType; A.area = '';
+    A.acs = [...A.acs, ...B.acs]; A.acN = A.acs.length; A.area = '';
     if (B.alias || B.name !== A.name) A.alias = [A.alias, B.name, B.alias].filter(Boolean).join(',');
     delete s.rooms[k]; s.walls.splice(i, 1);
   } else if (i < 0 && k > 0 && k < s.n) {
@@ -472,7 +487,8 @@ function renderPanel() {
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
     <label for="i-area">면적 수정</label><input id="i-area" data-k="area" type="number" step="0.1" min="0" value="${esc(i.area)}" placeholder="비우면 자동 계산">
-    <label for="i-act">에어컨</label><div class="row3"><select id="i-act" data-k="acType" title="종류">${AC_TYPES.map(t => `<option value="${t}"${t === i.acType ? ' selected' : ''}>${t || '종류'}</option>`).join('')}</select><input data-k="acN" type="number" min="0" value="${esc(i.acN)}" title="대수" aria-label="에어컨 대수"><input data-k="acYear" value="${esc(i.acYear)}" placeholder="연도" title="설치연도" aria-label="에어컨 설치연도"></div>
+    <div class="acs"><div class="acs-head"><span>냉난방기 ${i.acs.length ? i.acs.length + '대' : ''}</span><button type="button" data-acadd>+ 냉난방기 추가</button></div>
+      ${i.acs.map((a, n) => `<div class="acrow"><select data-ac="${n}" data-ak="t" aria-label="종류">${AC_TYPES.map(t => `<option value="${t}"${t === a.t ? ' selected' : ''}>${t || '종류'}</option>`).join('')}</select><input data-ac="${n}" data-ak="y" value="${esc(a.y)}" placeholder="연도" aria-label="설치연도"><input data-ac="${n}" data-ak="m" value="${esc(a.m)}" placeholder="모델" aria-label="모델"><button type="button" data-acdel="${n}" aria-label="이 냉난방기 지우기" title="지우기">×</button></div>`).join('')}</div>
     <label for="i-memo">메모</label><textarea id="i-memo" data-k="memo" rows="3">${esc(i.memo)}</textarea>
     <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
   </div>
@@ -485,7 +501,7 @@ function renderTable() {
   state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { roomKeys(r.info).forEach(k => used.add(k)); if (f.bld !== b) continue;
     const its = itemsFor(r.info, idx), i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
     if (need) { nRoom++; if (!+i.acN) noAc++; }
-    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac">${esc(i.acType)} ${i.acN}대${i.acYear ? ' · ' + esc(i.acYear) : ''}</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
+    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac">${esc(acSum(i))}</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const total = Object.values(tot).reduce((a, b) => a + b, 0);
   $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${esc(b)} 전체 면적</span></div>
     <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
@@ -565,14 +581,22 @@ $('plan').onclick = e => {
   else if (t.dataset.k) { sel = t.dataset.k; render(); }
 };
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
-$('panel').onclick = e => { if (e.target.dataset.close != null) { sel = null; render(); } };
+$('panel').onclick = e => {
+  const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
+  if (d.acadd == null && d.acdel == null) return;
+  applyRemote(); const r = findSel(); if (!r) return;
+  if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
+  r.info.acN = r.info.acs.length; save(); render();
+};
 addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => {
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
-  const k = e.target.dataset.k, r = findSel(); if (!k || !r) return;
+  const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;
   const v = e.target.value.trim();
+  if (ac != null && r.info.acs[ac]) { r.info.acs[ac][e.target.dataset.ak] = v; save(); return render(); }
+  if (!k) return;
   if (k === 'area' && v !== String(r.info.area)) log(`면적 직접 수정: ${r.info.name} ${fmt(r.area)}㎡ → ${v === '' ? '자동 계산 ' + fmt(r.calc) : fmt(+v)}㎡`);
-  r.info[k] = k === 'acN' ? Math.max(0, +v || 0) : v; save(); render();
+  r.info[k] = v; save(); render();
 };
 $('unm').onclick = e => { const loc = e.target.dataset.loc, r = findSel(); if (loc == null) return; if (!r) return alert('먼저 배치도에서 연결할 실을 고르세요.'); r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
 $('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
@@ -585,8 +609,9 @@ $('loadFile').onchange = async e => { const f = e.target.files[0]; if (!f) retur
     if (!confirm('지금 화면의 내용을 이 파일 내용으로 바꿉니다. 계속할까요?')) return; state = migrate(s); cur = home(); sel = null; save(); render(); }
   catch (err) { alert('불러오지 못했습니다: ' + err.message); } };
 $('csvBtn').onclick = () => { const idx = itemIndex(), q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
-  const rows = [['건물', '층', '실명', '용도', '면적(㎡)', '크기', '에어컨 종류', '에어컨 대수', '설치연도', '물품 건수', '메모']];
-  for (const f of state.floors) for (const r of roomsOf(f)) rows.push([f.bld, f.name, r.info.name, r.info.use, fmt(r.area), r.units ? unitLabel(r.units) : '', r.info.acType, r.info.acN || '', r.info.acYear, itemsFor(r.info, idx).length || '', r.info.memo]);
+  const rows = [['건물', '층', '실명', '용도', '면적(㎡)', '크기', '냉난방기 종류', '대수', '설치연도', '모델', '물품 건수', '메모']];
+  const uniq = (i, k) => [...new Set(i.acs.map(a => a[k]).filter(Boolean))].join(', ');
+  for (const f of state.floors) for (const r of roomsOf(f)) rows.push([f.bld, f.name, r.info.name, r.info.use, fmt(r.area), r.units ? unitLabel(r.units) : '', acSum(r.info), r.info.acN || '', uniq(r.info, 'y'), uniq(r.info, 'm'), itemsFor(r.info, idx).length || '', r.info.memo]);
   download(`실별현황_${today()}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv'); };
 
 // ── 물품대장 읽기 (xlsx · csv · 엑셀로 저장된 html 표) ──
@@ -670,6 +695,8 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   const bf = fl('신관', '지하 1층'), ba = roomsOf(bf).reduce((a, r) => a + r.area, 0), bn = roomsOf(bf).length;
   toggleFixed(bf, 'front|s0b', true); toggleFixed(bf, 'front|s1a', true); const dining = roomsOf(bf).find(r => r.info.name === '식당(왼쪽)');
   console.assert(roomsOf(bf).length === bn - 2 && Math.abs(dining.area - (32 + 18) * 10.7 - shoelace(bf.fixed[0].pts)) < 1e-9 && Math.abs(roomsOf(bf).reduce((a, r) => a + r.area, 0) - ba) < 1e-9, '식당 세 조각 합치기 실패');
+  const old = migrate({ v: 3, floors: [{ strips: [{ rooms: { 0: { acN: 2, acType: '천장형', acYear: '2015' } } }], fixed: [] }] }).floors[0].strips[0].rooms[0];
+  console.assert(old.acs.length === 2 && old.acN === 2 && old.acs[1].t === '천장형' && acSum(old) === '천장형 2대 (2015)', '예전 에어컨 자료 옮기기 실패');
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

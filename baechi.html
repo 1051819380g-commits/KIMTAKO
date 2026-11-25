@@ -881,7 +881,7 @@ function renderReqs() {
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
   const openN = all.filter(x => !x.q.done).length, list = all.filter(x => reqView === 'all' || !x.q.done).sort((a, b) => a.q.done - b.q.done || (b.q.d > a.q.d) - (b.q.d < a.q.d));
   if (openN && !ro() && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
-  $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>${openN}</b>` : ''}`;
+  $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>(${openN})</b>` : ''}`;   // 진행 중인 건수를 (n)으로
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>

@@ -35,7 +35,7 @@
   .seg { display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:2px; }
   .seg button { border:0; background:transparent; border-radius:6px; padding:4px 12px; color:var(--sub); }
   .seg button:hover { color:var(--ink); background:transparent; }
-  .seg button.sch { font-weight:600; color:var(--ink); } .seg button.sch i { display:inline-block; font-style:normal; color:var(--faint); transition:transform .25s; } .seg button.sch.on { box-shadow:none; background:var(--accent-soft); } .seg button.sch.on i { transform:rotate(90deg); color:var(--accent); }
+  .seg button.sch { font-weight:600; color:var(--ink); } .seg button.sch.on { box-shadow:none; background:var(--accent-soft); }
   .grpb { display:inline-flex; max-width:0; overflow:hidden; white-space:nowrap; opacity:0; transition:max-width .35s ease, opacity .25s ease; } .grpb.open { max-width:340px; opacity:1; }
   .seg button.on { background:var(--surface); color:var(--accent); font-weight:700; box-shadow:0 1px 2px rgba(22,33,46,.14); }
   label.chk { display:flex; gap:6px; align-items:center; padding:4px 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); cursor:pointer; font-weight:500; }
@@ -556,7 +556,7 @@ function addItem(r, name, n) {
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
-  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t} <i>›</i></button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^중학교 /, ''))}</button>`).join('')}</span>`;
+  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^중학교 /, ''))}</button>`).join('')}</span>`;
   $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + grp('hs', '고등학교') + grp('ms', '중학교');
   $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
@@ -754,8 +754,8 @@ if (DB) {
 
 // ── 조작 ──
 $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset.s;
-  if (s || e.target.parentNode.dataset.s) {      // 학교 단추: 다시 그리지 않고 클래스만 바꿔야 펼쳐지는 움직임이 보인다
-    const k = s || e.target.parentNode.dataset.s; open = open === k ? null : k;
+  if (s) {      // 학교 단추: 다시 그리지 않고 클래스만 바꿔야 펼쳐지는 움직임이 보인다
+    open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
     return; } if (b === '@site') { site = true; allView = false; sel = null; return render(); } if (b) { site = false; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };

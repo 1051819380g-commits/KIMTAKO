@@ -200,7 +200,7 @@
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
     <button id="syncBtn" hidden></button>
-    <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="14"></label></span>
+    <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
 </header>
@@ -285,6 +285,8 @@ function strip(tf, x0, unit, depth, n, list, memo) {
 }
 const fx = (id, name, tf, pts) => ({ id, tf, pts, info: info(name) });
 
+// 고등학교 건물 이름(v7부터 "고등학교"를 붙인다 — 중학교 본관과 헷갈리지 않게)
+const HS1 = '고등학교 신관', HS2 = '고등학교 본관';
 function mainFloor(name, L, R, front, core, pods) {
   const H = 7.73, C = 10.34, D = 17.84, est = '가운데 부분 면적은 도면 어림값';
   const fixed = [];
@@ -296,7 +298,7 @@ function mainFloor(name, L, R, front, core, pods) {
   fixed.push(fx('podL', pods[0], 'L', rect(-6.2, -18.3, -0.5, -10.7)), fx('podR', pods[1], 'R', rect(0.5, -18.3, 6.2, -10.7)));
   fixed.push(fx('corL', '복도', 'L', rect(-36, -10.7, 0, -8)), fx('corR', '복도', 'R', rect(0, -10.7, 36, -8)));
   fixed.forEach(f => { if (!/^cor[LR]$/.test(f.id)) f.info.memo = est; });
-  return { bld: '신관', name, strips: [strip('L', -36, 2, 8, 18, L), strip('R', 0, 2, 8, 18, R)], fixed };
+  return { bld: HS1, name, strips: [strip('L', -36, 2, 8, 18, L), strip('R', 0, 2, 8, 18, R)], fixed };
 }
 function longFloor(name, p) {
   const c = i => `교실 ${p}${String(i).padStart(2, '0')}`, seq = (from, to, k0) => Array.from({ length: (to - from) / 4 }, (_, i) => [from + 4 * (i + 1), c(k0 + i)]);
@@ -305,7 +307,7 @@ function longFloor(name, p) {
   const memo = p === 1 ? '' : '1층 도면을 본뜬 추정 — 확인 필요';
   const fixed = [fx('wcL', '화장실', 'B', rect(0, -14, 3.1, 0)), fx('cor', '복도', 'B', rect(3.1, -9.9, 124.6, -7.2)), fx('wcR', '화장실', 'B', rect(120.1, -14, 124.6, -9.9))];
   if (memo) fixed.forEach(f => f.info.memo = memo);
-  return { bld: '본관', name, strips: [strip('B', 3.1, 2.25, 7.2, 54, list, memo)], fixed };
+  return { bld: HS2, name, strips: [strip('B', 3.1, 2.25, 7.2, 54, list, memo)], fixed };
 }
 // 강당·도서관동(다목적동): 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡은 배치. x = ①열에서 오른쪽(m), y = Ⓐ열에서 아래(m).
 // 실 경계는 도면에서 잰 어림값이고, 냉난방기는 2024 배치도 엑셀의 현황표(93~104번)를 옮겼다.
@@ -388,7 +390,7 @@ const GROUND = [
   ['테니스장', [[273.8, 89.4], [294.6, 89.4], [294.6, 132.1], [273.8, 132.1]]],
   ['소운동장', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
 ];
-const SITE = { '신관': [.9659, .2588, -.2588, .9659, -125.09, -159.01], '본관': [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [-1, 0, 0, -1, -189.73, -169.91], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
+const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [-1, 0, 0, -1, -189.73, -169.91], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
@@ -411,6 +413,7 @@ function migrate(s) {
   if (s.v < 4) { for (const f of s.floors) if (f.bld === '본관') for (const x of [...(f.strips || []), ...(f.fixed || [])]) x.tf = 'B'; s.v = 4; } // v4: 본관을 180° 돌려 그림
   if (s.v < 5) { if (!s.floors.some(f => f.bld === HALL)) s.floors.push(...hallFloors()); s.v = 5; } // v5: 강당·도서관동 추가
   if (s.v < 6) { if (!s.floors.some(f => f.bld === MS1 || f.bld === MS2)) s.floors.push(...middleFloors()); s.v = 6; } // v6: 중학교 구관·본관 추가
+  if (s.v < 7) { for (const f of s.floors) f.bld = { '신관': HS1, '본관': HS2 }[f.bld] || f.bld; s.v = 7; } // v7: 신관·본관 → 고등학교 신관·고등학교 본관
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -419,7 +422,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 6, items: [], log: [], floors: [
+  return { v: 7, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -535,16 +538,16 @@ const canon = s => norm(s).replace(/(\d)학년(\d+)반/g, '$1-$2');
 // 물품대장 설치장소 → 찾을 열쇠. K-에듀파인은 "(신관)(4층)인터넷강의실A"처럼 건물·층을 앞에 붙인다.
 // 건물·층이 있으면 그 층 안에서만 찾고, 실 번호(4자리, 예: 1204(3학년1반))가 있으면 반 이름 대신 번호로 찾는다(반은 해마다 바뀐다).
 function locKeys(loc) {
-  const m = norm(loc).match(/^\((신관|본관|다)\)(?:\((\d층|지하)\))?(.+)$/), full = canon(loc);
+  const m = norm(loc).match(/^\(([^()]+)\)(?:\((\d층|지하)\))?(.+)$/), full = canon(loc);
   if (!m) return [full];
   const num = m[3].match(/(?<!\d)\d{4}(?!\d)/);
-  return [full, `@${m[1] === '다' ? HALL : m[1]}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`];
+  return [full, `@${norm({ '신관': HS1, '본관': HS2, '다': HALL }[m[1]] || m[1])}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`];
 }
 function itemIndex() {                       // 열쇠 → 물품 목록
   const m = new Map(); for (const it of state.items) for (const k of locKeys(it.loc)) { if (!m.has(k)) m.set(k, []); m.get(k).push(it); } return m;
 }
 const roomKeys = i => [i.name, ...String(i.alias || '').split(',')].map(canon).filter(Boolean).flatMap(k => [k, ...(k.match(/(?<!d)d{4}(?!d)/) || []).filter(n => n !== k)]);
-const itemsFor = (i, idx, f) => [...new Set(roomKeys(i).flatMap(k => [...(idx.get(k) || []), ...(idx.get(`@${f.bld}|${norm(f.name)}|${k}`) || [])]))];
+const itemsFor = (i, idx, f) => [...new Set(roomKeys(i).flatMap(k => [...(idx.get(k) || []), ...(idx.get(`@${norm(f.bld)}|${norm(f.name)}|${k}`) || [])]))];
 
 const roomItems = (r, name) => itemsFor(r.info, itemIndex(), state.floors[cur]).filter(it => name == null || it.n === name);
 function setItemQty(r, name, n) {
@@ -564,7 +567,7 @@ function addItem(r, name, n) {
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
-  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^중학교 /, ''))}</button>`).join('')}</span>`;
+  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
   $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + grp('hs', '고등학교') + grp('ms', '중학교');
   $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
@@ -954,40 +957,40 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
 
 // 자체 점검: 벽을 허물었다 다시 세워도 면적 합과 실 수가 그대로여야 한다
 (function selfCheck() {
-  const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl('신관', '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();
+  const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl(HS1, '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();
   console.assert(Math.abs(roomsOf(f).filter(r => r.key.startsWith('s0')).reduce((a, r) => a + r.area, 0) - 36 * 8) < 1e-9, '신관 날개 면적 ≠ 288㎡');
   toggleWall(f.strips[0], 6, true); console.assert(roomsOf(f).length === n0 - 1 && Math.abs(sum() - a0) < 1e-9, '벽 철거 후 면적 합이 달라짐');
   toggleWall(f.strips[0], 6, true); toggleWall(f.strips[0], 7, true); console.assert(roomsOf(f).length === n0 + 1 && Math.abs(sum() - a0) < 1e-9, '벽 설치 후 면적 합이 달라짐');
-  console.assert(Math.abs(roomsOf(fl('신관', '지하 1층')).find(r => r.info.name === '조리장').area - 14 * 10.7) < 1e-9, '조리장 면적 ≠ 149.8㎡');
+  console.assert(Math.abs(roomsOf(fl(HS1, '지하 1층')).find(r => r.info.name === '조리장').area - 14 * 10.7) < 1e-9, '조리장 면적 ≠ 149.8㎡');
   const fwN = fixedWalls(f).length; toggleFixed(f, 'front|ccor', true);
   console.assert(fwN >= 5 && roomsOf(f).length === n0 && Math.abs(sum() - a0) < 1e-9, '가운데 벽 철거 후 실 수·면적 합이 어긋남'); // 위에서 날개 실이 하나 늘어 n0+1 → 하나 묶여 n0
   toggleFixed(f, 'front|ccor', true); console.assert(roomsOf(f).length === n0 + 1, '가운데 벽을 다시 세워도 실 수가 안 돌아옴');
-  const bf = fl('신관', '지하 1층'), ba = roomsOf(bf).reduce((a, r) => a + r.area, 0), bn = roomsOf(bf).length;
+  const bf = fl(HS1, '지하 1층'), ba = roomsOf(bf).reduce((a, r) => a + r.area, 0), bn = roomsOf(bf).length;
   toggleFixed(bf, 'front|s0b', true); toggleFixed(bf, 'front|s1a', true); const dining = roomsOf(bf).find(r => r.info.name === '식당(왼쪽)');
   console.assert(roomsOf(bf).length === bn - 2 && Math.abs(dining.area - (32 + 18) * 10.7 - shoelace(bf.fixed[0].pts)) < 1e-9 && Math.abs(roomsOf(bf).reduce((a, r) => a + r.area, 0) - ba) < 1e-9, '식당 세 조각 합치기 실패');
   const old = migrate({ v: 3, floors: [{ strips: [{ rooms: { 0: { acN: 2, acType: '천장형', acYear: '2015' } } }], fixed: [] }] }).floors[0].strips[0].rooms[0];
   console.assert(old.acs.length === 2 && old.acN === 2 && old.acs[1].t === '천장형' && acSum(old) === '천장형 2대 (2015)', '예전 에어컨 자료 옮기기 실패');
-  const bk = roomsOf(fl('본관', '1층')), xOf = r => Math.min(...r.pts.map(q => q[0]));
-  console.assert(xOf(bk[0]) > xOf(bk[5]) && Math.min(...bk.flatMap(r => r.pts).map(q => q[1])) > -14.01 && migrate({ v: 3, floors: [{ bld: '본관', name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors.find(x => x.bld === '본관').strips[0].tf === 'B', '본관 180° 돌리기 실패');
+  const bk = roomsOf(fl(HS2, '1층')), xOf = r => Math.min(...r.pts.map(q => q[0]));
+  console.assert(xOf(bk[0]) > xOf(bk[5]) && Math.min(...bk.flatMap(r => r.pts).map(q => q[1])) > -14.01 && migrate({ v: 3, floors: [{ bld: '본관', name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors.find(x => x.bld === HS2).strips[0].tf === 'B', '본관 180° 돌리기 실패');
   const cc = centroid([rect(0, 0, 3, 2), [[3, 0], [3, 2], [4, 2], [4, 0]]]); console.assert(Math.abs(cc[0] - 2) < 1e-9 && Math.abs(cc[1] - 1) < 1e-9, '합친 실의 면적 중심 계산 틀림'); // 방향이 다른 두 조각 = 4×2 사각형
-  console.assert(locKeys('(신관)(4층)인터넷강의실A')[1] === '@신관|4층|인터넷강의실A' && locKeys('(신관)(2층)1204(3학년1반)')[1] === '@신관|2층|1204' && locKeys('(본관)(1층)1학년4반')[1] === '@본관|1층|1-4'
-    && locKeys('(신관)(지하)조리실')[1] === '@신관|지하1층|조리실' && locKeys('교실공통').length === 1, '물품대장 설치장소 풀기 실패');
-  { const keep = [state, cur]; state = d; cur = d.floors.indexOf(fl('신관', '1층')); const rm = roomsOf(d.floors[cur]).find(r => r.info.name === '보건실'), q = n => roomItems(rm, n).reduce((a, it) => a + it.q, 0);
+  console.assert(locKeys('(신관)(4층)인터넷강의실A')[1] === '@고등학교신관|4층|인터넷강의실A' && locKeys('(신관)(2층)1204(3학년1반)')[1] === '@고등학교신관|2층|1204' && locKeys('(본관)(1층)1학년4반')[1] === '@고등학교본관|1층|1-4'
+    && locKeys('(신관)(지하)조리실')[1] === '@고등학교신관|지하1층|조리실' && locKeys('교실공통').length === 1, '물품대장 설치장소 풀기 실패');
+  { const keep = [state, cur]; state = d; cur = d.floors.indexOf(fl(HS1, '1층')); const rm = roomsOf(d.floors[cur]).find(r => r.info.name === '보건실'), q = n => roomItems(rm, n).reduce((a, it) => a + it.q, 0);
     addItem(rm, '침대', 2); addItem(rm, '침대', 1); d.items.push({ n: '침대', loc: '(신관)(1층)보건실', q: 1 }); setItemQty(rm, '침대', 2);
     console.assert(q('침대') === 2 && d.items.length === 1, '물품 수량 고치기 실패'); setItemQty(rm, '침대', 0); console.assert(d.items.length === 0, '물품 지우기 실패'); [state, cur] = keep; }
   const hf = fl(HALL, '1층'), gym = roomsOf(hf).find(r => r.info.name === '강당');
   console.assert(d.floors.filter(x => x.bld === HALL).length === 5 && Math.abs(gym.area - (22.1 * 20.6 - 1 * 2.95)) < 1e-6 && gym.info.acN === 4 && fixedWalls(hf).some(w => w.id === 'lib1|kit')
-    && migrate({ v: 4, floors: [] }).floors.filter(x => x.bld === HALL).length === 5 && locKeys('(다)(3층)세미나실')[1] === '@' + HALL + '|3층|세미나실', '강당·도서관동 추가 실패');
-  { const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], a = ap(SITE['신관'], [-40, 0]), b = ap(SITE['본관'], [124.6, 0]);
+    && migrate({ v: 4, floors: [] }).floors.filter(x => x.bld === HALL).length === 5 && locKeys('(다)(3층)세미나실')[1] === '@' + norm(HALL) + '|3층|세미나실' && locKeys('(중학교 본관)(1층)교무실')[1] === '@중학교본관|1층|교무실', '강당·도서관동 추가 실패');
+  { const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], a = ap(SITE[HS1], [-40, 0]), b = ap(SITE[HS2], [124.6, 0]);
     console.assert(Object.values(SITE).every(M => Math.abs(M[0] * M[3] - M[1] * M[2] - 1) < 1e-3) && Math.hypot(a[0] - b[0], a[1] - b[1]) > 5 && Math.hypot(a[0] - b[0], a[1] - b[1]) < 40, '건물 대지 위치가 이상함'); }
   { const m1 = fl(MS1, '1층'), m2 = fl(MS2, '1층'), r2 = roomsOf(m2), by = (f, n) => roomsOf(f).find(r => r.info.name === n);
     console.assert(d.floors.filter(x => x.bld === MS1).length === 3 && d.floors.filter(x => x.bld === MS2).length === 4 && Math.abs(by(m1, '컴퓨터실').area - 64.8) < 1e-9 && Math.abs(by(m2, '교장실').area - 45) < 1e-9
       && by(m2, '교무실').units === 2 && by(m2, '교무실').info.acN === 3 && Math.abs(r2.filter(r => r.key[0] === 's').reduce((a, r) => a + r.area, 0) - 40.5 * 7.5) < 1e-9 && migrate({ v: 5, floors: [] }).floors.length === 7, '중학교 추가 실패'); }
   { const sq = fitBox([rect(0, 0, 4, 2)], [2, 1], 4), L = fitBox([rect(0, 0, 1, 5), rect(1, 4, 6, 5)], centroid([rect(0, 0, 1, 5), rect(1, 4, 6, 5)]), 6);
     console.assert(Math.abs(sq.w - 4) < 1e-9 && Math.abs(sq.h - 2) < 1e-9 && textW('가a1') === 2.24 && spans([rect(0, 0, 1, 1), rect(1, 0, 2, 1)], .5, 0).length === 1 && L.w <= 6 && L.h <= 5 && L.w > 0.5, '글자 자리 재기 실패'); }
-  console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
-  console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => ['신관', '본관'].includes(x.bld)).map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
-  console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');
+  console.assert(!fl(HS2, '지하 1층') && fl(HS1, '지하 1층'), '지하층은 신관에만 있어야 함');
+  console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
+  console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');
 })();
 render();
 </script>

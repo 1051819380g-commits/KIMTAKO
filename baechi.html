@@ -585,7 +585,7 @@ function addItem(r, name, n) {
 }
 
 // ── 그리기 ──
-function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
+function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
@@ -837,11 +837,18 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
-    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
-$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
+    return; } if (b === '@site') { site = true; allView = false; sel = null; $('zoom').value = 100; render(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; $('zoom').value = 100; render(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
+$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } $('zoom').value = 100; render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
-function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = z > 100 || allView ? 'none' : site ? '76vh' : '62vh'; }
+// 도면 크기 100% 이하에서는 도면이 한 화면에 들어오게 높이를 맞춘다: 맨 위로 올렸을 때 도면 위(제목·합계)와 아래(범례)를 빼고 남는 높이. 더 크게 보려면 "도면 크기"를 키운다.
+function fitPlan() {
+  const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
+  if (z > 100) { s.maxHeight = 'none'; return; }
+  const top = $('planbox').getBoundingClientRect().top + scrollY, room = innerHeight - top - $('legend').offsetHeight - 36;
+  s.maxHeight = Math.max(260, room) + 'px';
+}
+addEventListener('resize', fitPlan);
 $('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
 let drag = null, dragged = false, raf = 0;
@@ -857,7 +864,7 @@ $('plan').onclick = e => {
   if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물을 누르면 그 건물의 전체 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;
     const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
-    cur = +fi; render();          // 누른 층이 화면 가운데 오도록 내려간다
+    cur = +fi; $('zoom').value = 100; render();          // 누른 층이 화면 가운데 오도록 내려간다(한 화면에 다 들어오면 움직이지 않는다)
     return document.querySelector(`#plan g[data-fl="${cur}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   const t = e.target;

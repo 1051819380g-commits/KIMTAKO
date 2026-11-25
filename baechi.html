@@ -682,12 +682,12 @@ function renderPlan() {
     x0 = C[0] - R - 4; w = 2 * R + 8; y0 = S * (C[1] - R) - hi * gap - 9; h = S * (C[1] + R) - lo * gap + T + 1 - y0 - 2.4;
   } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
-    h_ += `<g transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
+    h_ += `<g data-fl="${d.i}" transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
   }
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물을 누르면 그 건물로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래)' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래)' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
@@ -817,7 +817,8 @@ $('plan').onclick = e => {
   if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물을 누르면 그 건물의 전체 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;
     const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
-    cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); return render();
+    cur = +fi; render();          // 누른 층이 화면 가운데 오도록 내려간다
+    return document.querySelector(`#plan g[data-fl="${cur}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;

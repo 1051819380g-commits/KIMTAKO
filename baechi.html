@@ -837,7 +837,7 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
-    return; } if (b === '@site') { site = true; allView = false; sel = null; return render(); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
+    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
 $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };

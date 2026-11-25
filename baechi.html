@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>창원남고 실 배치도</title>
+<title>남제학원 실 배치도</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
   /* 배치: 위에 도구 막대, 가운데에 도면 종이(왼쪽)와 실 정보(오른쪽), 아래에 표. 도면은 제도 용지처럼, 나머지는 조용하게. */
@@ -35,6 +35,7 @@
   .seg { display:inline-flex; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:2px; }
   .seg button { border:0; background:transparent; border-radius:6px; padding:4px 12px; color:var(--sub); }
   .seg button:hover { color:var(--ink); background:transparent; }
+  .seg button.tg { border:1px dashed var(--line-strong); margin:0 2px; color:var(--faint); } .seg button.tg.on { border-style:solid; border-color:var(--accent); background:var(--accent-soft); box-shadow:none; }
   .seg button.on { background:var(--surface); color:var(--accent); font-weight:700; box-shadow:0 1px 2px rgba(22,33,46,.14); }
   label.chk { display:flex; gap:6px; align-items:center; padding:4px 11px; border:1px solid var(--line); border-radius:6px; background:var(--surface); cursor:pointer; font-weight:500; }
   label.chk.on { background:var(--warn-soft); border-color:var(--warn); color:var(--warn); }
@@ -172,7 +173,7 @@
 <body>
 <header>
   <div class="bar">
-    <div class="brand"><small>시설 관리</small><h1>창원남고 실 배치도</h1></div>
+    <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
     <div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div>
     <div class="grp push noprint">
@@ -372,11 +373,11 @@ function middleFloors() {
 }
 // 전체 배치에 깔 바닥(운동장 등): 2023 건물배치도(1/1000)에서 눈으로 잡은 어림 테두리, 배치도 좌표(m). 그릴 때 건물처럼 180° 돌려 본다.
 const GROUND = [
-  ['운동장(고등학교)', [[121.9, 54.6], [176.5, 54.6], [177.8, 157.5], [134.6, 157.5], [88.9, 133.4], [111.8, 76.2]]],
-  ['운동장(중학교)', [[196.9, 89.3], [247.7, 89.3], [247.7, 151.9], [196.9, 151.9]]],
-  ['농구장', [[248.4, 89.4], [265.4, 89.4], [265.4, 151.9], [248.4, 151.9]]],
-  ['테니스장', [[273.8, 89.4], [294.6, 89.4], [294.6, 132.1], [273.8, 132.1]]],
-  ['소운동장', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
+  ['운동장(고등학교)', 'hs', [[121.9, 54.6], [176.5, 54.6], [177.8, 157.5], [134.6, 157.5], [88.9, 133.4], [111.8, 76.2]]],
+  ['운동장(중학교)', 'ms', [[196.9, 89.3], [247.7, 89.3], [247.7, 151.9], [196.9, 151.9]]],
+  ['농구장', '', [[248.4, 89.4], [265.4, 89.4], [265.4, 151.9], [248.4, 151.9]]],
+  ['테니스장', '', [[273.8, 89.4], [294.6, 89.4], [294.6, 132.1], [273.8, 132.1]]],
+  ['소운동장', 'ms', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
 ];
 const SITE = { '신관': [.9659, .2588, -.2588, .9659, -125.09, -159.01], '본관': [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [-1, 0, 0, -1, -189.73, -169.91], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
 const ST = '계단실';
@@ -429,6 +430,9 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
+const show = { hs: true, ms: true };                       // 고등학교·중학교 보이기(둘 다 끌 수는 없다)
+const school = b => b === MS1 || b === MS2 ? 'ms' : 'hs';
+const scope = () => show.hs && show.ms ? '모든 건물' : show.hs ? '고등학교' : '중학교';
 let cur = home(), allView = false, site = true,   // 처음 열면 전체 배치부터
     rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
@@ -551,8 +555,8 @@ function addItem(r, name, n) {
 // ── 그리기 ──
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
 function renderTabs() {
-  const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
-  $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="세 건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + blds.map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
+  const blds = [...new Set(state.floors.map(f => f.bld))].filter(x => show[school(x)]), b = state.floors[cur].bld;
+  $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + [['hs', '고등학교'], ['ms', '중학교']].map(([k, t]) => `<button class="tg${show[k] ? ' on' : ''}" data-s="${k}" aria-pressed="${show[k]}" title="${t} 건물 보이기/숨기기">${show[k] ? '✓ ' : ''}${t}</button>`).join('') + blds.map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
   $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
@@ -607,7 +611,7 @@ function drawFloor(fi) {
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
 function renderPlan() {
   const f = state.floors[cur], m = 1.5;
-  const ds = (site ? state.floors.map((x, i) => i) : allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
+  const ds = (site ? state.floors.map((x, i) => show[school(x.bld)] ? i : -1).filter(i => i >= 0) : allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
   let x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0, h = 0, h_ = '';
   if (site) {
     // 전체 배치: 건물마다 대지 위치로 옮긴 뒤 눕혀서, 뒤쪽 건물부터·아래층부터 그린다. 층 높이는 "층 간격"으로 조절(좁히면 실제 건물처럼 겹치고, 넓히면 아래층이 보인다).
@@ -617,12 +621,12 @@ function renderPlan() {
     const deg = rotDeg, th = deg * Math.PI / 180, C = [-180, -130], co = Math.cos(th), si = Math.sin(th), rs = `rotate(${deg} ${C[0]} ${C[1]})`;
     const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
     const depth = b => { const d = ds.find(d => state.floors[d.i].bld === b); return d ? turn(SITE[b], d.x0 + d.w / 2, d.y0 + d.h / 2)[1] : 0; };
-    const ground = () => { for (const [name, P] of GROUND) {          // 바닥은 1층 바닥판 아랫면 높이에 깐다
+    const ground = () => { for (const [name, who, P] of GROUND) { if (who && !show[who]) continue;          // 바닥은 1층 바닥판 아랫면 높이에 깐다
       const q = P.map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx + K * sy, S * sy + T]; }), c = centroid([q]);
       h_ += `<polygon class="ground" points="${q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')}"/><text class="gnd" x="${c[0].toFixed(2)}" y="${(c[1] + 1).toFixed(2)}" font-size="3">${esc(name)}</text>`;
     } };
     for (const under of [true, false]) { if (!under) ground();   // 지하층 → 바닥(운동장) → 지상층 순서로 그려, 지하층이 운동장을 뚫고 보이지 않게 한다
-    for (const b of Object.keys(SITE).sort((a, b) => depth(a) - depth(b))) {
+    for (const b of Object.keys(SITE).filter(b => show[school(b)]).sort((a, b) => depth(a) - depth(b))) {
       const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = b === MS1 || b === MS2; let lab = null;
       for (const d of ds.filter(d => state.floors[d.i].bld === b && (lv(state.floors[d.i].name) < 0) === under).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {
         const L = lv(state.floors[d.i].name), oy = -L * gap; lo = Math.min(lo, L); hi = Math.max(hi, L);
@@ -677,17 +681,17 @@ function renderPanel() {
 }
 function renderTable() {
   const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(); let ac = 0, noAc = 0, nRoom = 0, nItem = 0, rows = '';
-  state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { const its = itemsFor(r.info, idx, f); its.forEach(it => used.add(it)); if (!site && f.bld !== b) continue;
+  state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { const its = itemsFor(r.info, idx, f); its.forEach(it => used.add(it)); if (site ? !show[school(f.bld)] : f.bld !== b) continue;
     const i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
     if (need) { nRoom++; if (!+i.acN) noAc++; }
     rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const total = Object.values(tot).reduce((a, b) => a + b, 0);
-  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${site ? '모든 건물' : esc(b)} 전체 면적</span></div>
+  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${site ? scope() : esc(b)} 전체 면적</span></div>
     <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
     <div class="stat"><b>${ac}<small>대</small></b><span>에어컨</span></div>
     <div class="stat${noAc ? ' warn' : ''}"><b>${noAc}<small>실</small></b><span>에어컨 없는 실</span></div>
     <div class="stat"><b>${nItem.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
-  $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;
+  $('tblTitle').textContent = `${site ? scope() : b} 실별 면적표`;
   $('sum').innerHTML = Object.keys(USES).filter(u => tot[u]).map(u => `<span><span class="sw" style="background:${USES[u]}"></span>${u} ${fmt(tot[u])}㎡</span>`).join('');
   $('tbl').innerHTML = `<table><thead><tr><th>층</th><th>실명</th><th>용도</th><th class="n">면적(㎡)</th><th>크기</th><th>에어컨</th><th>에어컨 모델명</th><th class="n">물품</th><th>메모</th></tr></thead><tbody>${rows}</tbody></table>`;
   const ung = new Map(); for (const it of state.items) if (!used.has(it)) { const k = norm(it.loc); if (!ung.has(k)) ung.set(k, []); ung.get(k).push(it); }
@@ -748,7 +752,9 @@ if (DB) {
 }
 
 // ── 조작 ──
-$('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b === '@site') { site = true; allView = false; sel = null; return render(); } if (b) { site = false; cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
+$('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset.s;
+  if (s) { show[s] = !show[s]; if (!show.hs && !show.ms) show[s === 'hs' ? 'ms' : 'hs'] = true;     // 숨긴 학교의 건물을 보고 있었으면 남은 학교의 첫 건물로
+    if (!show[school(state.floors[cur].bld)]) cur = state.floors.findIndex(f => show[school(f.bld)] && f.name === '1층'); sel = null; return render(); } if (b === '@site') { site = true; allView = false; sel = null; return render(); } if (b) { site = false; cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
 $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };

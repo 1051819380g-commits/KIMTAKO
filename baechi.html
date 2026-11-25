@@ -497,6 +497,8 @@ state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
 const school = b => [MS1, MS2, B5, B8].includes(b) ? 'ms' : 'hs';
 let open = null;                                            // 건물 단추가 펼쳐진 학교('hs'·'ms'), 없으면 null
+let siteLv = null;   // 전체 배치에서 고른 층 이름(null = 모든 층). 층 단추가 건물 하나가 아니라 모든 건물의 같은 층을 보여 준다.
+const lvOf = n => n.startsWith('지하') ? -1 : parseInt(n) - 1;
 let cur = home(), allView = false, site = true,   // 처음 열면 전체 배치부터
     rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = false;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
@@ -622,7 +624,10 @@ function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k && ![B5, B6, B8].includes(x)).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
   $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + grp('hs', '고등학교') + grp('ms', '중학교');
-  $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
+  if (site) {   // 전체 배치: 모든 건물에 걸친 층 이름으로 단추를 만든다
+    const names = [...new Set(state.floors.filter(f => SITE[f.bld]).map(f => f.name))].sort((p, q) => lvOf(p) - lvOf(q) || p.localeCompare(q));
+    $('floorTabs').innerHTML = `<button class="${siteLv == null ? 'on' : ''}" data-lv="">전체</button>` + names.map(n => `<button class="${siteLv === n ? 'on' : ''}" data-lv="${esc(n)}">${esc(n)}</button>`).join('');
+  } else $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
 }
@@ -728,7 +733,7 @@ function poseSite() {
     k[4].setAttribute('transform', `translate(0 ${oy.toFixed(2)}) ${ms}`);
     lo = Math.min(lo, L); hi = Math.max(hi, L);
     for (const [x, y] of [[x0, y0], [x0 + w, y0], [x0, y0 + hh], [x0 + w, y0 + hh]]) { const [sx, sy] = turn(M, x, y), py = S * sy + oy;
-      R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (L >= 0 && (!labOf[b] || py < labOf[b][1])) labOf[b] = [sx, py]; }
+      R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if ((L >= 0 || siteLv != null) && (!labOf[b] || py < labOf[b][1])) labOf[b] = [sx, py]; }
     fs.push({ el, L, dep: turn(M, x0 + w / 2, y0 + hh / 2)[1] });
   }
   for (const box of [svg.querySelector('#sUnder'), svg.querySelector('#sOver')]) {      // 순서가 달라졌을 때만 다시 꽂는다
@@ -747,12 +752,12 @@ function poseSite() {
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
 function renderPlan() {
   const f = state.floors[cur], m = 1.5;
-  const ds = (site ? state.floors.map((x, i) => i) : allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
+  const ds = (site ? state.floors.map((x, i) => siteLv == null || x.name === siteLv ? i : -1).filter(i => i >= 0) : allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
   let x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0, h = 0, h_ = '';
   if (site) {
     // 전체 배치: 여기서는 뼈대만 만든다(층마다 바닥판 옆면 4겹 + 윗면, 바닥(운동장), 건물 이름). 자리·방향·높이·그리는 순서는 poseSite()가
     // transform과 순서만 바꿔서 잡는다 — 끌어서 돌릴 때 도면을 다시 만들지 않아야 부드럽다.
-    const lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, its = ds.filter(d => SITE[state.floors[d.i].bld]);
+    const lv = lvOf, its = ds.filter(d => SITE[state.floors[d.i].bld] && (siteLv == null || state.floors[d.i].name === siteLv));
     const one = d => { const fl = state.floors[d.i]; return `<g class="sf${school(fl.bld) === 'ms' ? ' ms' : ''}" data-b="${esc(fl.bld)}" data-l="${lv(fl.name)}" data-bb="${[d.x0, d.y0, d.w, d.h].join(' ')}">${`<g class="slab">${d.sil}</g>`.repeat(4)}<g class="top">${d.html}</g></g>`; };
     h_ = `<g id="sUnder">${its.filter(d => lv(state.floors[d.i].name) < 0).map(one).join('')}</g><g id="sGround">${GROUND.map(([name]) => `<polygon class="ground"/><text class="gnd" font-size="3">${esc(name)}</text>`).join('')}</g>`
       + `<g id="sOver">${its.filter(d => lv(state.floors[d.i].name) >= 0).map(one).join('')}</g><g id="sLab">${Object.keys(SITE).filter(b => ![B5, B6, B8].includes(b)).map(b => `<text class="flr${school(b) === 'ms' ? ' ms' : ''}" data-b="${esc(b)}" font-size="4">${esc(b)}</text>`).join('')}</g>`;
@@ -762,7 +767,7 @@ function renderPlan() {
   }
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
-  $('sheetTitle').textContent = site ? '전체 배치 (입체)' : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
+  $('sheetTitle').textContent = site ? '전체 배치 (입체)' + (siteLv ? ` · 모든 건물 ${siteLv}` : '') : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
   $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래) · Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동 · 휴대폰은 두 손가락으로 이동·크기 조절' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
@@ -877,7 +882,8 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
     return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); autoZoom(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
-$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
+$('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
+  const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).

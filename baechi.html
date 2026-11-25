@@ -134,6 +134,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; }
   #planbox.all { max-height:none; }
+  #printStack { display:none; } @media print { #printStack { display:block; } }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { pointer-events:none; } #plan.site .hit { display:none; }
   .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
   .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
@@ -162,12 +163,19 @@
     .noprint, #panel { display:none !important; }
     header { position:static; border:0; } body { background:#fff; }
     main { display:block; padding:0 0 8px; } .card { border:0; }
-    #planbox { max-height:none; overflow:visible; background:none; border:0; } #plan { width:100% !important; }
+    #sheet { display:block; }   /* 세로로 늘어놓는 틀(flex)은 인쇄에서 빈 쪽을 만든다 */
+    #planbox { max-height:none; overflow:visible; background:none; border:0; padding:0; margin:0; }
+    #plan { width:100% !important; max-height:70vh !important; }   /* 도면이 쪽에 안 들어가면 통째로 다음 쪽으로 밀려 빈 쪽이 생기므로, 제목·합계와 함께 첫 쪽에 들어가는 높이(쪽 높이의 70%)로 맞춘다 */
     .scroll { max-height:none; overflow:visible; border:0; } section { margin:0; padding:8px 0; }
     /* 도면만 인쇄: 제목·도면·범례만 한 장에 */
     body.plan-only header, body.plan-only .stats, body.plan-only section { display:none !important; }
-    body.plan-only .sheet-head b::before { content:"창원남고 "; }
-    body.plan-only #plan { max-height:var(--print-h); }
+    body.plan-only #plan { max-height:var(--print-h) !important; }
+    body.plan-only main { padding:0; } body.plan-only .sheet-head { padding:0 0 4mm; }
+    /* 전체 층을 도면만 인쇄: 층마다 따로 그려 쪽 사이에서 잘리지 않게 한다 */
+    body.print-stack #planbox { display:none; }
+    #printStack .pf { break-inside:avoid; page-break-inside:avoid; margin-bottom:4mm; }
+    #printStack h3 { margin:0 0 1mm; font-size:13pt; color:var(--accent); }
+    #printStack svg { display:block; width:100%; max-height:125mm; }
   }
 </style>
 </head>
@@ -876,11 +884,19 @@ async function readTable(file) {
   return readCsv(text);
 }
 let pending = null;
-// 도면만 인쇄: 한 층은 가로, 전체 층은 세로 용지 한 장에 맞춘다
+// 도면만 인쇄: 한 층과 전체 배치는 가로 용지 한 장에 맞추고, 전체 층은 세로 용지에 층마다 따로 그려 여러 쪽으로 나눈다
 $('printPlan').onclick = () => {
-  const st = document.createElement('style'); st.textContent = `@page { size: A4 ${allView ? 'portrait' : 'landscape'}; margin: 10mm; }`;
-  document.head.append(st); document.body.classList.add('plan-only'); document.body.style.setProperty('--print-h', allView ? '250mm' : '160mm');
-  addEventListener('afterprint', () => { st.remove(); document.body.classList.remove('plan-only'); }, { once: true });
+  const stackMode = allView && !site, f = state.floors[cur];
+  const st = document.createElement('style'); st.textContent = `@page { size: A4 ${stackMode ? 'portrait' : 'landscape'}; margin: 10mm; }`;
+  document.head.append(st); document.body.classList.add('plan-only'); document.body.style.setProperty('--print-h', '165mm');
+  let box = null;
+  if (stackMode) {          // 전체 층: 위층부터 층마다 그림 하나씩
+    box = document.createElement('div'); box.id = 'printStack';
+    box.innerHTML = state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse().map(i => { const d = drawFloor(i);
+      return `<div class="pf"><h3>${esc(state.floors[i].name)}</h3><svg xmlns="http://www.w3.org/2000/svg" viewBox="${d.x0} ${d.y0} ${d.w} ${d.h}">${d.html}</svg></div>`; }).join('');
+    $('planbox').after(box); document.body.classList.add('print-stack');
+  }
+  addEventListener('afterprint', () => { st.remove(); box?.remove(); document.body.classList.remove('plan-only', 'print-stack'); }, { once: true });
   print();
 };
 $('itemBtn').onclick = () => $('itemFile').click();

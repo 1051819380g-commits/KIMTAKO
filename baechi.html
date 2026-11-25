@@ -142,6 +142,7 @@
   .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
   .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
   .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
+  .door { fill:var(--warn); stroke:#fff; stroke-width:.15; stroke-linejoin:round; pointer-events:none; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -274,6 +275,7 @@ function guessUse(n) {
 const rot = deg => { const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r); return ([x, y]) => [x * c - y * s, x * s + y * c]; };
 const rL = rot(-15), rR = rot(15);
 const TF = { '': p => p, B: p => [124.6 - p[0], -14 - p[1]], // B = 본관: 엑셀 배치도(2024)와 같은 방향이 되게 180° 돌림
+  M: p => [90.5 - p[0], -9.9 - p[1]],                          // M = 중학교 구관: 180° 돌림(사용자 요청)
   L: p => { const q = rL(p); return [q[0] - 4, q[1]]; }, R: p => { const q = rR(p); return [q[0] + 4, q[1]]; } };
 const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 const shoelace = pts => Math.abs(pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + p[0] * q[1] - q[0] * p[1]; }, 0)) / 2;
@@ -362,10 +364,10 @@ function hallFloors() {
 const MS1 = '중학교 구관', MS2 = '중학교 본관';
 function middleFloors() {
   const mk = mkRoom;
-  const old = (name, L, R, mid, wc) => ({ bld: MS1, name, strips: [strip('', 4.3, 2.25, 7.2, 16, L), strip('', 53.8, 2.25, 7.2, 14, [...R, [14, '계단실#3']])], fixed: [
+  const old = (name, L, R, mid, wc) => ({ bld: MS1, name, strips: [strip('M', 4.3, 2.25, 7.2, 16, L), strip('M', 53.8, 2.25, 7.2, 14, [...R, [14, '계단실#3']])], fixed: [
     mk('st1', '계단실#1', [0.7, -7.2, 4.3, 0], '공용'), mk('cor', '복도', [4.3, 0, 85.3, 2.7], '공용'),
     mk('st2', '계단실#2', [40.3, -12.6, 44.8, -2.7], '공용'), mk('mid', mid, [44.8, -9.9, 53.8, -2.7], guessUse(mid)), mk('hall', '가운데 복도', [40.3, -2.7, 53.8, 0], '공용'),
-    mk('wc', wc, [85.3, -7.2, 89.8, 2.7], /WC|화장실/.test(wc) ? '화장실' : '창고')] });
+    mk('wc', wc, [85.3, -7.2, 89.8, 2.7], /WC|화장실/.test(wc) ? '화장실' : '창고')].map(x => (x.tf = 'M', x)) });
   // 본관은 교장실 6m·평가관리실 3m처럼 1.5m 단위로 나뉘어 있어 칸을 1.5m로 잡는다(교실 1실 = 6칸 = 9m)
   const main = (name, list, acs) => { const st = Object.assign(strip('', 0, 1.5, 7.5, 27, [...list, [27, '계단실']]), { per: 6 });
     for (const r of Object.values(st.rooms)) if (acs[r.name]) { r.acs = acList(acs[r.name], '천장형', ''); r.acN = r.acs.length; }
@@ -393,7 +395,15 @@ const GROUND = [
   ['테니스장', [[273.8, 89.4], [294.6, 89.4], [294.6, 132.1], [273.8, 132.1]]],
   ['소운동장', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
 ];
-const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [-1, 0, 0, -1, -189.73, -169.91], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
+// 건물 출입구(1층에만 그린다): [좌표 틀(tf), x, y, 안쪽 방향 x, y]. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
+const DOORS = {
+  [HS1]: [['', 0, 0, 0, -1], ['', 0, -17.84, 0, 1], ['L', -36, -4, 1, 0], ['R', 36, -4, -1, 0]],                       // 현관(가운데 앞), 가운데 뒤, 양 끝 계단
+  [HS2]: [['B', 63.85, -9.9, 0, 1], ['B', 5.4, -9.9, 0, 1], ['B', 119.2, -9.9, 0, 1]],                                     // 가운데 현관, 양 끝 계단 옆
+  [HALL]: [['', 15.1, 8.5, 1, 0], ['', 7.4, 23.1, -1, 0]],                                                              // 강당 HALL, 도서관 로비
+  [MS1]: [['M', 42, 2.7, 0, -1], ['M', 4.3, 1.35, 1, 0], ['M', 42.55, -12.6, 0, 1], ['M', 83.05, -7.2, 0, 1]],             // 가운데 현관, 왼쪽 복도 끝, 계단실#2 뒤, 계단실#3 뒤
+  [MS2]: [['', 15.75, 0, 0, -1]],                                                                                      // 홀
+};
+const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
@@ -417,6 +427,7 @@ function migrate(s) {
   if (s.v < 5) { if (!s.floors.some(f => f.bld === HALL)) s.floors.push(...hallFloors()); s.v = 5; } // v5: 강당·도서관동 추가
   if (s.v < 6) { if (!s.floors.some(f => f.bld === MS1 || f.bld === MS2)) s.floors.push(...middleFloors()); s.v = 6; } // v6: 중학교 구관·본관 추가
   if (s.v < 7) { for (const f of s.floors) f.bld = { '신관': HS1, '본관': HS2 }[f.bld] || f.bld; s.v = 7; } // v7: 신관·본관 → 고등학교 신관·고등학교 본관
+  if (s.v < 8) { for (const f of s.floors) if (f.bld === MS1) for (const x of [...(f.strips || []), ...(f.fixed || [])]) x.tf = 'M'; s.v = 8; } // v8: 중학교 구관을 180° 돌려 그림
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -425,7 +436,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 7, items: [], log: [], floors: [
+  return { v: 8, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -492,7 +503,7 @@ function roomsOf(f) {
 // 가운데 구역(기울지 않은 고정 실)끼리, 그리고 날개 끝 실과 가운데 구역이 맞닿은 벽 → [{id:'실|실', p, q}]. 위치는 못 옮기고 허물기·세우기만 된다.
 function fixedWalls(f) {
   const out = [], edges = P => P.map((p, m) => [p, P[(m + 1) % P.length]]);
-  const T = f.fixed.filter(x => x.tf === '').map(x => ({ id: x.id, segs: edges(x.pts) }));
+  const T = f.fixed.filter(x => x.tf === '' || x.tf === 'M').map(x => ({ id: x.id, segs: edges(x.pts.map(TF[x.tf])) }));
   f.strips.forEach((s, si) => { for (const [e, x] of [['a', s.x0], ['b', s.x0 + s.n * s.unit]]) T.push({ id: `s${si}${e}`, end: 1, segs: [[[x, 0], [x, -s.depth]].map(TF[s.tf])] }); });
   for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) {
     if (T[i].end && T[j].end) continue;
@@ -610,6 +621,16 @@ function fitBox(parts, c, fallback) {
   for (const k of [-0.6, 0, 0.6]) { const s = pick(spans(parts, cy + k * hh, 0), cx); lo = Math.max(lo, s[0]); hi = Math.min(hi, s[1]); }
   return { c: [cx, cy], w: Math.max(0.2, 2 * Math.min(cx - lo, hi - cx)), h: Math.max(0.2, 2 * hh) };
 }
+// 글자 상자들({x, y, w}, 높이 hgt)이 겹치지 않게 위아래로 벌린다. 가로로 겹치는 쌍만, 세로로 겹친 만큼을 반씩 나눠 민다.
+function spread(L, hgt) {
+  for (let n = 0; n < 12; n++) { let moved = false;
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) {
+      const a = L[i], b = L[j]; if (a.x > b.x + b.w + 1 || b.x > a.x + a.w + 1) continue;
+      const dy = b.y - a.y, gap = hgt - Math.abs(dy); if (gap <= 0) continue;
+      const s = dy > 0 || (dy === 0 && i < j) ? 1 : -1; a.y -= s * gap / 2; b.y += s * gap / 2; moved = true;
+    }
+    if (!moved) break; }
+}
 // 층 하나를 그려 {html, x0, y0, w, h}로 돌려준다
 function drawFloor(fi) {
   const f = state.floors[fi], rooms = roomsOf(f), all = rooms.flatMap(r => r.pts);
@@ -648,6 +669,10 @@ function drawFloor(fi) {
   });
   if (editing) for (const w of fw) { const has = !open.has(w.id);
     h_ += `<line class="hit ${has ? 'has' : 'no'}" data-f="${fi}" data-fw="${w.id}" x1="${w.p[0].toFixed(2)}" y1="${w.p[1].toFixed(2)}" x2="${w.q[0].toFixed(2)}" y2="${w.q[1].toFixed(2)}"><title>${has ? '눌러서 벽 철거' : '눌러서 벽 설치'}</title></line>`; }
+  if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {      // 출입구: 바깥에서 안쪽을 가리키는 세모
+    const a = TF[tf]([x, y]), b = TF[tf]([x + nx, y + ny]), ux = b[0] - a[0], uy = b[1] - a[1], bx = a[0] - ux * 1.5, by = a[1] - uy * 1.5, pt = (px, py) => px.toFixed(2) + ',' + py.toFixed(2);
+    h_ += `<polygon class="door" points="${pt(a[0] + ux * .2, a[1] + uy * .2)} ${pt(bx - uy * .85, by + ux * .85)} ${pt(bx + uy * .85, by - ux * .85)}"><title>출입구</title></polygon>`;
+  }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
@@ -658,7 +683,7 @@ function renderPlan() {
   if (site) {
     // 전체 배치: 건물마다 대지 위치로 옮긴 뒤 눕혀서, 뒤쪽 건물부터·아래층부터 그린다. 층 높이는 "층 간격"으로 조절(좁히면 실제 건물처럼 겹치고, 넓히면 아래층이 보인다).
     const S = tilt, K = 0, V = Math.sqrt(1 - S * S) / 0.866, T = 1.2 * V, gap = +$('gapR').value * V, lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, mx = `matrix(1 0 ${K} ${S} 0 0)`;
-    let R = 0, lo = 0, hi = 0, labels = '';   // R = 대지 가운데에서 가장 먼 모서리까지의 거리. 화면 범위를 이 원으로 잡아 두면 돌려도 도면이 출렁이지 않는다.
+    let R = 0, lo = 0, hi = 0; const labels = [];   // R = 대지 가운데에서 가장 먼 모서리까지의 거리. 화면 범위를 이 원으로 잡아 두면 돌려도 도면이 출렁이지 않는다.
     // 돌리기: 대지 가운데(C)를 축으로 돌린다. 돌리면 앞뒤가 바뀌므로, 건물 가운데가 뒤에 있는 것부터 그린다.
     const deg = rotDeg, th = deg * Math.PI / 180, C = [-180, -130], co = Math.cos(th), si = Math.sin(th), rs = `rotate(${deg} ${C[0]} ${C[1]})`;
     const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
@@ -678,10 +703,11 @@ function renderPlan() {
         }
         h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
       }
-      if (lab && !under) labels += `<text class="flr${mid ? ' ms' : ''}" x="${lab[0].toFixed(2)}" y="${(lab[1] - 1.5).toFixed(2)}" font-size="4">${esc(b)}</text>`;
+      if (lab && !under) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid });
     }
     }
-    h_ += labels;   // 건물 이름은 어느 건물에도 가리지 않게 맨 위에
+    spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
+    h_ += labels.map(l => `<text class="flr${l.mid ? ' ms' : ''}" x="${l.x.toFixed(2)}" y="${l.y.toFixed(2)}" font-size="4">${esc(l.t)}</text>`).join('');   // 건물 이름은 어느 건물에도 가리지 않게 맨 위에
     x0 = C[0] - R - 4; w = 2 * R + 8; y0 = S * (C[1] - R) - hi * gap - 9; h = S * (C[1] + R) - lo * gap + T + 1 - y0 - 2.4;
   } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
@@ -697,6 +723,7 @@ function renderPlan() {
   $('planbox').classList.toggle('all', allView || site);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
+  $('legend').innerHTML += '<span><b style="color:var(--warn)">▲</b> 건물 출입구(1층)</span>';
   if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_;
 }
@@ -994,6 +1021,8 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
       && by(m2, '교무실').units === 2 && by(m2, '교무실').info.acN === 3 && Math.abs(r2.filter(r => r.key[0] === 's').reduce((a, r) => a + r.area, 0) - 40.5 * 7.5) < 1e-9 && migrate({ v: 5, floors: [] }).floors.length === 7, '중학교 추가 실패'); }
   { const sq = fitBox([rect(0, 0, 4, 2)], [2, 1], 4), L = fitBox([rect(0, 0, 1, 5), rect(1, 4, 6, 5)], centroid([rect(0, 0, 1, 5), rect(1, 4, 6, 5)]), 6);
     console.assert(Math.abs(sq.w - 4) < 1e-9 && Math.abs(sq.h - 2) < 1e-9 && textW('가a1') === 2.24 && spans([rect(0, 0, 1, 1), rect(1, 0, 2, 1)], .5, 0).length === 1 && L.w <= 6 && L.h <= 5 && L.w > 0.5, '글자 자리 재기 실패'); }
+  { const m1 = fl(MS1, '1층'), rs = roomsOf(m1), x = n => Math.min(...rs.find(r => r.info.name === n).pts.map(q => q[0])), L = [{ x: 0, y: 0, w: 10 }, { x: 5, y: 1, w: 10 }, { x: 40, y: 0, w: 5 }]; spread(L, 4);
+    console.assert(x('과학실') < x('컴퓨터실') && fixedWalls(m1).some(w => w.id === 'st2|s0b') && Math.abs(L[1].y - L[0].y) >= 4 - 1e-9 && L[2].y === 0 && migrate({ v: 7, floors: [{ bld: MS1, name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors[0].strips[0].tf === 'M', '중학교 구관 돌리기·이름 벌리기 실패'); }
   console.assert(!fl(HS2, '지하 1층') && fl(HS1, '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

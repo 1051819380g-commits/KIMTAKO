@@ -408,12 +408,12 @@ const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
 function basement() {
-  const f = mainFloor('지하 1층', [[2, ST], [18, '식당(왼쪽)']], [[9, '식당(오른쪽)'], [16, '조리장'], [18, ST]], ['식당(가운데)'], ['화장실', ST, ''], ['', '']);
+  const f = mainFloor('지하 1층', [[2, ST], [18, '식당(왼쪽)']], [[9, '식당(오른쪽)'], [16, '조리장'], [18, ST]], ['식당(가운데)'], ['화장실', ST, ''], ['날개 실(왼쪽)', '날개 실(오른쪽)']);
   f.strips.forEach(s => s.depth = 10.7);
-  f.fixed = f.fixed.filter(x => ['front', 'core0', 'core1'].includes(x.id));
+  f.fixed = f.fixed.filter(x => ['front', 'core0', 'core1', 'podL', 'podR'].includes(x.id));   // 지하에도 위층처럼 가운데 뒤쪽 양옆에 날개 쪽 실이 하나씩 있다(사용자 확인)
   f.fixed[0].pts = [[-4, 0], [4, 0], [6.77, -10.34], [-6.77, -10.34]];
   for (const r of [...f.strips.flatMap(s => Object.values(s.rooms)), ...f.fixed.map(x => x.info)])
-    r.memo = /식당/.test(r.name) ? '식당 B101은 한 공간(왼쪽·가운데·오른쪽 세 조각의 합)' : r.name === '조리장' ? '조리장 B102' : '';
+    r.memo = /식당/.test(r.name) ? '식당 B101은 한 공간(왼쪽·가운데·오른쪽 세 조각의 합)' : r.name === '조리장' ? '조리장 B102' : /^날개 실/.test(r.name) ? '이름 확인 필요 — 위층 배치를 본떠 넣은 자리(물품대장에는 지하에 영양사실·조리원휴게실이 있음)' : '';
   return f;
 }
 // 예전 저장분을 지금 이름과 층 구성으로 옮긴다 (v1: V자형=본관, 1자형=1자형 교사동·지하 있음 / v2: 신관 지하가 추정 배치)
@@ -428,6 +428,8 @@ function migrate(s) {
   if (s.v < 6) { if (!s.floors.some(f => f.bld === MS1 || f.bld === MS2)) s.floors.push(...middleFloors()); s.v = 6; } // v6: 중학교 구관·본관 추가
   if (s.v < 7) { for (const f of s.floors) f.bld = { '신관': HS1, '본관': HS2 }[f.bld] || f.bld; s.v = 7; } // v7: 신관·본관 → 고등학교 신관·고등학교 본관
   if (s.v < 8) { for (const f of s.floors) if (f.bld === MS1) for (const x of [...(f.strips || []), ...(f.fixed || [])]) x.tf = 'M'; s.v = 8; } // v8: 중학교 구관을 180° 돌려 그림
+  if (s.v < 9) { const b = s.floors.find(f => f.bld === HS1 && f.name === '지하 1층');   // v9: 신관 지하에 날개 쪽 실 두 개 추가
+    if (b && !b.fixed.some(x => x.id === 'podL')) b.fixed.push(...basement().fixed.filter(x => /^pod/.test(x.id))); s.v = 9; }
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -436,7 +438,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 8, items: [], log: [], floors: [
+  return { v: 9, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -1024,6 +1026,8 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
     console.assert(Math.abs(sq.w - 4) < 1e-9 && Math.abs(sq.h - 2) < 1e-9 && textW('가a1') === 2.24 && spans([rect(0, 0, 1, 1), rect(1, 0, 2, 1)], .5, 0).length === 1 && L.w <= 6 && L.h <= 5 && L.w > 0.5, '글자 자리 재기 실패'); }
   { const m1 = fl(MS1, '1층'), rs = roomsOf(m1), x = n => Math.min(...rs.find(r => r.info.name === n).pts.map(q => q[0])), L = [{ x: 0, y: 0, w: 10 }, { x: 5, y: 1, w: 10 }, { x: 40, y: 0, w: 5 }]; spread(L, 4);
     console.assert(x('과학실') < x('컴퓨터실') && fixedWalls(m1).some(w => w.id === 'st2|s0b') && Math.abs(L[1].y - L[0].y) >= 4 - 1e-9 && L[2].y === 0 && migrate({ v: 7, floors: [{ bld: MS1, name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors[0].strips[0].tf === 'M', '중학교 구관 돌리기·이름 벌리기 실패'); }
+  { const old = defaults(); const ob = old.floors.find(x => x.bld === HS1 && x.name === '지하 1층'); ob.fixed = ob.fixed.filter(x => !/^pod/.test(x.id)); old.v = 8;
+    console.assert(roomsOf(fl(HS1, '지하 1층')).filter(r => /^날개 실/.test(r.info.name)).length === 2 && migrate(old).floors.find(x => x.bld === HS1 && x.name === '지하 1층').fixed.filter(x => /^pod/.test(x.id)).length === 2, '지하 날개 쪽 실 추가 실패'); }
   console.assert(!fl(HS2, '지하 1층') && fl(HS1, '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

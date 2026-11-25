@@ -142,7 +142,7 @@
   .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
   .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
   .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
-  .door { fill:var(--warn); stroke:#fff; stroke-width:.15; stroke-linejoin:round; pointer-events:none; }
+  .door { pointer-events:none; fill:none; stroke-linecap:round; } .door .gap { stroke:#fff; stroke-width:.34; stroke-linecap:butt; } .door .leaf { stroke:var(--wall); stroke-width:.22; } .door .arc { stroke:var(--wall); stroke-width:.09; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -669,9 +669,10 @@ function drawFloor(fi) {
   });
   if (editing) for (const w of fw) { const has = !open.has(w.id);
     h_ += `<line class="hit ${has ? 'has' : 'no'}" data-f="${fi}" data-fw="${w.id}" x1="${w.p[0].toFixed(2)}" y1="${w.p[1].toFixed(2)}" x2="${w.q[0].toFixed(2)}" y2="${w.q[1].toFixed(2)}"><title>${has ? '눌러서 벽 철거' : '눌러서 벽 설치'}</title></line>`; }
-  if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {      // 출입구: 바깥에서 안쪽을 가리키는 세모
-    const a = TF[tf]([x, y]), b = TF[tf]([x + nx, y + ny]), ux = b[0] - a[0], uy = b[1] - a[1], bx = a[0] - ux * 1.5, by = a[1] - uy * 1.5, pt = (px, py) => px.toFixed(2) + ',' + py.toFixed(2);
-    h_ += `<polygon class="door" points="${pt(a[0] + ux * .2, a[1] + uy * .2)} ${pt(bx - uy * .85, by + ux * .85)} ${pt(bx + uy * .85, by - ux * .85)}"><title>출입구</title></polygon>`;
+  if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {      // 출입구: 건축 도면의 쌍여닫이문 기호(벽을 끊고, 문짝 두 개와 열리는 호)
+    const c = TF[tf]([x, y]), q = TF[tf]([x + nx, y + ny]), ux = q[0] - c[0], uy = q[1] - c[1], tx = -uy, ty = ux, W = 1.2, P = (px, py) => px.toFixed(2) + ' ' + py.toFixed(2);
+    const h1 = [c[0] - tx * W, c[1] - ty * W], h2 = [c[0] + tx * W, c[1] + ty * W];      // 양쪽 경첩. 문짝은 경첩에서 안쪽으로 W만큼, 호는 문짝 끝에서 문 가운데까지
+    h_ += `<g class="door"><title>출입구</title><path class="gap" d="M${P(...h1)}L${P(...h2)}"/><path class="arc" d="M${P(h1[0] + ux * W, h1[1] + uy * W)}A${W} ${W} 0 0 1 ${P(...c)}A${W} ${W} 0 0 1 ${P(h2[0] + ux * W, h2[1] + uy * W)}"/><path class="leaf" d="M${P(...h1)}l${P(ux * W, uy * W)}M${P(...h2)}l${P(ux * W, uy * W)}"/></g>`;
   }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
@@ -723,7 +724,7 @@ function renderPlan() {
   $('planbox').classList.toggle('all', allView || site);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
-  $('legend').innerHTML += '<span><b style="color:var(--warn)">▲</b> 건물 출입구(1층)</span>';
+  $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';
   if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_;
 }

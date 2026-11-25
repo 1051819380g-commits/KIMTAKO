@@ -676,17 +676,17 @@ function renderPanel() {
 }
 function renderTable() {
   const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(); let ac = 0, noAc = 0, nRoom = 0, nItem = 0, rows = '';
-  state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { const its = itemsFor(r.info, idx, f); its.forEach(it => used.add(it)); if (f.bld !== b) continue;
+  state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { const its = itemsFor(r.info, idx, f); its.forEach(it => used.add(it)); if (!site && f.bld !== b) continue;
     const i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
     if (need) { nRoom++; if (!+i.acN) noAc++; }
-    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
+    rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const total = Object.values(tot).reduce((a, b) => a + b, 0);
-  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${esc(b)} 전체 면적</span></div>
+  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${site ? '모든 건물' : esc(b)} 전체 면적</span></div>
     <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
     <div class="stat"><b>${ac}<small>대</small></b><span>에어컨</span></div>
     <div class="stat${noAc ? ' warn' : ''}"><b>${noAc}<small>실</small></b><span>에어컨 없는 실</span></div>
     <div class="stat"><b>${nItem.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
-  $('tblTitle').textContent = `${b} 실별 면적표`;
+  $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;
   $('sum').innerHTML = Object.keys(USES).filter(u => tot[u]).map(u => `<span><span class="sw" style="background:${USES[u]}"></span>${u} ${fmt(tot[u])}㎡</span>`).join('');
   $('tbl').innerHTML = `<table><thead><tr><th>층</th><th>실명</th><th>용도</th><th class="n">면적(㎡)</th><th>크기</th><th>에어컨</th><th>에어컨 모델명</th><th class="n">물품</th><th>메모</th></tr></thead><tbody>${rows}</tbody></table>`;
   const ung = new Map(); for (const it of state.items) if (!used.has(it)) { const k = norm(it.loc); if (!ung.has(k)) ung.set(k, []); ung.get(k).push(it); }

@@ -200,7 +200,7 @@
 <section class="card"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
-  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다.</p>
+  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당·도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다.</p>
 </section>
 
 <dialog id="locDlg"><form method="dialog">
@@ -290,6 +290,49 @@ function longFloor(name, p) {
   if (memo) fixed.forEach(f => f.info.memo = memo);
   return { bld: '본관', name, strips: [strip('B', 3.1, 2.25, 7.2, 54, list, memo)], fixed };
 }
+// 강당·도서관동(다목적동): 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡은 배치. x = ①열에서 오른쪽(m), y = Ⓐ열에서 아래(m).
+// 실 경계는 도면에서 잰 어림값이고, 냉난방기는 2024 배치도 엑셀의 현황표(93~104번)를 옮겼다.
+const HALL = '강당·도서관동';
+function hallFloors() {
+  const mk = (id, name, p, use, o = {}) => { const x = fx(id, name, '', p.length === 4 && !Array.isArray(p[0]) ? rect(...p) : p); Object.assign(x.info, { use, ...o }); x.info.acN = x.info.acs.length; return x; };
+  const ac = (n, t, y, m = '') => Array.from({ length: n }, () => ({ t, y, m }));
+  const core = () => [mk('ev', '승강기', [-3.15, 25.2, -0.45, 31.05], '공용'), mk('st', '계단실', [-0.45, 25.2, 2.35, 31.05], '공용')];
+  const old = '2023 도면의 이름 — 지금 용도(탁구장·매점 등) 확인 필요';
+  const F = (name, fixed) => ({ bld: HALL, name, strips: [], fixed });
+  return [
+    F('1층', [
+      mk('lib1', '식당', [-0.4, -1.75, 7.4, 11.4], '지원', { memo: old }), mk('kit', '주방', [-0.4, 11.4, 5.75, 16.65], '지원', { memo: old }),
+      mk('wc', '화장실', [-0.4, 16.65, 4.9, 20.95], '화장실'),
+      mk('lobby', '로비', [[5.75, 11.4], [7.4, 11.4], [7.4, 25.2], [-0.4, 25.2], [-0.4, 20.95], [4.9, 20.95], [4.9, 16.65], [5.75, 16.65]], '공용'), ...core(),
+      mk('hall', 'HALL', [15.1, -1.75, 20.6, 18.85], '공용'),
+      mk('gym', '강당', [[20.6, -1.75], [42.7, -1.75], [42.7, 15.9], [41.7, 15.9], [41.7, 18.85], [20.6, 18.85]], '특별실', { acs: ac(4, '스탠드', '2013') }),
+      mk('stage', '무대', [[42.7, -1.75], [47.8, -1.75], [47.8, 18.85], [46.5, 18.85], [46.5, 15.9], [42.7, 15.9]], '특별실'),
+      mk('bc', '방송실', [41.7, 15.9, 46.5, 18.85], '지원'), mk('prep', '준비실', [47.8, 12.75, 52, 16.35], '지원'),
+      mk('wcm', '화장실(남)', [16.2, 18.85, 19.5, 25.4], '화장실'), mk('wcf', '화장실(여)', [19.5, 18.85, 23.5, 25.4], '화장실'), mk('sem', '세미나실', [23.5, 18.85, 28, 25.4], '특별실'),
+    ]),
+    F('2층', [
+      mk('lib4', '도서실4', [-0.4, -1.75, 7.4, 3.9], '특별실', { acs: ac(1, '천장형', '2024.01', 'LG') }), mk('lib3', '도서실3', [-0.4, 3.9, 7.4, 8.5], '특별실', { acs: ac(1, '천장형', '2024.01', 'LG') }),
+      mk('lib2', '도서실2', [-0.4, 8.5, 7.4, 13.1], '특별실', { acs: ac(1, '천장형', '2024.01', 'LG') }), mk('lib1', '도서실1', [-0.4, 13.1, 7.4, 18.9], '특별실', { acs: ac(1, '천장형', '2024.01', 'LG') }),
+      mk('rest', '휴게실', [-0.4, 18.9, 7.4, 25.2], '지원', { memo: '물품대장의 "(다)(2층)상담실 및 회의실"이 이 자리일 수 있음 — 확인 필요' }), ...core(),
+      mk('hall', '계단·복도', [15.1, -1.75, 20.6, 18.85], '공용'), mk('seat1', '관람석-1', [20.6, -1.75, 29, 18.85], '특별실'),
+      mk('void', '강당 상부(뚫림)', [[29, -1.75], [47.8, -1.75], [47.8, 15.9], [39.9, 15.9], [39.9, 17.1], [29, 17.1]], '공용', { area: '0' }),
+      mk('seat2', '관람석-2', [29, 17.1, 39.9, 20.35], '특별실'), mk('ahu', '공조실', [39.9, 15.9, 47.8, 20.35], '지원'),
+    ]),
+    F('3층', [
+      mk('sem', '세미나실', [-0.4, -1.75, 7.4, 5.7], '특별실', { acs: ac(1, '천장형', '2024.01', 'LG') }), mk('copy', '복사실', [2, 5.7, 7.4, 12.3], '지원', { acs: ac(1, '천장형', '2024.01', 'LG') }),
+      mk('data', '자료관리실', [2, 12.3, 7.4, 16.65], '지원', { acs: ac(1, '천장형', '2024.01', 'LG') }),
+      mk('cor', '복도', [[-0.4, 5.7], [2, 5.7], [2, 16.65], [4.3, 16.65], [4.3, 18.9], [-0.4, 18.9]], '공용'), mk('wc', '화장실', [4.3, 16.65, 7.4, 18.9], '화장실'),
+      mk('link', '연결통로', [2.6, 18.9, 4.5, 25.2], '공용'), ...core(),
+      mk('sto', '창고', [2.35, 25.2, 5.9, 28.6], '창고'), mk('per2', '간행물열람실-2', [2.35, 28.6, 5.9, 31.05], '특별실'),
+      mk('rest', '휴게실', [5.9, 25.2, 9.7, 31.05], '지원'), mk('per1', '간행물열람실-1', [9.7, 25.2, 13.1, 31.05], '특별실'),
+    ]),
+    F('4층', [
+      mk('chapel', '채플실', [-0.4, -1.75, 13.1, 17.1], '특별실', { acs: ac(2, '천장형', ''), memo: '2023 도면에는 "회의실"로 적힘' }),
+      mk('link', '연결통로', [2.6, 17.1, 4.5, 25.2], '공용'), ...core(), mk('guest', '관리자숙소(게스트하우스)', [2.35, 25.2, 13.1, 31.05], '지원'),
+    ]),
+    F('5층', [...core(), mk('guest', '관리자숙소', [2.35, 25.2, 13.1, 31.05], '지원')]),
+  ];
+}
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
@@ -310,6 +353,7 @@ function migrate(s) {
   }
   if (s.v < 3) { s.floors = s.floors.filter(f => !(f.bld === '신관' && f.name === '지하 1층')); s.floors.unshift(basement()); s.v = 3; }
   if (s.v < 4) { for (const f of s.floors) if (f.bld === '본관') for (const x of [...(f.strips || []), ...(f.fixed || [])]) x.tf = 'B'; s.v = 4; } // v4: 본관을 180° 돌려 그림
+  if (s.v < 5) { if (!s.floors.some(f => f.bld === HALL)) s.floors.push(...hallFloors()); s.v = 5; } // v5: 강당·도서관동 추가
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -318,7 +362,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 4, items: [], log: [], floors: [
+  return { v: 5, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -330,7 +374,7 @@ function defaults() {
       [[4, '수학전용실'], [12, '사회교과전용교실C'], [16, '미술실'], [18, ST]], ['지구과학실'], ['동아리실', ST, '특별실D'], ['화장실(남)', '화장실(남)']),
     mainFloor('5층', [[2, ST], [6, '전산실'], [18, '창의융합과학실']],
       [[6, '가사실'], [10, '특별실E'], [16, '체육실A'], [18, ST]], ['체육실B', '준비실', 2.5], ['창고', ST, '종교수업실'], ['화장실(남)', '화장실']),
-    longFloor('1층', 1), longFloor('2층', 2), longFloor('3층', 3),
+    longFloor('1층', 1), longFloor('2층', 2), longFloor('3층', 3), ...hallFloors(),
   ] };
 }
 
@@ -431,10 +475,10 @@ const canon = s => norm(s).replace(/(\d)학년(\d+)반/g, '$1-$2');
 // 물품대장 설치장소 → 찾을 열쇠. K-에듀파인은 "(신관)(4층)인터넷강의실A"처럼 건물·층을 앞에 붙인다.
 // 건물·층이 있으면 그 층 안에서만 찾고, 실 번호(4자리, 예: 1204(3학년1반))가 있으면 반 이름 대신 번호로 찾는다(반은 해마다 바뀐다).
 function locKeys(loc) {
-  const m = norm(loc).match(/^\((신관|본관)\)(?:\((\d층|지하)\))?(.+)$/), full = canon(loc);
+  const m = norm(loc).match(/^\((신관|본관|다)\)(?:\((\d층|지하)\))?(.+)$/), full = canon(loc);
   if (!m) return [full];
   const num = m[3].match(/(?<!\d)\d{4}(?!\d)/);
-  return [full, `@${m[1]}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`];
+  return [full, `@${m[1] === '다' ? HALL : m[1]}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`];
 }
 function itemIndex() {                       // 열쇠 → 물품 목록
   const m = new Map(); for (const it of state.items) for (const k of locKeys(it.loc)) { if (!m.has(k)) m.set(k, []); m.get(k).push(it); } return m;
@@ -517,7 +561,7 @@ function renderPlan() {
   const ds = (allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
   const x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0; let h = 0, h_ = '';
   for (const d of ds) {
-    if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.6}" font-size="2">${esc(state.floors[d.i].name)}</text>`; }
+    if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
   }
   const sy = h + 1.2, sx = x0 + m;
@@ -530,7 +574,7 @@ function renderPlan() {
   $('planbox').classList.toggle('all', allView);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
-  const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); svg.style.width = $('zoom').value + '%'; svg.innerHTML = h_;
+  const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.innerHTML = h_;
 }
 function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }
 function renderPanel() {
@@ -631,7 +675,8 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b) { cur = state
 $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
-$('zoom').oninput = () => { $('plan').style.width = $('zoom').value + '%'; };
+function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && z <= 100 ? '62vh' : 'none'; }
+$('zoom').oninput = fitPlan;
 $('plan').onclick = e => {
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;
@@ -777,15 +822,18 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   const old = migrate({ v: 3, floors: [{ strips: [{ rooms: { 0: { acN: 2, acType: '천장형', acYear: '2015' } } }], fixed: [] }] }).floors[0].strips[0].rooms[0];
   console.assert(old.acs.length === 2 && old.acN === 2 && old.acs[1].t === '천장형' && acSum(old) === '천장형 2대 (2015)', '예전 에어컨 자료 옮기기 실패');
   const bk = roomsOf(fl('본관', '1층')), xOf = r => Math.min(...r.pts.map(q => q[0]));
-  console.assert(xOf(bk[0]) > xOf(bk[5]) && Math.min(...bk.flatMap(r => r.pts).map(q => q[1])) > -14.01 && migrate({ v: 3, floors: [{ bld: '본관', name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors.at(-1).strips[0].tf === 'B', '본관 180° 돌리기 실패');
+  console.assert(xOf(bk[0]) > xOf(bk[5]) && Math.min(...bk.flatMap(r => r.pts).map(q => q[1])) > -14.01 && migrate({ v: 3, floors: [{ bld: '본관', name: '1층', strips: [{ tf: '', rooms: {} }], fixed: [] }] }).floors.find(x => x.bld === '본관').strips[0].tf === 'B', '본관 180° 돌리기 실패');
   const cc = centroid([rect(0, 0, 3, 2), [[3, 0], [3, 2], [4, 2], [4, 0]]]); console.assert(Math.abs(cc[0] - 2) < 1e-9 && Math.abs(cc[1] - 1) < 1e-9, '합친 실의 면적 중심 계산 틀림'); // 방향이 다른 두 조각 = 4×2 사각형
   console.assert(locKeys('(신관)(4층)인터넷강의실A')[1] === '@신관|4층|인터넷강의실A' && locKeys('(신관)(2층)1204(3학년1반)')[1] === '@신관|2층|1204' && locKeys('(본관)(1층)1학년4반')[1] === '@본관|1층|1-4'
     && locKeys('(신관)(지하)조리실')[1] === '@신관|지하1층|조리실' && locKeys('교실공통').length === 1, '물품대장 설치장소 풀기 실패');
   { const keep = [state, cur]; state = d; cur = d.floors.indexOf(fl('신관', '1층')); const rm = roomsOf(d.floors[cur]).find(r => r.info.name === '보건실'), q = n => roomItems(rm, n).reduce((a, it) => a + it.q, 0);
     addItem(rm, '침대', 2); addItem(rm, '침대', 1); d.items.push({ n: '침대', loc: '(신관)(1층)보건실', q: 1 }); setItemQty(rm, '침대', 2);
     console.assert(q('침대') === 2 && d.items.length === 1, '물품 수량 고치기 실패'); setItemQty(rm, '침대', 0); console.assert(d.items.length === 0, '물품 지우기 실패'); [state, cur] = keep; }
+  const hf = fl(HALL, '1층'), gym = roomsOf(hf).find(r => r.info.name === '강당');
+  console.assert(d.floors.filter(x => x.bld === HALL).length === 5 && Math.abs(gym.area - (22.1 * 20.6 - 1 * 2.95)) < 1e-6 && gym.info.acN === 4 && fixedWalls(hf).some(w => w.id === 'lib1|kit')
+    && migrate({ v: 4, floors: [] }).floors.length === 5 && locKeys('(다)(3층)세미나실')[1] === '@' + HALL + '|3층|세미나실', '강당·도서관동 추가 실패');
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
-  console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
+  console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => x.bld !== HALL).map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');
 })();
 render();

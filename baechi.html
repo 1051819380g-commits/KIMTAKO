@@ -184,6 +184,10 @@
   .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
   .door { pointer-events:none; fill:none; stroke-linecap:round; } .door .gap { stroke:#fff; stroke-width:.34; stroke-linecap:butt; } .door .leaf { stroke:var(--wall); stroke-width:.22; } .door .arc { stroke:var(--wall); stroke-width:.09; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
+  .evac { fill:none; stroke:#0a8f4d; stroke-width:.2; stroke-linejoin:round; stroke-linecap:round; pointer-events:none; opacity:.8; } .evac.on { stroke-width:.5; opacity:1; }
+  svg text.evx { fill:#0a8f4d; font-weight:700; } svg text.ev { fill:#0a8f4d; font-weight:600; }
+  .fm rect { fill:#d92d20; stroke:#fff; stroke-width:.08; } .fm text { fill:#fff; font-weight:700; pointer-events:none; } .fm.d rect { fill:#e8830c; } .fm.g rect { fill:#7a1f1f; }
+  .fmk { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border-radius:3px; background:#d92d20; color:#fff; font-size:11px; font-weight:700; margin-right:4px; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
   .room.sel { stroke:var(--accent); stroke-width:.55; }
@@ -261,7 +265,7 @@
     </div>
   </div>
   <div class="bar noprint">
-    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
+    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="syncBtn" hidden></button>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
@@ -680,11 +684,12 @@ function renderTabs() {
     const names = [...new Set(state.floors.filter(f => SITE[f.bld]).map(f => f.name))].sort((p, q) => lvOf(p) - lvOf(q) || p.localeCompare(q));
     $('floorTabs').innerHTML = `<button class="${siteLv == null ? 'on' : ''}" data-lv="">전체</button>` + names.map(n => `<button class="${siteLv === n ? 'on' : ''}" data-lv="${esc(n)}">${esc(n)}</button>`).join('');
   } else $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
-  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
+  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
 }
 function fill(i) {
   if (view === 'use') return USES[i.use] || '#fff';
+  if (view === 'fire') return /계단/.test(i.name) ? '#c9ebd3' : i.use === '공용' ? '#fff' : '#f1f2f4';   // 소방·안전: 피난 계단만 초록, 나머지는 옅게(동선이 잘 보이게)
   if (+i.acN > 0) return AC_FILL.on;
   return AC_NEED.includes(i.use) ? AC_FILL.off : AC_FILL.na;
 }
@@ -727,12 +732,81 @@ function spread(L, hgt) {
     }
     if (!moved) break; }
 }
+// ── 소방·안전 보기 ──
+// 소방시설: 2024 배치도 엑셀(본관동·신관동 시트)의 칸 위치를 옮긴 어림 자리. '*' = 지상 모든 층. [종류, 좌표 틀, x, y, 설명]
+// 강당·도서관동은 엑셀에 경보기만 흩어져 적혀 있어 넣지 않았고, 중학교는 자료가 없다.
+const FIRE = {
+  [HS2]: { '*': [['소화전', 'B', 120.6, -7.75, '옥내소화전(끝 계단 옆)'], ['소화전', 'B', 63.85, -7.75, '옥내소화전(가운데 계단 앞)'], ['소화전', 'B', 28, -7.75, '옥내소화전']],
+    '2층': [['탐지기', 'B', 48, -3.6, '화재탐지기 — 엑셀에 교무실 위 칸에 적혀 있음, 자리 확인 필요']], '3층': [['펌프', 'B', 45, -3.6, '소방펌프(본관 옥상)']] },
+  [HS1]: { '*': [['소화전', 'L', -35.4, -8.55, '옥내소화전(왼쪽 날개 끝)'], ['소화전', 'R', 35.4, -8.55, '옥내소화전(오른쪽 날개 끝)'], ['소화전', '', 0, -9.5, '옥내소화전(가운데)'],
+      ['방화문', 'L', -0.4, -9.35, '방화문'], ['방화문', 'R', 0.4, -9.35, '방화문']],
+    '1층': [['탐지기', '', 4.5, -15.6, '당직실: 무인경비·화재탐지']] },
+  [B5]: { '1층': [['펌프', '', 10.6, -5.2, '소방펌프 — 엑셀에 "1층기계실"로만 적혀 있어 5호동 기계실로 봄, 확인 필요']] },
+};
+const FIRE_SYM = { 소화전: ['h', '소'], 펌프: ['p', 'P'], 탐지기: ['d', '감'], 방화문: ['g', '방'] };
+function fireMarks(f) {
+  const F = FIRE[f.bld] || {};
+  return [...(f.name.startsWith('지하') ? [] : F['*'] || []), ...(F[f.name] || [])].map(([k, tf, x, y, t]) => { const [cx, cy] = TF[tf]([x, y]), [c, l] = FIRE_SYM[k];
+    return `<g class="fm ${c}" transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)})"><title>${esc(t || k)}</title><rect x="-.6" y="-.6" width="1.2" height="1.2" rx="${c === 'p' ? .6 : .18}"/><text y=".31" font-size=".82">${l}</text></g>`; }).join('');
+}
+// 대피 동선: 실끼리 맞닿은 벽의 가운데를 문으로 보고, 복도·홀·계단(공용)을 따라 가장 가까운 건물 출입구(1층)나 계단실(그 밖의 층)까지 가장 짧은 길을 찾는다.
+// 실은 복도·홀로만 열린다고 본다(계단실·옆 실과 맞닿은 벽은 문이 아니다). 복도와 닿지 않는 안쪽 실만 옆 실을 지나간다(거리 4배로 쳐서 되도록 피한다).
+// 실제 문 위치·방화구획은 모르므로 어림이다. → { html, dist: {실 key: 거리 m} } 또는 null(출입구·계단이 없는 층)
+function evacRoutes(f, rooms, selKey) {
+  const N = rooms.length, pub = rooms.map(r => r.info.use === '공용'), stair = rooms.map(r => /계단/.test(r.info.name));
+  const edges = P => P.map((p, m) => [p, P[(m + 1) % P.length]]), parts = rooms.map(r => r.parts || [r.pts]), D = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const cand = [];
+  for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) for (const A of parts[i]) for (const [p0, p1] of edges(A)) {
+    const len = D(p0, p1); if (len < .5) continue;
+    const ux = (p1[0] - p0[0]) / len, uy = (p1[1] - p0[1]) / len, off = q => Math.abs((q[0] - p0[0]) * uy - (q[1] - p0[1]) * ux), along = q => (q[0] - p0[0]) * ux + (q[1] - p0[1]) * uy;
+    for (const B of parts[j]) for (const [q0, q1] of edges(B)) { if (off(q0) > .15 || off(q1) > .15) continue;
+      const lo = Math.max(0, Math.min(along(q0), along(q1))), hi = Math.min(len, Math.max(along(q0), along(q1)));
+      if (hi - lo > .8) cand.push({ i, j, p: [p0[0] + ux * (lo + hi) / 2, p0[1] + uy * (lo + hi) / 2] }); }
+  }
+  const okDoor = c => (pub[c.i] && pub[c.j]) || (pub[c.i] !== pub[c.j] && !stair[pub[c.i] ? c.i : c.j]);
+  let doors = cand.filter(okDoor); const has = new Set(doors.flatMap(c => [c.i, c.j]));
+  doors = doors.concat(cand.filter(c => !okDoor(c) && ((!pub[c.i] && !has.has(c.i)) || (!pub[c.j] && !has.has(c.j)))));
+  const pos = [], adj = [], inRoom = rooms.map(() => []), add = p => (pos.push(p), adj.push([]), pos.length - 1);
+  const link = (a, b, w, k) => { const d = D(pos[a], pos[b]) * w; adj[a].push([b, d, k]); adj[b].push([a, d, k]); };
+  const cen = parts.map(ps => add(centroid(ps)));                       // 0..N-1 = 실 가운데
+  for (const c of doors) { const n = add(c.p); inRoom[c.i].push(n); inRoom[c.j].push(n); }
+  const tgt = new Set();
+  if (f.name === '1층') for (const [tf, x, y] of DOORS[f.bld] || []) {   // 1층: 건물 출입구가 목적지. 문이 붙은 실(공용 먼저)을 찾아 잇는다
+    const c = TF[tf]([x, y]), near = [];
+    rooms.forEach((r, i) => { for (const A of parts[i]) for (const [p0, p1] of edges(A)) { const L2 = D(p0, p1) ** 2 || 1, t = Math.max(0, Math.min(1, ((c[0] - p0[0]) * (p1[0] - p0[0]) + (c[1] - p0[1]) * (p1[1] - p0[1])) / L2));
+      const d = D(c, [p0[0] + t * (p1[0] - p0[0]), p0[1] + t * (p1[1] - p0[1])]); if (d < .4) near.push([pub[i] ? 0 : 1, d, i]); } });
+    if (!near.length) continue; near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const n = add(c); inRoom[near[0][2]].push(n); tgt.add(n);
+  }
+  if (!tgt.size) stair.forEach((s, i) => { if (s) tgt.add(cen[i]); });
+  if (!tgt.size) return null;
+  for (let i = 0; i < N; i++) { const L = inRoom[i];
+    for (let a = 0; a < L.length; a++) { link(cen[i], L[a], 1, i); for (let b = a + 1; b < L.length; b++) link(L[a], L[b], pub[i] ? 1 : 4, i); } }
+  const dist = pos.map(() => Infinity), nxt = [], done = new Set(); for (const t of tgt) dist[t] = 0;
+  for (;;) { let a = -1; for (let n = 0; n < pos.length; n++) if (!done.has(n) && dist[n] < Infinity && (a < 0 || dist[n] < dist[a])) a = n;
+    if (a < 0) break; done.add(a); if (a < N && !tgt.has(a)) continue;    // 실 가운데는 출발점일 뿐, 지나가는 길이 아니다
+    for (const [b, d, k] of adj[a]) if (dist[a] + d < dist[b]) { dist[b] = dist[a] + d; nxt[b] = [a, k]; } }
+  // 길쭉한 복도에서는 가운데 줄을 따라가게 그려 여러 실의 동선이 한 줄로 겹치게 한다
+  const axis = rooms.map((r, k) => { if (!pub[k] || r.parts) return null; let best = null; for (const [p, q] of edges(r.pts)) { const l = D(p, q); if (!best || l > best.l) best = { l, u: [(q[0] - p[0]) / l, (q[1] - p[1]) / l] }; }
+    return best.l > 3 * shoelace(r.pts) / best.l ? { c: centroid([r.pts]), u: best.u } : null; });
+  const proj = (A, p) => { const t = (p[0] - A.c[0]) * A.u[0] + (p[1] - A.c[1]) * A.u[1]; return [A.c[0] + A.u[0] * t, A.c[1] + A.u[1] * t]; };
+  const P2 = p => p[0].toFixed(2) + ',' + p[1].toFixed(2), out = { html: '<defs><marker id="evA" viewBox="0 0 6 6" refX="5.2" refY="3" markerWidth="4.5" markerHeight="4.5" orient="auto"><path d="M0 .6L6 3L0 5.4z" fill="#0a8f4d"/></marker></defs>', dist: {} };
+  rooms.forEach((r, i) => { if (pub[i] || dist[cen[i]] === Infinity) return;
+    const pts = [pos[cen[i]]], push = p => { if (D(pts.at(-1), p) > .05) pts.push(p); };
+    for (let n = cen[i]; !tgt.has(n);) { const [m, k] = nxt[n]; if (axis[k] && k !== i) { push(proj(axis[k], pos[n])); push(proj(axis[k], pos[m])); } push(pos[m]); n = m; }
+    out.dist[r.key] = pts.reduce((a, p, j) => a + (j ? D(pts[j - 1], p) : 0), 0);
+    const cls = 'evac' + (r.key === selKey ? ' on' : ''), cut = pts.length > 3 ? 3 : pts.length;
+    out.html += `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(0, cut).map(P2).join(' ')}"/>` + (cut < pts.length ? `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(cut - 1).map(P2).join(' ')}"/>` : '');
+  });
+  return out;
+}
 // 층 하나를 그려 {html, x0, y0, w, h}로 돌려준다
 function drawFloor(fi) {
   const f = state.floors[fi], rooms = roomsOf(f), all = rooms.flatMap(r => r.pts);
   const xs = all.map(p => p[0]), ys = all.map(p => p[1]), m = 1.5;
   const x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m, w = Math.max(...xs) - x0 + m, h = Math.max(...ys) - y0 + m;
   let h_ = '', t_ = ''; const fw = fixedWalls(f), open = new Set(f.open || []);
+  const ev = view === 'fire' && !site ? evacRoutes(f, rooms, fi === cur ? sel : null) : null, fire = view === 'fire' && !site;
   const sil = rooms.flatMap(r => r.parts || [r.pts]).map(pts => `<polygon points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"/>`).join('');
   for (const r of rooms) {
     const on = fi === cur && sel === r.key;
@@ -744,17 +818,18 @@ function drawFloor(fi) {
     // 이름·면적·에어컨 글자는 실 안에 들어가는 가장 큰 크기로: 실 가운데를 지나는 가로·세로 폭을 재서, 한 줄/두 줄 가운데 더 크게 쓸 수 있는 쪽을 고른다
     const parts = r.parts || [r.pts], box = fitBox(parts, centroid(parts), r.w), [cx, cy] = box.c;
     const nm = r.info.name, half = Math.ceil(nm.length / 2), extra = [];
-    if (r.info.use !== '공용' || r.w > 6) extra.push(fmt(r.area) + '㎡');
+    if (fire) { if (ev && ev.dist[r.key] != null) extra.push('→ ' + Math.round(ev.dist[r.key]) + 'm'); }   // 소방·안전: 면적·에어컨 대신 대피 거리
+    else if (r.info.use !== '공용' || r.w > 6) extra.push(fmt(r.area) + '㎡');
     const nq = ro() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
-    if (+r.info.acN > 0 || nq) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : ''].filter(Boolean).join(' '));
+    if (!fire && (+r.info.acN > 0 || nq)) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : ''].filter(Boolean).join(' '));
     const tryFit = (names, ex) => ({ lines: [...names, ...ex], nameN: names.length,
       fs: Math.min(1.3, box.w * 0.9 / Math.max(.1, ...names.map(textW), ...ex.map(t => textW(t) * 0.85)), box.h * 0.88 / ((names.length + ex.length * 0.85) * 1.2)) });
     const cands = ex => [tryFit([nm], ex), ...(nm.length > 3 ? [tryFit([nm.slice(0, half), nm.slice(half)], ex)] : [])].sort((x, y) => y.fs - x.fs)[0];
     let best = cands(extra); if (best.fs < 0.45 && extra.length) { const alt = cands(extra.filter(t => t[0] === '❄' || t.startsWith('🚨'))); if (alt.fs > best.fs) best = alt; }   // 너무 작아지면 면적 줄은 뺀다
     const { lines, nameN, fs } = best;
-    lines.forEach((t, j) => { t_ += `<text class="${j < nameN ? 'nm' : t[0] === '❄' || t.startsWith('🚨') ? 'acb' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
+    lines.forEach((t, j) => { t_ += `<text class="${j < nameN ? 'nm' : t[0] === '❄' || t.startsWith('🚨') ? 'acb' : fire ? 'ev' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
   }
-  h_ += t_;
+  h_ += t_; if (ev) h_ += ev.html; if (fire) h_ += fireMarks(f);
   // 기둥(신관 4m, 본관 9m 간격) — 도면다운 표시
   for (const s of f.strips) for (let k = 0, step = s.unit === 2 ? 2 : s.unit === 1.5 ? 3 : 4; k <= s.n; k += step) for (const y of [0, -s.depth]) {
     const c = TF[s.tf]([s.x0 + k * s.unit, y]); h_ += `<rect class="col" x="${(c[0] - .22).toFixed(2)}" y="${(c[1] - .22).toFixed(2)}" width=".44" height=".44"/>`; }
@@ -770,6 +845,7 @@ function drawFloor(fi) {
     const c = TF[tf]([x, y]), q = TF[tf]([x + nx, y + ny]), ux = q[0] - c[0], uy = q[1] - c[1], tx = -uy, ty = ux, W = 1.2, P = (px, py) => px.toFixed(2) + ' ' + py.toFixed(2);
     const h1 = [c[0] - tx * W, c[1] - ty * W], h2 = [c[0] + tx * W, c[1] + ty * W];      // 양쪽 경첩. 문짝은 경첩에서 안쪽으로 W만큼, 호는 문짝 끝에서 문 가운데까지
     h_ += `<g class="door"><title>출입구</title><path class="gap" d="M${P(...h1)}L${P(...h2)}"/><path class="arc" d="M${P(h1[0] + ux * W, h1[1] + uy * W)}A${W} ${W} 0 0 1 ${P(...c)}A${W} ${W} 0 0 1 ${P(h2[0] + ux * W, h2[1] + uy * W)}"/><path class="leaf" d="M${P(...h1)}l${P(ux * W, uy * W)}M${P(...h2)}l${P(ux * W, uy * W)}"/></g>`;
+    if (fire) h_ += `<text class="evx" x="${(c[0] - ux * .9).toFixed(2)}" y="${(c[1] - uy * .9 + .3).toFixed(2)}" font-size=".85">비상구</text>`;
   }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
@@ -826,7 +902,9 @@ function renderPlan() {
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#0a8f4d;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 거리</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span>'
+      + '<span><b class="fmk">소</b>옥내소화전</span><span><b class="fmk" style="border-radius:50%">P</b>소방펌프</span><span><b class="fmk" style="background:#e8830c">감</b>화재탐지</span><span><b class="fmk" style="background:#7a1f1f">방</b>방화문</span><span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
+    : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';
   if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
@@ -977,7 +1055,7 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); autoZoom(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
   const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
-$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
+$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); };
 $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
@@ -1232,6 +1310,8 @@ $('mapDlg').onclose = () => { if (ro()) return; if ($('mapDlg').returnValue !== 
 
 // 자체 점검: 벽을 허물었다 다시 세워도 면적 합과 실 수가 그대로여야 한다
 (function selfCheck() {
+  { const d0 = defaults(); for (const [b, n] of [[HS2, '2층'], [HS1, '3층'], [HS1, '1층'], [MS2, '1층'], [MS1, '2층']]) { const f0 = d0.floors.find(x => x.bld === b && x.name === n), rs = roomsOf(f0), e = evacRoutes(f0, rs);
+    const miss = rs.filter(r => r.info.use !== '공용' && !(e && e.dist[r.key] > 0)).map(r => r.info.name); console.assert(!miss.length, b + ' ' + n + ' 대피 동선 없는 실: ' + miss.join(', ')); } }
   const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl(HS1, '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();
   console.assert(Math.abs(roomsOf(f).filter(r => r.key.startsWith('s0')).reduce((a, r) => a + r.area, 0) - 36 * 8) < 1e-9, '신관 날개 면적 ≠ 288㎡');
   toggleWall(f.strips[0], 6, true); console.assert(roomsOf(f).length === n0 - 1 && Math.abs(sum() - a0) < 1e-9, '벽 철거 후 면적 합이 달라짐');

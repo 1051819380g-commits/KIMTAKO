@@ -85,6 +85,19 @@
   .f input, .f select, .f textarea { width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
+  /* 보수요청 */
+  .req-btn { margin-left:8px; padding:2px 9px; font-size:12px; font-weight:600; vertical-align:3px; color:#b42318; background:#fff4f2; border-color:#f3b8ae; }
+  .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
+  .reqs { margin:-4px 0 14px; }
+  .req-form { display:grid; gap:6px; padding:9px; border:1px solid #f3b8ae; border-radius:6px; background:#fff8f6; }
+  .req-form textarea, .req-form input { width:100%; box-sizing:border-box; } .req-form .rb { display:flex; gap:6px; justify-content:flex-end; }
+  .req-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #d92d20; border-radius:6px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
+  .req-item.done { border-left-color:var(--line-strong); color:var(--sub); } .req-item.done .rt { text-decoration:line-through; }
+  .req-meta { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:3px; font-size:11px; color:var(--sub); white-space:normal; }
+  .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
+  #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
+  #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
+  svg text.reqm { pointer-events:none; }
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
   .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
   .acs-head button { padding:2px 9px; font-size:12px; }
@@ -169,6 +182,7 @@
   @media (pointer:coarse) and (max-width: 960px) {
     /* 실 정보 창: 화면을 채우는 팝업 */
     #panel { inset:0 !important; width:auto !important; max-height:none !important; border:0; border-radius:0; box-shadow:none; z-index:30; padding:18px 18px 28px; overscroll-behavior:contain; }
+    #panel input, #panel select, #panel textarea { font-size:16px; }   /* 16px보다 작으면 아이폰이 입력할 때 화면을 확대해 팝업이 잘린다 */
     #panel .p-close { top:10px; right:10px; width:40px; height:40px; font-size:26px; }
     body.popup { overflow:hidden; }
     /* 머리: 첫 줄은 제목+메뉴 단추, 둘째 줄은 학교·층 단추를 옆으로 밀어 보는 한 줄. 파일 단추·보기 설정은 메뉴를 눌러야 보인다. */
@@ -206,6 +220,7 @@
 <header>
   <div class="bar">
     <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
+    <button id="reqJump" class="noprint" title="보수요청 목록으로">🚨 보수요청</button>
     <button id="menuBtn" class="noprint" aria-expanded="false">메뉴 ▾</button>
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
@@ -238,6 +253,7 @@
   </div>
   <aside class="card" id="panel"></aside>
 </main>
+<section class="card" id="reqSec"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg noprint" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div></div><div id="reqList"></div></section>
 <section class="card"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
@@ -619,7 +635,7 @@ function addItem(r, name, n) {
 }
 
 // ── 그리기 ──
-function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+function render() { renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k && ![B5, B6, B8].includes(x)).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
@@ -699,6 +715,8 @@ function drawFloor(fi) {
     const cands = ex => [tryFit([nm], ex), ...(nm.length > 3 ? [tryFit([nm.slice(0, half), nm.slice(half)], ex)] : [])].sort((x, y) => y.fs - x.fs)[0];
     let best = cands(extra); if (best.fs < 0.45 && extra.length) { const alt = cands(extra.filter(t => t[0] === '❄')); if (alt.fs > best.fs) best = alt; }   // 너무 작아지면 면적 줄은 뺀다
     const { lines, nameN, fs } = best;
+    const nq = (r.info.reqs || []).filter(q => !q.done).length;   // 진행 중인 보수요청이 있으면 실 오른쪽 위에 🚨
+    if (nq) { const rs = Math.max(.8, Math.min(1.6, box.h * .32, box.w * .32)); t_ += `<text class="reqm" x="${(cx + box.w * .5 - rs * .55).toFixed(2)}" y="${(cy - box.h * .5 + rs * .95).toFixed(2)}" font-size="${rs.toFixed(2)}"><title>보수요청 ${nq}건</title>🚨</text>`; }
     lines.forEach((t, j) => { t_ += `<text class="${j < nameN ? 'nm' : t[0] === '❄' ? 'acb' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
   }
   h_ += t_;
@@ -784,10 +802,13 @@ function renderPanel() {
   const r = findSel(), p = $('panel');
   p.hidden = !r; sheetMark(r); if (!r) return;
   const i = r.info, its = itemsFor(i, itemIndex(), state.floors[cur]), grp = new Map();
+  const reqs = i.reqs || [], openN = reqs.filter(q => !q.done).length, rk = cur + ':' + r.key;
   for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
-  <div class="p-name">${esc(i.name)}</div>
+  <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
+  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span><div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button><button type="button" data-reqdel="${n}">지움</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -800,6 +821,25 @@ function renderPanel() {
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
+}
+// 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
+let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
+function reqAct(r, n, del) {
+  const q = (r.info.reqs || [])[n]; if (!q) return;
+  if (del) { if (!confirm(`「${r.info.name}」의 보수요청 "${q.t}"을(를) 지웁니다. 계속할까요?`)) return; r.info.reqs.splice(n, 1); log(`보수요청 지움: ${r.info.name} — ${q.t}`); }
+  else { q.done = !q.done; q.dd = q.done ? today() : ''; log(`보수요청 ${q.done ? '완료' : '되돌림'}: ${r.info.name} — ${q.t}`); }
+  save(); render();
+}
+function renderReqs() {
+  const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
+  const openN = all.filter(x => !x.q.done).length, list = all.filter(x => reqView === 'all' || !x.q.done).sort((a, b) => a.q.done - b.q.done || (b.q.d > a.q.d) - (b.q.d < a.q.d));
+  if (openN && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
+  $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>${openN}</b>` : ''}`;
+  $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
+  for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
+  $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th><th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' + (q.dd ? `<br><small>${esc(q.dd)}</small>` : '') : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}</td><td>${esc(q.d)}</td><td>${esc(q.who || '')}</td><td class="noprint"><button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+    : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {
   const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(), acc = {}; let rows = '';   // acc = 합계 묶음(전체 배치에서는 학교별 두 줄, 건물 화면에서는 한 줄)
@@ -981,8 +1021,23 @@ $('plan').onclick = e => {
   else if (t.dataset.k) { sel = t.dataset.k; render(); }
 };
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
+$('reqView').onclick = e => { if (e.target.dataset.rv) { reqView = e.target.dataset.rv; renderReqs(); } };
+$('reqJump').onclick = () => { $('reqSec').scrollIntoView({ block: 'start' }); scrollBy(0, -document.querySelector('header').offsetHeight - 8); };
+$('reqList').onclick = e => {
+  const tr = e.target.closest('tr[data-k]'); if (!tr) return;
+  if (e.target.dataset.rq != null) { applyRemote(); const r = roomsOf(state.floors[+tr.dataset.f]).find(x => x.key === tr.dataset.k); if (r) { const c = cur; cur = +tr.dataset.f; reqAct(r, +e.target.dataset.rq, false); cur = c; render(); } return; }
+  cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 그 실이 있는 층으로 가서 정보 창을 연다
+  $('planbox').scrollIntoView({ block: 'nearest' });
+};
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
+  if (d.reqadd != null || d.reqcancel != null) { reqForm = d.reqadd != null ? cur + ':' + sel : ''; renderPanel(); if (reqForm) $('r-text').focus(); return; }
+  if (d.reqsave != null) {
+    const t = $('r-text').value.trim(), who = $('r-who').value.trim(); if (!t) return $('r-text').focus();
+    lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
+    (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); return render();
+  }
+  if (d.reqdone != null || d.reqdel != null) { applyRemote(); const r = findSel(); if (!r) return; return reqAct(r, +(d.reqdone ?? d.reqdel), d.reqdel != null); }
   if (d.acadd == null && d.acdel == null && d.itadd == null && d.itdel == null) return;
   applyRemote(); const r = findSel(); if (!r) return;
   if (d.itdel != null) { if (!confirm(`이 실의 "${d.itdel}"을(를) 물품 목록에서 지웁니다. 계속할까요?`)) return; setItemQty(r, d.itdel, 0); save(); return render(); }

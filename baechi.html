@@ -85,6 +85,11 @@
   .f input, .f select, .f textarea { width:100%; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
+  /* 보기 전용(함께 쓰기 암호 없음): 고치는 단추를 숨긴다 */
+  body.ro :is(#itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  body.ro #panel :is(input, select, textarea):disabled { opacity:1; color:var(--ink); background:var(--sheet); -webkit-text-fill-color:var(--ink); }
+  body.ro #panel :disabled::placeholder { -webkit-text-fill-color:transparent; color:transparent; }
+  .ro-note { margin:0 36px 10px 0; padding:7px 10px; border-radius:6px; background:#fff4e5; color:#9a5a17; font-size:12px; line-height:1.5; }
   /* 보수요청 */
   .req-btn { margin-left:8px; padding:2px 9px; font-size:12px; font-weight:600; vertical-align:3px; color:#b42318; background:#fff4f2; border-color:#f3b8ae; }
   .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
@@ -640,7 +645,8 @@ function addItem(r, name, n) {
 }
 
 // ── 그리기 ──
-function render() { renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+function render() { document.body.classList.toggle('ro', ro()); if (ro() && editing) { editing = false; $('edit').checked = false; }
+  renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k && ![B5, B6, B8].includes(x)).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
@@ -808,7 +814,7 @@ function renderPanel() {
   const i = r.info, its = itemsFor(i, itemIndex(), state.floors[cur]), grp = new Map();
   const reqs = i.reqs || [], openN = reqs.filter(q => !q.done).length, rk = cur + ':' + r.key;
   for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
-  p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
+  p.innerHTML = `${ro() ? '<p class="ro-note">보기 전용입니다. "함께 쓰기"(휴대폰은 메뉴 안)를 눌러 편집 암호를 넣으면 고칠 수 있습니다.</p>' : ''}<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
@@ -825,6 +831,7 @@ function renderPanel() {
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
+  if (ro()) for (const x of p.querySelectorAll('input, select, textarea')) x.disabled = true;
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
@@ -877,13 +884,15 @@ function renderLog() {
 // 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
 const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
+// 보기 전용: 함께 쓰기를 쓰는데 편집 암호가 없으면 배치도·정보를 보기만 하고 고치는 단추·입력칸은 숨기거나 막는다.
+const ro = () => !!DB && !pw;
 if (/^#[A-Za-z0-9_-]+$/.test(location.hash)) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
 const syncMsg = t => { $('syncBtn').textContent = t; };
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 function askPw() {
   const v = (prompt('편집 암호를 넣으면 고친 내용이 다른 사람 화면에도 바로 반영됩니다.\n비워 두면 이 기기에서만 보이고, 다른 사람이 고치면 사라집니다.') || '').trim();
   if (v && !/^[A-Za-z0-9_-]+$/.test(v)) { alert('편집 암호는 영문·숫자만 씁니다.'); return false; }
-  if (v) { pw = v; lsv(KEY + '-pw', pw); } return !!v;
+  if (v) { pw = v; lsv(KEY + '-pw', pw); render(); } return !!v;
 }
 function queuePush() {
   if (!pw && !asked) { asked = true; askPw(); }
@@ -894,7 +903,7 @@ async function push() {
   const t = Date.now();
   try {
     const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ baechi: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }) });
-    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); return syncMsg('편집 암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
+    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); render(); return syncMsg('편집 암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
     if (!r.ok) throw new Error(r.status);
     syncMsg('함께 쓰기: 저장됨');
   } catch (e) { syncMsg('함께 쓰기: 올리지 못함 — 눌러서 다시 시도'); }
@@ -929,7 +938,7 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
   const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
-$('edit').onchange = e => { editing = e.target.checked; render(); };
+$('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
   const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
@@ -1038,12 +1047,13 @@ $('reqView').onclick = e => { if (e.target.dataset.rv) { reqView = e.target.data
 $('reqJump').onclick = () => { $('reqSec').scrollIntoView({ block: 'start' }); scrollBy(0, -document.querySelector('header').offsetHeight - 8); };
 $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
-  if (e.target.dataset.rq != null) { applyRemote(); const r = roomsOf(state.floors[+tr.dataset.f]).find(x => x.key === tr.dataset.k); if (r) { const c = cur; cur = +tr.dataset.f; reqAct(r, +e.target.dataset.rq, false); cur = c; render(); } return; }
+  if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); const r = roomsOf(state.floors[+tr.dataset.f]).find(x => x.key === tr.dataset.k); if (r) { const c = cur; cur = +tr.dataset.f; reqAct(r, +e.target.dataset.rq, false); cur = c; render(); } return; }
   cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 그 실이 있는 층으로 가서 정보 창을 연다
   $('planbox').scrollIntoView({ block: 'nearest' });
 };
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
+  if (ro()) return;
   if (d.reqadd != null || d.reqcancel != null) { reqForm = d.reqadd != null ? cur + ':' + sel : ''; renderPanel(); if (reqForm) $('r-text').focus(); return; }
   if (d.reqsave != null) {
     const t = $('r-text').value.trim(), who = $('r-who').value.trim(); if (!t) return $('r-text').focus();
@@ -1063,7 +1073,7 @@ $('panel').onclick = e => {
   r.info.acN = r.info.acs.length; save(); render();
 };
 addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open) { sel = null; render(); } });
-$('panel').onchange = e => {
+$('panel').onchange = e => { if (ro()) return;
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;
   const v = e.target.value.trim();
@@ -1085,14 +1095,14 @@ $('unm').onclick = e => { const chip = e.target.closest('[data-loc]'); if (!chip
   $('locList').innerHTML = `<table><tr><th>품명</th><th class="n">수량</th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n">${q}</td></tr>`).join('')}</table>`;
   $('locInfo').textContent = r ? `"연결하기"를 누르면 이 물품들이 지금 고른 실 「${f.bld} ${f.name} ${r.info.name}」에 연결됩니다.` : '연결하려면 이 창을 닫고 배치도에서 실을 먼저 고른 뒤 다시 눌러 주세요.';
   $('locOk').disabled = !r; $('locDlg').returnValue = ''; $('locDlg').showModal(); };
-$('locDlg').onclose = () => { const loc = locPick; if ($('locDlg').returnValue !== 'ok' || loc == null) return;
+$('locDlg').onclose = () => { if (ro()) return; const loc = locPick; if ($('locDlg').returnValue !== 'ok' || loc == null) return;
   applyRemote(); const r = findSel(); if (!r) return; r.info.alias = [r.info.alias, loc].filter(Boolean).join(','); save(); render(); };
-$('log').onclick = e => { const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
+$('log').onclick = e => { if (ro()) return; const i = e.target.dataset.del; if (i != null) { state.log.splice(+i, 1); save(); render(); } };
 
 function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); }
 $('saveBtn').onclick = () => download(`실배치도_${today()}.json`, JSON.stringify(state), 'application/json');
 $('loadBtn').onclick = () => $('loadFile').click();
-$('loadFile').onchange = async e => { const f = e.target.files[0]; if (!f) return; e.target.value = '';
+$('loadFile').onchange = async e => { if (ro()) return; const f = e.target.files[0]; if (!f) return; e.target.value = '';
   try { const s = JSON.parse(await f.text()); if (!Array.isArray(s.floors)) throw new Error('배치도 저장파일이 아닙니다.');
     if (!confirm('지금 화면의 내용을 이 파일 내용으로 바꿉니다. 계속할까요?')) return; state = migrate(s); cur = home(); sel = null; save(); render(); }
   catch (err) { alert('불러오지 못했습니다: ' + err.message); } };
@@ -1160,10 +1170,10 @@ $('printPlan').onclick = () => {
 };
 $('itemBtn').onclick = () => $('itemFile').click();
 // 넣은 물품만 지운다. 실에 적어 둔 "물품 위치명"은 남겨서, 대장을 다시 넣으면 연결이 그대로 살아난다.
-$('itemClear').onclick = () => { if (!state.items.length) return alert('넣은 물품대장이 없습니다.');
+$('itemClear').onclick = () => { if (ro()) return; if (!state.items.length) return alert('넣은 물품대장이 없습니다.');
   if (!confirm(`넣어 둔 물품 ${state.items.length}건을 모두 지웁니다. 실에 적어 둔 "물품 위치명"은 그대로 둡니다. 계속할까요?`)) return;
   state.items = []; save(); render(); };
-$('itemFile').onchange = async e => { const file = e.target.files[0]; if (!file) return; e.target.value = '';
+$('itemFile').onchange = async e => { if (ro()) return; const file = e.target.files[0]; if (!file) return; e.target.value = '';
   try { const rows = await readTable(file); let h = rows.slice(0, 40).findIndex(r => r.some(c => /품명|물품분류명|설치장소/.test(c))); if (h < 0) h = 0;
     const head = rows[h].map(c => norm(c)), pick = (...res) => { for (const re of res) { const i = head.findIndex(c => re.test(c)); if (i >= 0) return i; } return -1; };
     const fields = [['n', '물품명', pick(/^(물품|품)명$/, /품명/, /물품분류명/, /목록명/)], ['loc', '위치(실 이름)', pick(/설치장소|사용장소|보관장소/, /위치|장소/, /운용부서/, /부서/)], ['q', '수량', pick(/^수량$/, /수량/)], ['s', '규격', pick(/규격/, /목록명/)], ['d', '취득일', pick(/취득일/)]];
@@ -1171,7 +1181,7 @@ $('itemFile').onchange = async e => { const file = e.target.files[0]; if (!file)
     $('mapInfo').textContent = `${file.name} · 제목 줄 ${h + 1}행 · 자료 ${rows.length - h - 1}행. "위치"는 실 이름이 들어 있는 열을 고르세요. 넣으면 이전에 넣은 물품대장은 새 것으로 바뀝니다.`;
     pending = rows.slice(h + 1); $('mapDlg').returnValue = ''; $('mapDlg').showModal(); }
   catch (err) { alert('물품대장을 읽지 못했습니다: ' + err.message); } };
-$('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) return;
+$('mapDlg').onclose = () => { if (ro()) return; if ($('mapDlg').returnValue !== 'ok' || !pending) return;
   const m = {}; document.querySelectorAll('#mapF select').forEach(s => m[s.dataset.m] = +s.value);
   if (m.n < 0 || m.loc < 0) return alert('물품명과 위치 열은 꼭 골라야 합니다.');
   const g = (r, k) => m[k] >= 0 ? String(r[m[k]] ?? '').trim() : '';

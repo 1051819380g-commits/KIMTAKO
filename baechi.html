@@ -132,7 +132,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; }
   #planbox.all { max-height:none; }
-  #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room, #plan.site .hit { cursor:inherit; }
+  #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { pointer-events:none; } #plan.site .hit { display:none; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -594,7 +594,7 @@ function renderPlan() {
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}${site ? ' · 도면을 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래)' : ''}</span>`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '보기 전용 — 도면을 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래)' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
@@ -704,18 +704,17 @@ $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => 
 $('edit').onchange = e => { editing = e.target.checked; render(); };
 function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = z > 100 || allView ? 'none' : site ? '76vh' : '62vh'; }
 $('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
-// 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다. 5px 안쪽으로 움직인 것은 그냥 누르기로 본다.
-let drag = null, dragged = false, raf = 0;
-$('plan').onpointerdown = e => { if (site && e.button === 0) drag = { x: e.clientX, y: e.clientY, rot: rotDeg, tilt, moved: false }; };
+// 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
+let drag = null, raf = 0;
+$('plan').onpointerdown = e => { if (site && e.button === 0) drag = { x: e.clientX, y: e.clientY, rot: rotDeg, tilt }; };
 addEventListener('pointermove', e => {
   if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-  if (!drag.moved && Math.hypot(dx, dy) < 5) return; drag.moved = true;
   rotDeg = drag.rot - dx * 0.35; tilt = Math.min(1, Math.max(0.12, drag.tilt + dy * 0.0025));
   if (!raf) raf = requestAnimationFrame(() => { raf = 0; renderPlan(); });
 });
-addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; });
+addEventListener('pointerup', () => { drag = null; });
 $('plan').onclick = e => {
-  if (dragged) return;   // 끌어서 돌린 뒤 손을 뗀 것은 누르기가 아니다
+  if (site) return;   // 전체 배치는 보기 전용: 실 선택·벽 편집 없음
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;
   if (t.dataset.w) { const [si, k] = t.dataset.w.split(':').map(Number); toggleWall(state.floors[cur].strips[si], k); sel = null; save(); render(); }

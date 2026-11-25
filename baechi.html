@@ -185,7 +185,8 @@
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
     <button id="syncBtn" hidden></button>
-    <label class="zoom push">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
+    <label class="zoom push" id="gapLbl" hidden>층 간격 <input type="range" id="gapR" min="2" max="40" value="7"></label>
+    <label class="zoom">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
 </header>
 
@@ -334,6 +335,7 @@ function hallFloors() {
     F('5층', [...core(), mk('guest', '관리자숙소', [2.35, 25.2, 13.1, 31.05], '지원')]),
   ];
 }
+const SITE = { '신관': [.9659, .2588, -.2588, .9659, -125.09, -159.01], '본관': [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14] };
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
@@ -383,7 +385,7 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
-let cur = home(), allView = false, iso = false, view = 'use', sel = null, editing = true;
+let cur = home(), allView = false, iso = false, site = false, view = 'use', sel = null, editing = true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }
@@ -505,10 +507,10 @@ function addItem(r, name, n) {
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); }
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
-  $('bldTabs').innerHTML = blds.map(x => `<button class="${x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
-  $('floorTabs').innerHTML = `<button class="${allView ? 'on' : ''}" data-f="all">전체</button><button class="${iso ? 'on' : ''}" data-f="iso" title="층을 아래부터 위로 쌓아 건물처럼 봅니다">입체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!allView && !iso && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
+  $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="세 건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + blds.map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
+  $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button><button class="${!site && iso ? 'on' : ''}" data-f="iso" title="층을 아래부터 위로 쌓아 건물처럼 봅니다">입체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && !iso && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
-  $('editLbl').className = 'chk' + (editing ? ' on' : '');
+  $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
 }
 function fill(i) {
   if (view === 'use') return USES[i.use] || '#fff';
@@ -560,9 +562,26 @@ function drawFloor(fi) {
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
 function renderPlan() {
   const f = state.floors[cur], m = 1.5;
-  const ds = (allView || iso ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
+  const ds = (site ? state.floors.map((x, i) => i) : allView || iso ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
   let x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0, h = 0, h_ = '';
-  if (iso) {
+  if (site) {
+    // 전체 배치: 건물마다 대지 위치로 옮긴 뒤 눕혀서, 뒤쪽 건물부터·아래층부터 그린다. 층 높이는 "층 간격"으로 조절(좁히면 실제 건물처럼 겹치고, 넓히면 아래층이 보인다).
+    const K = -0.45, S = 0.5, T = 1.2, gap = +$('gapR').value, lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, mx = `matrix(1 0 ${K} ${S} 0 0)`;
+    let X0 = 1e9, X1 = -1e9, Y0 = 1e9, Y1 = -1e9;
+    for (const b of ['신관', '본관', HALL]) {
+      const M = SITE[b], ms = `matrix(${M.join(' ')})`; let lab = null;
+      for (const d of ds.filter(d => state.floors[d.i].bld === b).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {
+        const oy = -lv(state.floors[d.i].name) * gap;
+        for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
+          const sx = M[0] * x + M[2] * y + M[4], sy = M[1] * x + M[3] * y + M[5], px = sx + K * sy, py = S * sy + oy;
+          X0 = Math.min(X0, px); X1 = Math.max(X1, px); Y0 = Math.min(Y0, py); Y1 = Math.max(Y1, py + T); if (!lab || py < lab[1]) lab = [px, py];
+        }
+        h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
+      }
+      if (lab) h_ += `<text class="flr" x="${lab[0].toFixed(2)}" y="${(lab[1] - 1.5).toFixed(2)}" font-size="4">${esc(b)}</text>`;
+    }
+    x0 = X0 - 3; w = X1 - X0 + 6; y0 = Y0 - 8; h = Y1 - y0 - 0.4;
+  } else if (iso) {
     // 입체 보기: 평면을 뒤로 눕히고(가로는 그대로, 세로는 절반, 뒤쪽이 왼쪽으로 밀림) 아래층부터 위로 쌓는다. 바닥판 두께는 실루엣을 조금씩 내려 겹쳐 그린다.
     const K = -0.45, S = 0.5, T = 1.4, top = Math.min(...ds.map(d => d.y0)), bot = Math.max(...ds.map(d => d.y0 + d.h)), gap = S * (bot - top) + 3.5, mx = `matrix(1 0 ${K} ${S} 0 0)`;
     x0 = Math.min(...ds.map(d => d.x0)) + K * bot - 7; w = Math.max(...ds.map(d => d.x0 + d.w)) + K * top - x0 + 1;
@@ -578,13 +597,13 @@ function renderPlan() {
     h_ += `<g transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
   }
   const sy = h + 1.2, sx = x0 + m;
-  if (!iso) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
-  $('sheetTitle').textContent = iso ? `${f.bld} 입체 보기` : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
+  if (!iso && !site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
+  $('sheetTitle').textContent = site ? '전체 배치 (입체)' : iso ? `${f.bld} 입체 보기` : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
   $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
-  $('planbox').classList.toggle('all', allView || iso);
+  $('planbox').classList.toggle('all', allView || iso || site);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.innerHTML = h_;
@@ -684,12 +703,12 @@ if (DB) {
 }
 
 // ── 조작 ──
-$('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b) { cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
-$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; iso = v === 'iso'; if (!allView && !iso) { cur = +v; sel = null; } render(); };
+$('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b === '@site') { site = true; allView = iso = false; sel = null; return render(); } if (b) { site = false; cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
+$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; iso = v === 'iso'; if (!allView && !iso) { cur = +v; sel = null; } render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
-function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && !iso && z <= 100 ? '62vh' : 'none'; }
-$('zoom').oninput = fitPlan;
+function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && !iso && !site && z <= 100 ? '62vh' : 'none'; }
+$('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
 $('plan').onclick = e => {
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;
@@ -845,6 +864,8 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   const hf = fl(HALL, '1층'), gym = roomsOf(hf).find(r => r.info.name === '강당');
   console.assert(d.floors.filter(x => x.bld === HALL).length === 5 && Math.abs(gym.area - (22.1 * 20.6 - 1 * 2.95)) < 1e-6 && gym.info.acN === 4 && fixedWalls(hf).some(w => w.id === 'lib1|kit')
     && migrate({ v: 4, floors: [] }).floors.length === 5 && locKeys('(다)(3층)세미나실')[1] === '@' + HALL + '|3층|세미나실', '강당·도서관동 추가 실패');
+  { const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], a = ap(SITE['신관'], [-40, 0]), b = ap(SITE['본관'], [124.6, 0]);
+    console.assert(Object.values(SITE).every(M => Math.abs(M[0] * M[3] - M[1] * M[2] - 1) < 1e-3) && Math.hypot(a[0] - b[0], a[1] - b[1]) > 5 && Math.hypot(a[0] - b[0], a[1] - b[1]) < 40, '건물 대지 위치가 이상함'); }
   console.assert(!fl('본관', '지하 1층') && fl('신관', '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => x.bld !== HALL).map(x => x.bld + x.name).join() === '신관지하 1층,신관1층,본관1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl('본관', '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

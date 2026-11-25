@@ -112,6 +112,12 @@
   section { margin:0 20px 14px; padding:14px 16px; }
   .sec-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 16px; margin-bottom:10px; }
   .sec-head h2 { margin:0; font-size:15px; }
+  /* 접는 구역: 제목 줄(▾ 단추·제목)을 누르면 내용을 접고 편다. 인쇄할 때는 늘 펼친다. */
+  [data-fold] .sec-head { align-items:center; } [data-fold] .sec-head h2 { cursor:pointer; user-select:none; }
+  .fold-btn { width:26px; height:26px; padding:0; margin-right:-8px; border:0; background:none; color:var(--sub); font-size:13px; line-height:1; transition:transform .15s; }
+  .fold-btn:hover { background:var(--accent-soft); }
+  section.folded > :not(.sec-head) { display:none; } section.folded .sec-head { margin-bottom:0; } section.folded .fold-btn { transform:rotate(-90deg); }
+  @media print { section.folded > :not(.sec-head) { display:revert !important; } .fold-btn { display:none; } }
   .sum { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
   .scroll { overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:6px; }
   table { border-collapse:collapse; width:100%; font-size:13px; }
@@ -253,9 +259,9 @@
   <aside class="card" id="panel"></aside>
 </main>
 <section class="card" id="reqSec"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg noprint" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div></div><div id="reqList"></div></section>
-<section class="card"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
-<section class="card noprint"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
-<section class="card"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
+<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
+<section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
+<section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당·도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
@@ -1019,6 +1025,15 @@ $('plan').onclick = e => {
   else if (t.dataset.k) { sel = t.dataset.k; render(); }
 };
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
+// 구역 접기: 접은 상태는 이 기기(브라우저)에 기억한다.
+for (const sec of document.querySelectorAll('section[data-fold]')) {
+  const k = KEY + '-fold-' + sec.dataset.fold, head = sec.querySelector('.sec-head'), btn = document.createElement('button');
+  btn.className = 'fold-btn noprint'; btn.type = 'button'; btn.textContent = '▾'; head.prepend(btn);
+  const set = f => { sec.classList.toggle('folded', f); btn.setAttribute('aria-expanded', !f); btn.title = f ? '펼치기' : '접기'; try { localStorage.setItem(k, f ? '1' : ''); } catch (e) {} };
+  try { if (localStorage.getItem(k)) set(true); else btn.title = '접기'; } catch (e) {}
+  const toggle = () => set(!sec.classList.contains('folded'));
+  btn.onclick = toggle; head.querySelector('h2').addEventListener('click', toggle);
+}
 $('reqView').onclick = e => { if (e.target.dataset.rv) { reqView = e.target.dataset.rv; renderReqs(); } };
 $('reqJump').onclick = () => { $('reqSec').scrollIntoView({ block: 'start' }); scrollBy(0, -document.querySelector('header').offsetHeight - 8); };
 $('reqList').onclick = e => {

@@ -722,7 +722,7 @@ function renderPlan() {
         }
         h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
       }
-      if (lab && !under) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid });
+      if (lab && !under && ![B5, B6, B8].includes(b)) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid });
     }
     }
     spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)

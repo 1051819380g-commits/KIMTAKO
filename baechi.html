@@ -845,7 +845,7 @@ $('edit').onchange = e => { editing = e.target.checked; render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
   const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
-  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36);
+  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36) * (site ? 1.3 : 1);   // 전체 배치는 상자를 한 화면의 1.3배 높이로(사용자 요청)
   $('planbox').style.maxHeight = room + 18 + 'px';      // 상자는 한 화면 높이: 넘치는 도면은 상자 안에서 움직여 본다(오른쪽 단추로 끌기·스크롤)
   $('planbox').style.height = site ? room + 18 + 'px' : '';   // 전체 배치는 상자 크기를 고정하고 스크롤 막대 없이(넘치면 오른쪽 단추로 끌어서 본다)
   $('planbox').classList.toggle('fixed', site);

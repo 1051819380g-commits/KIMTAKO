@@ -168,7 +168,7 @@
     header { position:static; border:0; } body { background:#fff; }
     main { display:block; padding:0 0 8px; } .card { border:0; }
     #sheet { display:block; }   /* 세로로 늘어놓는 틀(flex)은 인쇄에서 빈 쪽을 만든다 */
-    #planbox { max-height:none; overflow:visible; background:none; border:0; padding:0; margin:0; }
+    #planbox { max-height:none !important; overflow:visible !important; background:none; border:0; padding:0; margin:0; }
     #plan { width:100% !important; max-height:70vh !important; }   /* 도면이 쪽에 안 들어가면 통째로 다음 쪽으로 밀려 빈 쪽이 생기므로, 제목·합계와 함께 첫 쪽에 들어가는 높이(쪽 높이의 70%)로 맞춘다 */
     .scroll { max-height:none; overflow:visible; border:0; } section { margin:0; padding:8px 0; }
     /* 도면만 인쇄: 제목·도면·범례만 한 장에 */
@@ -205,7 +205,7 @@
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="syncBtn" hidden></button>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
-    <label class="zoom">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
+    <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다.">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
 </header>
 
@@ -724,7 +724,7 @@ function renderPlan() {
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래)' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래) · Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동' : editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
@@ -844,10 +844,23 @@ $('edit').onchange = e => { editing = e.target.checked; render(); };
 // 도면 크기 100% 이하에서는 도면이 한 화면에 들어오게 높이를 맞춘다: 맨 위로 올렸을 때 도면 위(제목·합계)와 아래(범례)를 빼고 남는 높이. 더 크게 보려면 "도면 크기"를 키운다.
 function fitPlan() {
   const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
-  if (z > 100) { s.maxHeight = 'none'; return; }
-  const top = $('planbox').getBoundingClientRect().top + scrollY, room = innerHeight - top - $('legend').offsetHeight - 36;
-  s.maxHeight = Math.max(260, room) + 'px';
+  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36);
+  $('planbox').style.maxHeight = room + 18 + 'px';      // 상자는 늘 한 화면 높이: 100%보다 키운 도면은 상자 안에서 움직여 본다(오른쪽 단추로 끌기·스크롤)
+  s.maxHeight = z > 100 ? 'none' : room + 'px';
 }
+// Ctrl+휠: 도면 크기. 마우스가 가리키던 자리가 그대로 있도록 상자 스크롤을 맞춘다.
+$('planbox').addEventListener('wheel', e => {
+  if (!e.ctrlKey) return; e.preventDefault();
+  const box = $('planbox'), z = $('zoom'), g0 = $('plan').getBoundingClientRect(), fx = (e.clientX - g0.left) / g0.width, fy = (e.clientY - g0.top) / g0.height;
+  z.value = Math.min(+z.max, Math.max(+z.min, +z.value + (e.deltaY < 0 ? 1 : -1) * Math.max(5, Math.round(+z.value * 0.1)))); fitPlan();
+  const g1 = $('plan').getBoundingClientRect(); box.scrollLeft += g1.left + fx * g1.width - e.clientX; box.scrollTop += g1.top + fy * g1.height - e.clientY;
+}, { passive: false });
+// 오른쪽 단추로 끌기: 도면 상자 안에서 화면 이동. 끌었을 때는 오른쪽 단추 메뉴를 띄우지 않는다.
+let pan = null, panned = false;
+$('planbox').addEventListener('pointerdown', e => { if (e.button === 2) pan = { x: e.clientX, y: e.clientY, l: $('planbox').scrollLeft, t: $('planbox').scrollTop, moved: false }; });
+addEventListener('pointermove', e => { if (!pan) return; const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (Math.hypot(dx, dy) > 3) pan.moved = true; $('planbox').scrollLeft = pan.l - dx; $('planbox').scrollTop = pan.t - dy; });
+addEventListener('pointerup', () => { if (pan) { panned = pan.moved; pan = null; } });
+$('planbox').addEventListener('contextmenu', e => { if (panned || pan) { e.preventDefault(); panned = false; } });
 addEventListener('resize', fitPlan);
 $('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.

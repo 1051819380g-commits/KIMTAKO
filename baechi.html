@@ -109,9 +109,9 @@
     #reqList thead { display:none; } #reqList table, #reqList tbody { display:block; }
     #reqList tr { display:block; position:relative; padding:10px 84px 10px 12px; border-bottom:1px solid var(--line); }
     #reqList td { display:inline; padding:0; border:0; font-size:12px; color:var(--sub); white-space:normal; } #reqList td + td { margin-left:6px; }
-    #reqList td.nm { color:var(--ink); font-weight:700; } #reqList td br { display:none; }
+    #reqList td.nm { color:var(--ink); font-weight:700; }
     #reqList td.rt { display:block; margin:4px 0 2px; min-width:0; font-size:15px; color:var(--ink); }
-    #reqList td:nth-child(5) { margin-left:0; } #reqList td:nth-child(5)::before { content:'요청 '; } #reqList td:nth-child(6):not(:empty)::before { content:'· '; }
+    #reqList td.rd { margin-left:0; } #reqList td.rd::before { content:'요청 '; } #reqList td.dd:empty { display:none; } #reqList td.dd::before { content:'· 완료 '; } #reqList td.who:empty { display:none; } #reqList td.who::before { content:'· '; }
     #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { padding:5px 12px; font-size:13px; } #reqDlg .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
@@ -862,8 +862,8 @@ function renderReqs() {
   $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>${openN}</b>` : ''}`;
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
-  $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th><th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
-    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' + (q.dd ? `<br><small>${esc(q.dd)}</small>` : '') : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}</td><td>${esc(q.d)}</td><td>${esc(q.who || '')}</td><td class="noprint"><button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+  $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {

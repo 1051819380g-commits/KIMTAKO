@@ -45,6 +45,9 @@
 
   .stats { display:flex; flex-wrap:wrap; gap:6px 34px; padding:14px 20px 4px; }
   .stat { display:flex; flex-direction:column; }
+  .stats.two { flex-direction:column; gap:8px; } .srow { display:grid; grid-template-columns:76px repeat(5, minmax(96px, 150px)); gap:4px 22px; align-items:center; }
+  .srow em { font-style:normal; font-weight:700; font-size:14px; color:var(--accent); } .srow + .srow em { color:#9a5a17; } .stats.two .stat b { font-size:20px; }
+  @media (max-width: 760px) { .srow { grid-template-columns:repeat(3, minmax(0, 1fr)); } .srow em { grid-column:1 / -1; } }
   .stat b { font-size:24px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.15; }
   .stat b small { font-size:13px; font-weight:500; color:var(--sub); margin-left:2px; }
   .stat span { font-size:12px; color:var(--sub); }
@@ -720,17 +723,19 @@ function renderPanel() {
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
 }
 function renderTable() {
-  const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(); let ac = 0, noAc = 0, nRoom = 0, nItem = 0, rows = '';
+  const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(), acc = {}; let rows = '';   // acc = 합계 묶음(전체 배치에서는 학교별 두 줄, 건물 화면에서는 한 줄)
   state.floors.forEach((f, fi) => { let first = true; for (const r of roomsOf(f)) { const its = itemsFor(r.info, idx, f); its.forEach(it => used.add(it)); if (!site && f.bld !== b) continue;
-    const i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area; ac += +i.acN || 0; nItem += its.length;
-    if (need) { nRoom++; if (!+i.acN) noAc++; }
+    const i = r.info, need = AC_NEED.includes(i.use); tot[i.use] = (tot[i.use] || 0) + r.area;
+    const A = acc[site ? school(f.bld) : 'one'] ||= { area: 0, n: 0, ac: 0, no: 0, it: 0 }; A.area += r.area; A.ac += +i.acN || 0; A.it += its.length;
+    if (need) { A.n++; if (!+i.acN) A.no++; }
     rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
-  const total = Object.values(tot).reduce((a, b) => a + b, 0);
-  $('stats').innerHTML = `<div class="stat"><b>${Math.round(total).toLocaleString()}<small>㎡</small></b><span>${site ? '모든 건물' : esc(b)} 전체 면적</span></div>
-    <div class="stat"><b>${nRoom}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
-    <div class="stat"><b>${ac}<small>대</small></b><span>에어컨</span></div>
-    <div class="stat${noAc ? ' warn' : ''}"><b>${noAc}<small>실</small></b><span>에어컨 없는 실</span></div>
-    <div class="stat"><b>${nItem.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
+  const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span>${esc(name)} 전체 면적</span></div>
+    <div class="stat"><b>${A.n}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
+    <div class="stat"><b>${A.ac}<small>대</small></b><span>에어컨</span></div>
+    <div class="stat${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span>에어컨 없는 실</span></div>
+    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
+  $('stats').classList.toggle('two', site);
+  $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || { area: 0, n: 0, ac: 0, no: 0, it: 0 }, b);
   $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;
   $('sum').innerHTML = Object.keys(USES).filter(u => tot[u]).map(u => `<span><span class="sw" style="background:${USES[u]}"></span>${u} ${fmt(tot[u])}㎡</span>`).join('');
   $('tbl').innerHTML = `<table><thead><tr><th>층</th><th>실명</th><th>용도</th><th class="n">면적(㎡)</th><th>크기</th><th>에어컨</th><th>에어컨 모델명</th><th class="n">물품</th><th>메모</th></tr></thead><tbody>${rows}</tbody></table>`;

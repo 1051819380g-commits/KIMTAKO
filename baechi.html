@@ -144,6 +144,7 @@
   .hit.no:hover { stroke:var(--accent); stroke-width:.35; }
   dialog { border:1px solid var(--line); border-radius:12px; padding:20px; min-width:360px; color:var(--ink); box-shadow:0 12px 40px rgba(22,33,46,.25); }
   dialog::backdrop { background:rgba(22,33,46,.35); }
+  [hidden] { display:none !important; }
   button:disabled { opacity:.45; cursor:default; pointer-events:none; }
   #locDlg { width:min(460px, calc(100vw - 32px)); } #locList { max-height:46vh; margin-bottom:10px; }
   dialog h2 { font-size:16px; margin-bottom:12px; }
@@ -185,7 +186,7 @@
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
     <button id="syncBtn" hidden></button>
-    <label class="zoom push" id="gapLbl" hidden>층 간격 <input type="range" id="gapR" min="2" max="40" value="7"></label>
+    <span class="grp push" id="gapLbl" hidden><label class="zoom">돌리기 <input type="range" id="rotR" min="0" max="360" step="5" value="0"></label><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="14"></label></span>
     <label class="zoom">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
   </div>
 </header>
@@ -568,12 +569,16 @@ function renderPlan() {
     // 전체 배치: 건물마다 대지 위치로 옮긴 뒤 눕혀서, 뒤쪽 건물부터·아래층부터 그린다. 층 높이는 "층 간격"으로 조절(좁히면 실제 건물처럼 겹치고, 넓히면 아래층이 보인다).
     const K = -0.45, S = 0.5, T = 1.2, gap = +$('gapR').value, lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, mx = `matrix(1 0 ${K} ${S} 0 0)`;
     let X0 = 1e9, X1 = -1e9, Y0 = 1e9, Y1 = -1e9;
-    for (const b of ['신관', '본관', HALL]) {
-      const M = SITE[b], ms = `matrix(${M.join(' ')})`; let lab = null;
+    // 돌리기: 대지 가운데(C)를 축으로 돌린다. 돌리면 앞뒤가 바뀌므로, 건물 가운데가 뒤에 있는 것부터 그린다.
+    const deg = +$('rotR').value, th = deg * Math.PI / 180, C = [-175, -110], co = Math.cos(th), si = Math.sin(th), rs = `rotate(${deg} ${C[0]} ${C[1]})`;
+    const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
+    const depth = b => { const d = ds.find(d => state.floors[d.i].bld === b); return d ? turn(SITE[b], d.x0 + d.w / 2, d.y0 + d.h / 2)[1] : 0; };
+    for (const b of Object.keys(SITE).sort((a, b) => depth(a) - depth(b))) {
+      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`; let lab = null;
       for (const d of ds.filter(d => state.floors[d.i].bld === b).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {
         const oy = -lv(state.floors[d.i].name) * gap;
         for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
-          const sx = M[0] * x + M[2] * y + M[4], sy = M[1] * x + M[3] * y + M[5], px = sx + K * sy, py = S * sy + oy;
+          const [sx, sy] = turn(M, x, y), px = sx + K * sy, py = S * sy + oy;
           X0 = Math.min(X0, px); X1 = Math.max(X1, px); Y0 = Math.min(Y0, py); Y1 = Math.max(Y1, py + T); if (!lab || py < lab[1]) lab = [px, py];
         }
         h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
@@ -708,7 +713,7 @@ $('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; si
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
 function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && !iso && !site && z <= 100 ? '62vh' : 'none'; }
-$('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
+$('zoom').oninput = fitPlan; $('gapR').oninput = $('rotR').oninput = () => renderPlan();
 $('plan').onclick = e => {
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;

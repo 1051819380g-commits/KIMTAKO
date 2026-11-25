@@ -910,6 +910,7 @@ function phone() { return matchMedia('(pointer:coarse) and (max-width: 960px)').
 function sheetMark(r) { document.body.classList.toggle('popup', !!r && phone()); }
 $('menuBtn').onclick = () => { const h = document.querySelector('header'), o = h.classList.toggle('open');
   $('menuBtn').textContent = o ? '메뉴 ▴' : '메뉴 ▾'; $('menuBtn').setAttribute('aria-expanded', o); fitPlan(); };
+const mid = () => { const [a, b] = [...tp.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; };
 $('planbox').addEventListener('pointerdown', e => {   // 도면의 돌리기 시작(onpointerdown)보다 뒤에 돌아서 두 번째 손가락이 닿으면 돌리기를 끊는다
   if (e.pointerType !== 'touch') return; tp.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (tp.size === 1 && !site) one = { x: e.clientX, y: e.clientY, moved: false };   // 층 화면: 한 손가락 끌기는 도면 상자 스크롤(넘치는 위아래는 화면 스크롤)

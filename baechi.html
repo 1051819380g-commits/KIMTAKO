@@ -132,6 +132,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; }
   #planbox.all { max-height:none; }
+  .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
   .room.sel { stroke:var(--accent); stroke-width:.55; }
@@ -382,7 +383,7 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
-let cur = home(), allView = false, view = 'use', sel = null, editing = true;
+let cur = home(), allView = false, iso = false, view = 'use', sel = null, editing = true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }
@@ -505,7 +506,7 @@ function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); re
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   $('bldTabs').innerHTML = blds.map(x => `<button class="${x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x)}</button>`).join('');
-  $('floorTabs').innerHTML = `<button class="${allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
+  $('floorTabs').innerHTML = `<button class="${allView ? 'on' : ''}" data-f="all">전체</button><button class="${iso ? 'on' : ''}" data-f="iso" title="층을 아래부터 위로 쌓아 건물처럼 봅니다">입체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!allView && !iso && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : '');
 }
@@ -527,6 +528,7 @@ function drawFloor(fi) {
   const xs = all.map(p => p[0]), ys = all.map(p => p[1]), m = 1.5;
   const x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m, w = Math.max(...xs) - x0 + m, h = Math.max(...ys) - y0 + m;
   let h_ = '', t_ = ''; const fw = fixedWalls(f), open = new Set(f.open || []);
+  const sil = rooms.flatMap(r => r.parts || [r.pts]).map(pts => `<polygon points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"/>`).join('');
   for (const r of rooms) {
     const on = fi === cur && sel === r.key;
     for (const pts of r.parts || [r.pts]) h_ += `<polygon class="room${on ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info)}" points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
@@ -553,25 +555,36 @@ function drawFloor(fi) {
   });
   if (editing) for (const w of fw) { const has = !open.has(w.id);
     h_ += `<line class="hit ${has ? 'has' : 'no'}" data-f="${fi}" data-fw="${w.id}" x1="${w.p[0].toFixed(2)}" y1="${w.p[1].toFixed(2)}" x2="${w.q[0].toFixed(2)}" y2="${w.q[1].toFixed(2)}"><title>${has ? '눌러서 벽 철거' : '눌러서 벽 설치'}</title></line>`; }
-  return { html: h_, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
+  return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
 function renderPlan() {
   const f = state.floors[cur], m = 1.5;
-  const ds = (allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
-  const x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0; let h = 0, h_ = '';
-  for (const d of ds) {
+  const ds = (allView || iso ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
+  let x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0, h = 0, h_ = '';
+  if (iso) {
+    // 입체 보기: 평면을 뒤로 눕히고(가로는 그대로, 세로는 절반, 뒤쪽이 왼쪽으로 밀림) 아래층부터 위로 쌓는다. 바닥판 두께는 실루엣을 조금씩 내려 겹쳐 그린다.
+    const K = -0.45, S = 0.5, T = 1.4, top = Math.min(...ds.map(d => d.y0)), bot = Math.max(...ds.map(d => d.y0 + d.h)), gap = S * (bot - top) + 3.5, mx = `matrix(1 0 ${K} ${S} 0 0)`;
+    x0 = Math.min(...ds.map(d => d.x0)) + K * bot - 7; w = Math.max(...ds.map(d => d.x0 + d.w)) + K * top - x0 + 1;
+    y0 = S * top - 1; h = (ds.length - 1) * gap + S * bot + T + 1 - y0;
+    ds.forEach((d, n) => {            // ds는 위층부터라, 뒤에서부터(아래층 먼저) 그려야 위층이 위에 덮인다
+      const e = ds[ds.length - 1 - n], oy = (ds.length - 1 - n) * gap, fl = state.floors[e.i];
+      h_ += `<g transform="translate(0 ${oy.toFixed(2)})">${[4, 3, 2, 1].map(k => `<g class="slab" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx}">${e.sil}</g>`).join('')}<g transform="${mx}">${e.html}</g>
+        <text class="flr" x="${(x0 + 0.8).toFixed(2)}" y="${(S * bot).toFixed(2)}" font-size="2.2">${esc(fl.name)}</text></g>`;
+    });
+    h -= 2.4; // 아래 공통 코드가 viewBox 높이에 더하는 여백을 미리 뺀다
+  } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
   }
   const sy = h + 1.2, sx = x0 + m;
-  h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
-  $('sheetTitle').textContent = allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
+  if (!iso) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
+  $('sheetTitle').textContent = iso ? `${f.bld} 입체 보기` : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
   $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${editing ? '벽 자리를 누르면 철거/설치됩니다' : '실을 누르면 정보 창이 뜹니다'}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
-  $('planbox').classList.toggle('all', allView);
+  $('planbox').classList.toggle('all', allView || iso);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.innerHTML = h_;
@@ -672,10 +685,10 @@ if (DB) {
 
 // ── 조작 ──
 $('bldTabs').onclick = e => { const b = e.target.dataset.b; if (b) { cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); } };
-$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); };
+$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; allView = v === 'all'; iso = v === 'iso'; if (!allView && !iso) { cur = +v; sel = null; } render(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
-function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && z <= 100 ? '62vh' : 'none'; }
+function fitPlan() { const s = $('plan').style, z = +$('zoom').value; s.width = z + '%'; s.maxHeight = !allView && !iso && z <= 100 ? '62vh' : 'none'; }
 $('zoom').oninput = fitPlan;
 $('plan').onclick = e => {
   const t = e.target;
@@ -781,8 +794,8 @@ async function readTable(file) {
 let pending = null;
 // 도면만 인쇄: 한 층은 가로, 전체 층은 세로 용지 한 장에 맞춘다
 $('printPlan').onclick = () => {
-  const st = document.createElement('style'); st.textContent = `@page { size: A4 ${allView ? 'portrait' : 'landscape'}; margin: 10mm; }`;
-  document.head.append(st); document.body.classList.add('plan-only'); document.body.style.setProperty('--print-h', allView ? '250mm' : '160mm');
+  const st = document.createElement('style'); st.textContent = `@page { size: A4 ${allView || iso ? 'portrait' : 'landscape'}; margin: 10mm; }`;
+  document.head.append(st); document.body.classList.add('plan-only'); document.body.style.setProperty('--print-h', allView || iso ? '250mm' : '160mm');
   addEventListener('afterprint', () => { st.remove(); document.body.classList.remove('plan-only'); }, { once: true });
   print();
 };

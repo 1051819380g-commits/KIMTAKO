@@ -133,6 +133,8 @@
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; }
   #planbox.all { max-height:none; }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { pointer-events:none; } #plan.site .hit { display:none; }
+  .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
+  .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -606,16 +608,16 @@ function renderPlan() {
     const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
     const depth = b => { const d = ds.find(d => state.floors[d.i].bld === b); return d ? turn(SITE[b], d.x0 + d.w / 2, d.y0 + d.h / 2)[1] : 0; };
     for (const b of Object.keys(SITE).sort((a, b) => depth(a) - depth(b))) {
-      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`; let lab = null;
+      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = b === MS1 || b === MS2; let lab = null;
       for (const d of ds.filter(d => state.floors[d.i].bld === b).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {
         const L = lv(state.floors[d.i].name), oy = -L * gap; lo = Math.min(lo, L); hi = Math.max(hi, L);
         for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
           const [sx, sy] = turn(M, x, y), px = sx + K * sy, py = S * sy + oy;
           R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (!lab || py < lab[1]) lab = [px, py];
         }
-        h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
+        h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
       }
-      if (lab) h_ += `<text class="flr" x="${lab[0].toFixed(2)}" y="${(lab[1] - 1.5).toFixed(2)}" font-size="4">${esc(b)}</text>`;
+      if (lab) h_ += `<text class="flr${mid ? ' ms' : ''}" x="${lab[0].toFixed(2)}" y="${(lab[1] - 1.5).toFixed(2)}" font-size="4">${esc(b)}</text>`;
     }
     x0 = C[0] - R - 4; w = 2 * R + 8; y0 = S * (C[1] - R) - hi * gap - 9; h = S * (C[1] + R) - lo * gap + T + 1 - y0 - 2.4;
   } else for (const d of ds) {
@@ -632,6 +634,7 @@ function renderPlan() {
   $('planbox').classList.toggle('all', allView || site);
   $('legend').innerHTML = view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
+  if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_;
 }
 function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }

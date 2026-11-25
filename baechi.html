@@ -104,6 +104,7 @@
   #reqDlg .sec-head { position:relative; padding-right:36px; } #reqDlg .p-close { top:-4px; right:-6px; } #reqDlg h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
   @media (pointer:coarse) and (max-width: 960px) { #reqDlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
+    .sheet-head { flex-wrap:wrap; } #sheetTitle { white-space:nowrap; } #sheetSub { flex:1 1 100%; order:3; }   /* 제목이 세로로 한 글자씩 쪼개지지 않게: 제목·에어컨 대수 한 줄, 안내는 아랫줄 */
     #doneDlg { min-width:0; width:calc(100vw - 32px); box-sizing:border-box; } #doneDlg input[type=date] { font-size:16px; flex:1; }
     #reqDlg #reqList .scroll { max-height:none; }
     /* 휴대폰: 표 대신 요청마다 한 장씩(첫 줄 상태·위치·실, 둘째 줄 내용, 셋째 줄 요청일·요청자, 오른쪽 위 완료 단추) */
@@ -174,7 +175,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:.35px; stroke-linejoin:round; }
   #planbox.all { max-height:none; }
-  #planbox.fixed { overflow:hidden; }
+  #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:auto; }   /* 전체 배치: 도면을 상자 가운데에(넘칠 때는 자동 여백이 0이 되어 잘리지 않는다) */
   #printStack { display:none; } @media print { #printStack { display:block; } }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { cursor:pointer; } #plan.site .hit { display:none; }
   .sf.ms .slab polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
@@ -667,7 +668,10 @@ function addItem(r, name, n) {
 
 // ── 그리기 ──
 function render() { document.body.classList.toggle('ro', ro()); if (ro() && editing) { editing = false; $('edit').checked = false; }
-  renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+  const enter = site && !render.site; render.site = site;
+  renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+  if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
+}
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
   const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k && ![B5, B6, B8].includes(x)).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
@@ -978,7 +982,7 @@ $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
   const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
-  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36) * (site ? 1.3 : 1);   // 전체 배치는 상자를 한 화면의 1.3배 높이로(사용자 요청)
+  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36) * (site && !phone() ? 1.3 : 1);   // 전체 배치는 상자를 한 화면의 1.3배 높이로(사용자 요청). 휴대폰은 가운데 맞춘 도면이 화면 안에 보이도록 한 화면 높이
   $('planbox').style.maxHeight = room + 18 + 'px';      // 상자는 한 화면 높이: 넘치는 도면은 상자 안에서 움직여 본다(오른쪽 단추로 끌기·스크롤)
   $('planbox').style.height = site ? room + 18 + 'px' : '';   // 전체 배치는 상자 크기를 고정하고 스크롤 막대 없이(넘치면 오른쪽 단추로 끌어서 본다)
   $('planbox').classList.toggle('fixed', site);

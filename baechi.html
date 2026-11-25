@@ -205,7 +205,7 @@
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="syncBtn" hidden></button>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
-    <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다.">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
+    <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다.">도면 크기 <input type="range" id="zoom" min="10" max="300" value="100"></label>
   </div>
 </header>
 
@@ -837,8 +837,8 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
-    return; } if (b === '@site') { site = true; allView = false; sel = null; $('zoom').value = 100; render(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; $('zoom').value = 100; render(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
-$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } $('zoom').value = 100; render(); };
+    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); autoZoom(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
+$('floorTabs').onclick = e => { const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); };
 $('edit').onchange = e => { editing = e.target.checked; render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
@@ -862,6 +862,13 @@ addEventListener('pointermove', e => { if (!pan) return; const dx = e.clientX - 
 addEventListener('pointerup', () => { if (pan) { panned = pan.moved; pan = null; } });
 $('planbox').addEventListener('contextmenu', e => { if (panned || pan) { e.preventDefault(); panned = false; } });
 addEventListener('resize', fitPlan);
+// 화면(건물·층·전체 배치)을 바꾸면 "도면 크기" 값을 도면이 한 화면에 들어오는 값으로 잡는다(100%를 넘기지는 않는다). 높이를 누르는 것이 아니라 값 자체를 정하므로 막대를 움직이면 늘 크기가 바뀐다.
+function autoZoom() {
+  const box = $('planbox'), z = $('zoom'), vb = $('plan').viewBox.baseVal, cs = getComputedStyle(box);
+  // 폭은 스크롤 막대가 없을 때 기준으로 잰다(막대가 떠 있는 동안 재면 맞춘 뒤 막대가 사라지면서 도면이 넓어져 다시 넘친다)
+  const w = box.offsetWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth), room = parseFloat(box.style.maxHeight) - 20;
+  z.value = Math.max(+z.min, Math.min(100, Math.floor(room / (w * vb.height / vb.width) * 100))); fitPlan();
+}
 $('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
 let drag = null, dragged = false, raf = 0;
@@ -877,7 +884,7 @@ $('plan').onclick = e => {
   if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물을 누르면 그 건물의 전체 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;
     const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
-    cur = +fi; $('zoom').value = 100; render();          // 누른 층이 화면 가운데 오도록 내려간다(한 화면에 다 들어오면 움직이지 않는다)
+    cur = +fi; render(); autoZoom();          // 누른 층이 화면 가운데 오도록 내려간다(한 화면에 다 들어오면 움직이지 않는다)
     return document.querySelector(`#plan g[data-fl="${cur}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
   const t = e.target;
@@ -1060,7 +1067,7 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');
 })();
-render();
+render(); autoZoom();
 </script>
 </body>
 </html>

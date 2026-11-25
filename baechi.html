@@ -99,6 +99,20 @@
   .req-item.done { border-left-color:var(--line-strong); color:var(--sub); } .req-item.done .rt { text-decoration:line-through; }
   .req-meta { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:3px; font-size:11px; color:var(--sub); white-space:normal; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
+  /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
+  #reqDlg { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
+  #reqDlg .sec-head { position:relative; padding-right:36px; } #reqDlg .p-close { top:-4px; right:-6px; } #reqDlg h2 { margin:0; }
+  #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
+  @media (pointer:coarse) and (max-width: 960px) { #reqDlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
+    #reqDlg #reqList .scroll { max-height:none; }
+    /* 휴대폰: 표 대신 요청마다 한 장씩(첫 줄 상태·위치·실, 둘째 줄 내용, 셋째 줄 요청일·요청자, 오른쪽 위 완료 단추) */
+    #reqList thead { display:none; } #reqList table, #reqList tbody { display:block; }
+    #reqList tr { display:block; position:relative; padding:10px 84px 10px 12px; border-bottom:1px solid var(--line); }
+    #reqList td { display:inline; padding:0; border:0; font-size:12px; color:var(--sub); white-space:normal; } #reqList td + td { margin-left:6px; }
+    #reqList td.nm { color:var(--ink); font-weight:700; } #reqList td br { display:none; }
+    #reqList td.rt { display:block; margin:4px 0 2px; min-width:0; font-size:15px; color:var(--ink); }
+    #reqList td:nth-child(5) { margin-left:0; } #reqList td:nth-child(5)::before { content:'요청 '; } #reqList td:nth-child(6):not(:empty)::before { content:'· '; }
+    #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { padding:5px 12px; font-size:13px; } #reqDlg .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
@@ -262,13 +276,13 @@
   </div>
   <aside class="card" id="panel"></aside>
 </main>
-<section class="card" id="reqSec"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg noprint" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div></div><div id="reqList"></div></section>
 <section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당·도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="reqList"></div></dialog>
 <dialog id="locDlg"><form method="dialog">
   <h2 id="locTitle"></h2>
   <div id="locList" class="scroll"></div>
@@ -1044,11 +1058,13 @@ for (const sec of document.querySelectorAll('section[data-fold]')) {
   btn.onclick = toggle; head.querySelector('h2').addEventListener('click', toggle);
 }
 $('reqView').onclick = e => { if (e.target.dataset.rv) { reqView = e.target.dataset.rv; renderReqs(); } };
-$('reqJump').onclick = () => { $('reqSec').scrollIntoView({ block: 'start' }); scrollBy(0, -document.querySelector('header').offsetHeight - 8); };
+$('reqJump').onclick = () => { renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };
+$('reqClose').onclick = () => $('reqDlg').close();
+$('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
   if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); const r = roomsOf(state.floors[+tr.dataset.f]).find(x => x.key === tr.dataset.k); if (r) { const c = cur; cur = +tr.dataset.f; reqAct(r, +e.target.dataset.rq, false); cur = c; render(); } return; }
-  cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 그 실이 있는 층으로 가서 정보 창을 연다
+  $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다
   $('planbox').scrollIntoView({ block: 'nearest' });
 };
 $('panel').onclick = e => {
@@ -1072,7 +1088,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => { if (ro()) return;
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;

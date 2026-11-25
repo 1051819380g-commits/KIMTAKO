@@ -429,7 +429,8 @@ function defaults() {
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
 state = state && state.floors ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
-let cur = home(), allView = false, site = false, rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = true;
+let cur = home(), allView = false, site = true,   // 처음 열면 전체 배치부터
+    rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }

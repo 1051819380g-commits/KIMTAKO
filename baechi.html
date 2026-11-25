@@ -413,7 +413,8 @@ const DOORS = {
   [MS2]: [['', 15.75, 0, 0, -1]],                                                                                      // 홀
 };
 const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84],
-  [B6]: [1, 0, 0, 1, -166.45, -188.32], [B5]: [.861, .508, -.508, .861, -108.91, -165.32], [B8]: [1, 0, 0, 1, -296.99, -152.62] };   // 부속 건물: 6호동은 신관 아래, 5호동은 신관 왼쪽 날개 바깥(30° 기울어 있음), 8호동은 테니스장 옆
+  [B6]: [1, 0, 0, 1, -167.75, -188.32],   // 배치도 값(-166.45)에서 1.3m 옆으로 옮김: 도구의 신관 가운데 뒤쪽 실(화장실 자리)이 배치도 테두리보다 넓게 그려져 6호동과 1m쯤 겹쳤다
+  [B5]: [.861, .508, -.508, .861, -108.91, -165.32], [B8]: [1, 0, 0, 1, -296.99, -152.62] };   // 부속 건물: 6호동은 신관 아래, 5호동은 신관 왼쪽 날개 바깥(30° 기울어 있음), 8호동은 테니스장 옆
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
 // 식당은 왼쪽 날개 → 가운데 → 오른쪽 날개 18m까지 이어진 한 공간이라 세 조각으로 나눠 넣는다.
@@ -1080,6 +1081,9 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
     console.assert(roomsOf(fl(HS1, '지하 1층')).filter(r => /^날개 실/.test(r.info.name)).length === 2 && migrate(old).floors.find(x => x.bld === HS1 && x.name === '지하 1층').fixed.filter(x => /^pod|annex/.test(x.id)).length === 4 && Math.abs(roomsOf(fl(HS1, '지하 1층')).find(r => r.info.name === '아래 실').area - 32) < 1e-9, '지하 날개 쪽 실·아래 실 추가 실패'); }
   console.assert([B5, B6, B8].every(b => fl(b, '1층') && SITE[b]) && roomsOf(fl(B6, '1층'))[0].area === 467.06 && school(B6) === 'hs' && school(B5) === 'ms' && migrate({ v: 11, floors: [] }).floors.length === 3, '부속 건물 추가 실패');
   console.assert(migrate({ v: 12, floors: [{ bld: '고등학교 급식시설(6호동)', name: '1층', strips: [], fixed: [] }] }).floors[0].bld === '6호동', '부속 건물 이름 바꾸기 실패');
+  { const ap = (M, q) => [M[0] * q[0] + M[2] * q[1] + M[4], M[1] * q[0] + M[3] * q[1] + M[5]], bb = P => [Math.min(...P.map(q => q[0])), Math.min(...P.map(q => q[1])), Math.max(...P.map(q => q[0])), Math.max(...P.map(q => q[1]))];
+    const six = bb(roomsOf(fl(B6, '1층'))[0].pts.map(q => ap(SITE[B6], q))), hit = roomsOf(fl(HS1, '1층')).filter(r => { const b = bb(r.pts.map(q => ap(SITE[HS1], q))); return b[0] < six[2] && six[0] < b[2] && b[1] < six[3] && six[1] < b[3]; });
+    console.assert(!hit.length, '6호동이 신관과 겹침: ' + hit.map(r => r.info.name)); }
   console.assert(!fl(HS2, '지하 1층') && fl(HS1, '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

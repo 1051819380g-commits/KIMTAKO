@@ -163,15 +163,22 @@
   dialog h2 { font-size:16px; margin-bottom:12px; }
   dialog .acts { display:flex; gap:8px; justify-content:flex-end; margin-top:14px; }
 
-  .p-grab { display:none; }
-  /* 휴대폰(터치·좁은 화면) 전용: PC 화면에는 걸리지 않는다. 도면 상자의 손가락 동작은 스크립트가 맡고, 실 정보 창은 아래쪽 시트로 띄워 접을 수 있게 한다. */
-  @media (pointer:coarse) { #planbox { touch-action:none; } }
+  #menuBtn { display:none; } .tabrow { display:contents; }
+  /* 휴대폰(터치·좁은 화면) 전용: PC 화면에는 걸리지 않는다. */
+  @media (pointer:coarse) { #planbox { touch-action:none; } }   /* 도면 상자의 손가락 동작은 스크립트가 맡는다 */
   @media (pointer:coarse) and (max-width: 960px) {
-    #panel { left:0 !important; right:0 !important; bottom:0 !important; top:auto !important; width:auto !important; max-height:44vh !important; border-radius:14px 14px 0 0; padding-top:24px; }
-    #panel .p-grab { display:block; position:absolute; top:0; left:0; right:44px; height:24px; padding:0; border:0; background:none; }
-    #panel .p-grab::before { content:''; position:absolute; top:9px; left:calc(50% + 22px); width:40px; height:4px; margin-left:-20px; border-radius:2px; background:var(--line-strong); }
-    #panel.min { overflow:hidden; } #panel.min > :not(.p-grab):not(.p-close):not(.p-eyebrow):not(.p-name) { display:none; } #panel.min .p-name { margin-bottom:0; }
-    body.sheet { padding-bottom:46vh; } body.sheet-min { padding-bottom:96px; }
+    /* 실 정보 창: 화면을 채우는 팝업 */
+    #panel { inset:0 !important; width:auto !important; max-height:none !important; border:0; border-radius:0; box-shadow:none; z-index:30; padding:18px 18px 28px; overscroll-behavior:contain; }
+    #panel .p-close { top:10px; right:10px; width:40px; height:40px; font-size:26px; }
+    body.popup { overflow:hidden; }
+    /* 머리: 첫 줄은 제목+메뉴 단추, 둘째 줄은 학교·층 단추를 옆으로 밀어 보는 한 줄. 파일 단추·보기 설정은 메뉴를 눌러야 보인다. */
+    header .bar { padding:6px 12px; gap:6px 10px; }
+    .brand small { display:none; } .brand h1 { font-size:16px; }
+    #menuBtn { display:block; margin-left:auto; padding:5px 12px; }
+    .tabrow { display:flex; gap:6px; width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; } .tabrow::-webkit-scrollbar { display:none; }
+    .tabrow .seg { flex:none; } .seg button { white-space:nowrap; padding:4px 10px; }
+    header:not(.open) .bar > .grp.push, header:not(.open) .bar + .bar { display:none; }
+    header.open .bar > .grp.push { width:100%; margin-left:0; }
   }
   @media (max-width: 960px) { #panel { right:16px; top:auto; bottom:16px; max-height:60vh; } ul.log li { grid-template-columns:86px minmax(0,1fr) auto; } ul.log .w { display:none; } }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
@@ -199,8 +206,9 @@
 <header>
   <div class="bar">
     <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
-    <div class="seg" id="bldTabs"></div>
-    <div class="seg" id="floorTabs"></div>
+    <button id="menuBtn" class="noprint" aria-expanded="false">메뉴 ▾</button>
+    <div class="tabrow"><div class="seg" id="bldTabs"></div>
+    <div class="seg" id="floorTabs"></div></div>
     <div class="grp push noprint">
       <button id="itemBtn" class="primary">물품대장 넣기</button>
       <button id="csvBtn">엑셀(CSV)로</button>
@@ -772,7 +780,7 @@ function renderPanel() {
   p.hidden = !r; sheetMark(r); if (!r) return;
   const i = r.info, its = itemsFor(i, itemIndex(), state.floors[cur]), grp = new Map();
   for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
-  p.innerHTML = `<button class="p-grab" data-grab aria-label="정보 창 접기·펴기"></button><button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
+  p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}</div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   <div class="f">
@@ -897,22 +905,11 @@ $('planbox').addEventListener('contextmenu', e => { if (panned || pan) { e.preve
 // 휴대폰: 두 손가락으로 끌면 도면 상자 안에서 화면 이동, 벌리거나 오므리면 크기 조절. 한 손가락 끌기는 그대로 돌리기다.
 // 전체 배치는 상자가 스크롤을 막고(fixed) 도면이 터치를 모두 받으므로(touch-action:none) 손가락 이동을 직접 처리한다.
 const tp = new Map(); let pinch = null, one = null, tMoved = false;
-// 휴대폰 실 정보 창(아래쪽 시트): 실을 새로 고르면 펼치고, 고른 실이 시트에 가려지면 화면을 올려 보이게 한다.
+// 휴대폰 실 정보 창: 화면을 채우는 팝업으로 띄우고, 떠 있는 동안 뒤 화면은 스크롤하지 않는다.
 function phone() { return matchMedia('(pointer:coarse) and (max-width: 960px)').matches; }
-var sheetMin = false, sheetFor = '';   // var: 처음 그리기(render)가 이 줄보다 먼저 돌아도 쓸 수 있게
-function sheetMark(r) {
-  const on = !!r && phone(), key = r ? cur + ':' + r.key : '';
-  if (key !== sheetFor) { sheetMin = false; if (on) requestAnimationFrame(revealSel); } sheetFor = key;
-  $('panel').classList.toggle('min', on && sheetMin);
-  document.body.classList.toggle('sheet', on && !sheetMin); document.body.classList.toggle('sheet-min', on && sheetMin);
-}
-function revealSel() {
-  const g = $('plan').querySelector('.room.sel'), p = $('panel'); if (!g || p.hidden) return;
-  const need = () => g.getBoundingClientRect().bottom - (p.getBoundingClientRect().top - 12);
-  if (need() > 0) scrollBy(0, need());
-  if (need() > 0) $('planbox').scrollTop += need();
-}
-const mid = () => { const [a, b] = [...tp.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) }; };
+function sheetMark(r) { document.body.classList.toggle('popup', !!r && phone()); }
+$('menuBtn').onclick = () => { const h = document.querySelector('header'), o = h.classList.toggle('open');
+  $('menuBtn').textContent = o ? '메뉴 ▴' : '메뉴 ▾'; $('menuBtn').setAttribute('aria-expanded', o); fitPlan(); };
 $('planbox').addEventListener('pointerdown', e => {   // 도면의 돌리기 시작(onpointerdown)보다 뒤에 돌아서 두 번째 손가락이 닿으면 돌리기를 끊는다
   if (e.pointerType !== 'touch') return; tp.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (tp.size === 1 && !site) one = { x: e.clientX, y: e.clientY, moved: false };   // 층 화면: 한 손가락 끌기는 도면 상자 스크롤(넘치는 위아래는 화면 스크롤)
@@ -979,7 +976,6 @@ $('plan').onclick = e => {
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
-  if (d.grab != null) { sheetMin = !sheetMin; return sheetMark(findSel()); }
   if (d.acadd == null && d.acdel == null && d.itadd == null && d.itdel == null) return;
   applyRemote(); const r = findSel(); if (!r) return;
   if (d.itdel != null) { if (!confirm(`이 실의 "${d.itdel}"을(를) 물품 목록에서 지웁니다. 계속할까요?`)) return; setItemQty(r, d.itdel, 0); save(); return render(); }

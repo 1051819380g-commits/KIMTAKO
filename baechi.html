@@ -397,7 +397,7 @@ const GROUND = [
   ['소운동장', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
 ];
 // 평면도가 없는 1층짜리 부속 건물 세 동: 건물배치도(1/1000)의 테두리 크기로 한 덩어리 실만 넣고, 면적은 2024 배치도 엑셀(연면적 시트)의 값을 직접 넣는다.
-const B6 = '고등학교 급식시설(6호동)', B5 = '중학교 기계실(5호동)', B8 = '중학교 씨름연습장(8호동)';
+const B6 = '6호동', B5 = '5호동', B8 = '8호동';   // 이름은 호동 번호만(사용자 요청). 위쪽 탭에는 넣지 않고 전체 배치에서 눌러 들어간다.
 function annexFloors() {
   const one = (bld, name, w, d, use, area, memo) => ({ bld, name: '1층', strips: [], fixed: [mkRoom('room', name, d < 0 ? [0, d, w, 0] : [0, 0, w, d], use, { area: String(area), memo })] });
   const src = '배치도 테두리로 잡은 크기라 모양은 어림. 면적은 2024 배치도 엑셀 값';
@@ -446,6 +446,7 @@ function migrate(s) {
   if (s.v < 11) { const b = s.floors.find(f => f.bld === HS1 && f.name === '지하 1층'), a = b && b.fixed.find(x => x.id === 'annex');   // v11: 아래 실을 반으로 나눔(이름·용도는 이어받고 냉난방기는 왼쪽 반에 남김)
     if (a && !b.fixed.some(x => x.id === 'annex2')) { a.pts = rect(14, 0, 18, 8); a.info.area = ''; b.fixed.splice(b.fixed.indexOf(a) + 1, 0, { id: 'annex2', tf: 'R', pts: rect(18, 0, 22, 8), info: { ...info(a.info.name + '-2'), use: a.info.use } }); } s.v = 11; }
   if (s.v < 12) { for (const f of annexFloors()) if (!s.floors.some(x => x.bld === f.bld)) s.floors.push(f); s.v = 12; } // v12: 부속 건물 5·6·8호동 추가
+  if (s.v < 13) { const nm = { '고등학교 급식시설(6호동)': B6, '중학교 기계실(5호동)': B5, '중학교 씨름연습장(8호동)': B8 }; for (const f of s.floors) f.bld = nm[f.bld] || f.bld; s.v = 13; } // v13: 부속 건물 이름을 호동 번호만으로
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -454,7 +455,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 12, items: [], log: [], floors: [
+  return { v: 13, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -599,7 +600,7 @@ function addItem(r, name, n) {
 function render() { renderTabs(); renderPlan(); renderPanel(); renderTable(); renderLog(); fitPlan(); }   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
-  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
+  const grp = (k, t) => `<button class="sch${open === k ? ' on' : ''}" data-s="${k}" aria-expanded="${open === k}">${t}</button><span class="grpb${open === k ? ' open' : ''}" data-g="${k}">${blds.filter(x => school(x) === k && ![B5, B6, B8].includes(x)).map(x => `<button class="${!site && x === b ? 'on' : ''}" data-b="${esc(x)}">${esc(x.replace(/^(중학교|고등학교) /, ''))}</button>`).join('')}</span>`;
   $('bldTabs').innerHTML = `<button class="${site ? 'on' : ''}" data-b="@site" title="건물을 실제 위치대로 놓고 층을 쌓아 봅니다">전체 배치</button>` + grp('hs', '고등학교') + grp('ms', '중학교');
   $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : '';
@@ -1077,6 +1078,7 @@ $('mapDlg').onclose = () => { if ($('mapDlg').returnValue !== 'ok' || !pending) 
     console.assert(m10.length === 2 && m10.every(r => Math.abs(r.area - 32) < 1e-9) && m10[1].info.name === '영양사실-2', '아래 실 반으로 나누기 실패');
     console.assert(roomsOf(fl(HS1, '지하 1층')).filter(r => /^날개 실/.test(r.info.name)).length === 2 && migrate(old).floors.find(x => x.bld === HS1 && x.name === '지하 1층').fixed.filter(x => /^pod|annex/.test(x.id)).length === 4 && Math.abs(roomsOf(fl(HS1, '지하 1층')).find(r => r.info.name === '아래 실').area - 32) < 1e-9, '지하 날개 쪽 실·아래 실 추가 실패'); }
   console.assert([B5, B6, B8].every(b => fl(b, '1층') && SITE[b]) && roomsOf(fl(B6, '1층'))[0].area === 467.06 && school(B6) === 'hs' && school(B5) === 'ms' && migrate({ v: 11, floors: [] }).floors.length === 3, '부속 건물 추가 실패');
+  console.assert(migrate({ v: 12, floors: [{ bld: '고등학교 급식시설(6호동)', name: '1층', strips: [], fixed: [] }] }).floors[0].bld === '6호동', '부속 건물 이름 바꾸기 실패');
   console.assert(!fl(HS2, '지하 1층') && fl(HS1, '지하 1층'), '지하층은 신관에만 있어야 함');
   console.assert(migrate({ v: 1, floors: [{ bld: '본관', name: '1층' }, { bld: '1자형 교사동', name: '지하 1층' }, { bld: '1자형 교사동', name: '1층' }] }).floors.filter(x => [HS1, HS2].includes(x.bld)).map(x => x.bld + x.name).join() === HS1 + '지하 1층,' + HS1 + '1층,' + HS2 + '1층', '예전 저장분 옮기기 실패');
   console.assert(Math.abs(roomsOf(fl(HS2, '1층')).find(r => r.info.name === '교실 103').area - 64.8) < 1e-9, '본관 교실 면적 ≠ 64.8㎡');

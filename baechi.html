@@ -135,6 +135,7 @@
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { pointer-events:none; } #plan.site .hit { display:none; }
   .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
   .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
+  .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -369,6 +370,14 @@ function middleFloors() {
   memo(MS1, '3층', '골프연습실', '도면에는 가운데 실·복도까지 한 공간 — 가운데 조각과 벽을 허물어 합칠 수 있음'); memo(MS2, '1층', '교무실', '도면에는 복도 폭까지 쓰는 것으로 보임 — 면적 확인 필요');
   return fl;
 }
+// 전체 배치에 깔 바닥(운동장 등): 2023 건물배치도(1/1000)에서 눈으로 잡은 어림 테두리, 배치도 좌표(m). 그릴 때 건물처럼 180° 돌려 본다.
+const GROUND = [
+  ['운동장(고등학교)', [[121.9, 54.6], [176.5, 54.6], [177.8, 157.5], [134.6, 157.5], [88.9, 133.4], [111.8, 76.2]]],
+  ['운동장(중학교)', [[196.9, 89.3], [247.7, 89.3], [247.7, 151.9], [196.9, 151.9]]],
+  ['농구장', [[248.4, 89.4], [265.4, 89.4], [265.4, 151.9], [248.4, 151.9]]],
+  ['테니스장', [[273.8, 89.4], [294.6, 89.4], [294.6, 132.1], [273.8, 132.1]]],
+  ['소운동장', [[220.5, 180.8], [285.8, 180.8], [243.8, 240], [220.5, 232.4]]],
+];
 const SITE = { '신관': [.9659, .2588, -.2588, .9659, -125.09, -159.01], '본관': [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [-1, 0, 0, -1, -189.73, -169.91], [MS2]: [0, 1, -1, 0, -210.69, -218.84] };
 const ST = '계단실';
 // 신관 지하 1층(급식소): 2016 배치도의 지하 1층 평면도 기준. 복도 없이 폭 전체(10.7m)를 쓰고,
@@ -607,6 +616,10 @@ function renderPlan() {
     const deg = rotDeg, th = deg * Math.PI / 180, C = [-180, -130], co = Math.cos(th), si = Math.sin(th), rs = `rotate(${deg} ${C[0]} ${C[1]})`;
     const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
     const depth = b => { const d = ds.find(d => state.floors[d.i].bld === b); return d ? turn(SITE[b], d.x0 + d.w / 2, d.y0 + d.h / 2)[1] : 0; };
+    for (const [name, P] of GROUND) {          // 바닥은 1층 바닥판 아랫면 높이에 먼저 깐다
+      const q = P.map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx + K * sy, S * sy + T]; }), c = centroid([q]);
+      h_ += `<polygon class="ground" points="${q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')}"/><text class="gnd" x="${c[0].toFixed(2)}" y="${(c[1] + 1).toFixed(2)}" font-size="3">${esc(name)}</text>`;
+    }
     for (const b of Object.keys(SITE).sort((a, b) => depth(a) - depth(b))) {
       const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = b === MS1 || b === MS2; let lab = null;
       for (const d of ds.filter(d => state.floors[d.i].bld === b).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {

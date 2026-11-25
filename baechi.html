@@ -712,20 +712,21 @@ function renderPlan() {
       const q = P.map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx + K * sy, S * sy + T]; }), c = centroid([q]);
       h_ += `<polygon class="ground" points="${q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')}"/><text class="gnd" x="${c[0].toFixed(2)}" y="${(c[1] + 1).toFixed(2)}" font-size="3">${esc(name)}</text>`;
     } };
-    for (const under of [true, false]) { if (!under) ground();   // 지하층 → 바닥(운동장) → 지상층 순서로 그려, 지하층이 운동장을 뚫고 보이지 않게 한다
-    for (const b of Object.keys(SITE).sort((a, b) => depth(a) - depth(b))) {
-      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = school(b) === "ms"; let lab = null;
-      for (const d of ds.filter(d => state.floors[d.i].bld === b && (lv(state.floors[d.i].name) < 0) === under).sort((p, q) => lv(state.floors[p.i].name) - lv(state.floors[q.i].name))) {
-        const L = lv(state.floors[d.i].name), oy = -L * gap; lo = Math.min(lo, L); hi = Math.max(hi, L);
-        for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
-          const [sx, sy] = turn(M, x, y), px = sx + K * sy, py = S * sy + oy;
-          R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (!lab || py < lab[1]) lab = [px, py];
-        }
-        h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
+    // 그리는 순서: 모든 건물을 통틀어 낮은 층부터, 같은 층끼리는 뒤에 있는 건물부터. 위에서 내려다보면 높은 층이 늘 낮은 층을 가리므로,
+    // 건물 단위로 그리면 앞에 있는 1층짜리 건물이 뒤 건물의 위층을 덮어 버린다. 지하층 다음에 바닥(운동장)을 깔아 지하가 운동장을 뚫고 보이지 않게 한다.
+    const items = ds.map(d => ({ d, b: state.floors[d.i].bld, L: lv(state.floors[d.i].name) })).filter(x => SITE[x.b]).sort((p, q) => p.L - q.L || depth(p.b) - depth(q.b));
+    const labOf = {}; let grounded = false;
+    for (const { d, b, L } of items) {
+      if (L >= 0 && !grounded) { ground(); grounded = true; }
+      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = school(b) === 'ms', oy = -L * gap; lo = Math.min(lo, L); hi = Math.max(hi, L);
+      for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
+        const [sx, sy] = turn(M, x, y), px = sx + K * sy, py = S * sy + oy;
+        R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (L >= 0 && (!labOf[b] || py < labOf[b][1])) labOf[b] = [px, py];
       }
-      if (lab && !under && ![B5, B6, B8].includes(b)) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid });
+      h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
     }
-    }
+    if (!grounded) ground();
+    for (const [b, lab] of Object.entries(labOf)) if (![B5, B6, B8].includes(b)) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid: school(b) === 'ms' });
     spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
     h_ += labels.map(l => `<text class="flr${l.mid ? ' ms' : ''}" x="${l.x.toFixed(2)}" y="${l.y.toFixed(2)}" font-size="4">${esc(l.t)}</text>`).join('');   // 건물 이름은 어느 건물에도 가리지 않게 맨 위에
     x0 = C[0] - R - 4; w = 2 * R + 8; y0 = S * (C[1] - R) - hi * gap - 9; h = S * (C[1] + R) - lo * gap + T + 1 - y0 - 2.4;

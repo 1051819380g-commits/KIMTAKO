@@ -202,7 +202,7 @@
   </div>
   <div class="bar noprint">
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button></div>
-    <label class="chk" id="editLbl"><input type="checkbox" id="edit" checked> 벽 편집</label>
+    <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="syncBtn" hidden></button>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom">도면 크기 <input type="range" id="zoom" min="30" max="300" value="100"></label>
@@ -461,7 +461,7 @@ const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
 const school = b => b === MS1 || b === MS2 ? 'ms' : 'hs';
 let open = null;                                            // 건물 단추가 펼쳐진 학교('hs'·'ms'), 없으면 null
 let cur = home(), allView = false, site = true,   // 처음 열면 전체 배치부터
-    rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = true;
+    rotDeg = 30, tilt = 0.5, view = 'use', sel = null, editing = false;
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { alert('브라우저 저장에 실패했습니다. "저장파일 내보내기"로 백업하세요.\n' + e.message); } if (DB) queuePush(); }
 const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 function log(text) { const f = state.floors[cur]; state.log.unshift({ d: today(), w: `${f.bld} ${f.name}`, t: text }); }

@@ -140,7 +140,8 @@
   #planbox.fixed { overflow:hidden; }
   #printStack { display:none; } @media print { #printStack { display:block; } }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { cursor:pointer; } #plan.site .hit { display:none; }
-  .slab.ms polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
+  .sf.ms .slab polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
+  #plan.moving .top text, #plan.moving .col, #plan.moving .door, #plan.moving .hit { display:none; }   /* 끌어서 돌리는 동안은 실 안의 글자·기둥·문을 감춘다(손을 떼면 다시 보인다) */
   .sw.hs { background:#8d99a8; } .sw.msw { background:#c08a4e; }
   .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
   .door { pointer-events:none; fill:none; stroke-linecap:round; } .door .gap { stroke:#fff; stroke-width:.34; stroke-linecap:butt; } .door .leaf { stroke:var(--wall); stroke-width:.22; } .door .arc { stroke:var(--wall); stroke-width:.09; }
@@ -696,41 +697,47 @@ function drawFloor(fi) {
   }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
+// 전체 배치의 자리 잡기(다시 그리지 않고 속성만 바꾼다). 건물마다 대지 위치로 옮기고(SITE) → 대지 가운데 C를 축으로 돌리고(rotDeg) → 눕힌다(tilt).
+// 층 높이는 "층 간격". 순서는 모든 건물을 통틀어 낮은 층부터, 같은 층끼리는 뒤에 있는 것부터(위에서 보면 높은 층이 늘 낮은 층을 가린다). 지하 → 바닥 → 지상.
+function poseSite() {
+  const svg = $('plan'), S = tilt, V = Math.sqrt(1 - S * S) / 0.866, T = 1.2 * V, gap = +$('gapR').value * V, C = [-180, -130];
+  const th = rotDeg * Math.PI / 180, co = Math.cos(th), si = Math.sin(th), mx = `matrix(1 0 0 ${S} 0 0) rotate(${rotDeg.toFixed(2)} ${C[0]} ${C[1]})`;
+  const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
+  let R = 0, lo = 0, hi = 0; const labOf = {}, fs = [];   // R = 대지 가운데에서 가장 먼 모서리까지. 보이는 범위를 이 원으로 잡으면 돌려도 도면이 출렁이지 않는다.
+  for (const el of svg.querySelectorAll('.sf')) {
+    const b = el.dataset.b, L = +el.dataset.l, [x0, y0, w, hh] = el.dataset.bb.split(' ').map(Number), M = SITE[b], oy = -L * gap, ms = `${mx} matrix(${M.join(' ')})`, k = el.children;
+    for (let i = 0; i < 4; i++) k[i].setAttribute('transform', `translate(0 ${(oy + (4 - i) * T / 4).toFixed(2)}) ${ms}`);
+    k[4].setAttribute('transform', `translate(0 ${oy.toFixed(2)}) ${ms}`);
+    lo = Math.min(lo, L); hi = Math.max(hi, L);
+    for (const [x, y] of [[x0, y0], [x0 + w, y0], [x0, y0 + hh], [x0 + w, y0 + hh]]) { const [sx, sy] = turn(M, x, y), py = S * sy + oy;
+      R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (L >= 0 && (!labOf[b] || py < labOf[b][1])) labOf[b] = [sx, py]; }
+    fs.push({ el, L, dep: turn(M, x0 + w / 2, y0 + hh / 2)[1] });
+  }
+  for (const box of [svg.querySelector('#sUnder'), svg.querySelector('#sOver')]) {      // 순서가 달라졌을 때만 다시 꽂는다
+    const want = fs.filter(q => q.el.parentNode === box).sort((p, q) => p.L - q.L || p.dep - q.dep).map(q => q.el);
+    if (want.some((el, i) => box.children[i] !== el)) box.append(...want);
+  }
+  [...svg.querySelectorAll('#sGround polygon')].forEach((pg, i) => {                     // 바닥은 1층 바닥판 아랫면 높이
+    const q = GROUND[i][1].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx, S * sy + T]; }), c = centroid([q]), t = pg.nextElementSibling;
+    pg.setAttribute('points', q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')); t.setAttribute('x', c[0].toFixed(2)); t.setAttribute('y', (c[1] + 1).toFixed(2));
+  });
+  const labels = [...svg.querySelectorAll('#sLab text')].filter(t => labOf[t.dataset.b]).map(t => ({ t, x: labOf[t.dataset.b][0], y: labOf[t.dataset.b][1] - 1.5, w: textW(t.dataset.b) * 4 }));
+  spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
+  for (const l of labels) { l.t.setAttribute('x', l.x.toFixed(2)); l.t.setAttribute('y', l.y.toFixed(2)); }
+  svg.setAttribute('viewBox', `${C[0] - R - 4} ${(S * (C[1] - R) - hi * gap - 9).toFixed(2)} ${2 * R + 8} ${(2 * S * R + (hi - lo) * gap + T + 10).toFixed(2)}`);
+}
 // 한 층만, 또는 건물의 전체 층을 위층부터 아래로 쌓아서 그린다
 function renderPlan() {
   const f = state.floors[cur], m = 1.5;
   const ds = (site ? state.floors.map((x, i) => i) : allView ? state.floors.map((x, i) => x.bld === f.bld ? i : -1).filter(i => i >= 0).reverse() : [cur]).map(i => ({ i, ...drawFloor(i) }));
   let x0 = Math.min(...ds.map(d => d.x0)), w = Math.max(...ds.map(d => d.x0 + d.w)) - x0, y0 = 0, h = 0, h_ = '';
   if (site) {
-    // 전체 배치: 건물마다 대지 위치로 옮긴 뒤 눕혀서, 뒤쪽 건물부터·아래층부터 그린다. 층 높이는 "층 간격"으로 조절(좁히면 실제 건물처럼 겹치고, 넓히면 아래층이 보인다).
-    const S = tilt, K = 0, V = Math.sqrt(1 - S * S) / 0.866, T = 1.2 * V, gap = +$('gapR').value * V, lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, mx = `matrix(1 0 ${K} ${S} 0 0)`;
-    let R = 0, lo = 0, hi = 0; const labels = [];   // R = 대지 가운데에서 가장 먼 모서리까지의 거리. 화면 범위를 이 원으로 잡아 두면 돌려도 도면이 출렁이지 않는다.
-    // 돌리기: 대지 가운데(C)를 축으로 돌린다. 돌리면 앞뒤가 바뀌므로, 건물 가운데가 뒤에 있는 것부터 그린다.
-    const deg = rotDeg, th = deg * Math.PI / 180, C = [-180, -130], co = Math.cos(th), si = Math.sin(th), rs = `rotate(${deg} ${C[0]} ${C[1]})`;
-    const turn = (M, x, y) => { const sx = M[0] * x + M[2] * y + M[4] - C[0], sy = M[1] * x + M[3] * y + M[5] - C[1]; return [C[0] + sx * co - sy * si, C[1] + sx * si + sy * co]; };
-    const depth = b => { const d = ds.find(d => state.floors[d.i].bld === b); return d ? turn(SITE[b], d.x0 + d.w / 2, d.y0 + d.h / 2)[1] : 0; };
-    const ground = () => { for (const [name, P] of GROUND) {          // 바닥은 1층 바닥판 아랫면 높이에 깐다
-      const q = P.map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx + K * sy, S * sy + T]; }), c = centroid([q]);
-      h_ += `<polygon class="ground" points="${q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')}"/><text class="gnd" x="${c[0].toFixed(2)}" y="${(c[1] + 1).toFixed(2)}" font-size="3">${esc(name)}</text>`;
-    } };
-    // 그리는 순서: 모든 건물을 통틀어 낮은 층부터, 같은 층끼리는 뒤에 있는 건물부터. 위에서 내려다보면 높은 층이 늘 낮은 층을 가리므로,
-    // 건물 단위로 그리면 앞에 있는 1층짜리 건물이 뒤 건물의 위층을 덮어 버린다. 지하층 다음에 바닥(운동장)을 깔아 지하가 운동장을 뚫고 보이지 않게 한다.
-    const items = ds.map(d => ({ d, b: state.floors[d.i].bld, L: lv(state.floors[d.i].name) })).filter(x => SITE[x.b]).sort((p, q) => p.L - q.L || depth(p.b) - depth(q.b));
-    const labOf = {}; let grounded = false;
-    for (const { d, b, L } of items) {
-      if (L >= 0 && !grounded) { ground(); grounded = true; }
-      const M = SITE[b], ms = `${rs} matrix(${M.join(' ')})`, mid = school(b) === 'ms', oy = -L * gap; lo = Math.min(lo, L); hi = Math.max(hi, L);
-      for (const [x, y] of [[d.x0, d.y0], [d.x0 + d.w, d.y0], [d.x0, d.y0 + d.h], [d.x0 + d.w, d.y0 + d.h]]) {
-        const [sx, sy] = turn(M, x, y), px = sx + K * sy, py = S * sy + oy;
-        R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); if (L >= 0 && (!labOf[b] || py < labOf[b][1])) labOf[b] = [px, py];
-      }
-      h_ += `<g transform="translate(0 ${oy})">${[4, 3, 2, 1].map(k => `<g class="slab${mid ? ' ms' : ''}" transform="translate(0 ${(k * T / 4).toFixed(2)}) ${mx} ${ms}">${d.sil}</g>`).join('')}<g transform="${mx} ${ms}">${d.html}</g></g>`;
-    }
-    if (!grounded) ground();
-    for (const [b, lab] of Object.entries(labOf)) if (![B5, B6, B8].includes(b)) labels.push({ x: lab[0], y: lab[1] - 1.5, w: textW(b) * 4, t: b, mid: school(b) === 'ms' });
-    spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
-    h_ += labels.map(l => `<text class="flr${l.mid ? ' ms' : ''}" x="${l.x.toFixed(2)}" y="${l.y.toFixed(2)}" font-size="4">${esc(l.t)}</text>`).join('');   // 건물 이름은 어느 건물에도 가리지 않게 맨 위에
-    x0 = C[0] - R - 4; w = 2 * R + 8; y0 = S * (C[1] - R) - hi * gap - 9; h = S * (C[1] + R) - lo * gap + T + 1 - y0 - 2.4;
+    // 전체 배치: 여기서는 뼈대만 만든다(층마다 바닥판 옆면 4겹 + 윗면, 바닥(운동장), 건물 이름). 자리·방향·높이·그리는 순서는 poseSite()가
+    // transform과 순서만 바꿔서 잡는다 — 끌어서 돌릴 때 도면을 다시 만들지 않아야 부드럽다.
+    const lv = n => n.startsWith('지하') ? -1 : parseInt(n) - 1, its = ds.filter(d => SITE[state.floors[d.i].bld]);
+    const one = d => { const fl = state.floors[d.i]; return `<g class="sf${school(fl.bld) === 'ms' ? ' ms' : ''}" data-b="${esc(fl.bld)}" data-l="${lv(fl.name)}" data-bb="${[d.x0, d.y0, d.w, d.h].join(' ')}">${`<g class="slab">${d.sil}</g>`.repeat(4)}<g class="top">${d.html}</g></g>`; };
+    h_ = `<g id="sUnder">${its.filter(d => lv(state.floors[d.i].name) < 0).map(one).join('')}</g><g id="sGround">${GROUND.map(([name]) => `<polygon class="ground"/><text class="gnd" font-size="3">${esc(name)}</text>`).join('')}</g>`
+      + `<g id="sOver">${its.filter(d => lv(state.floors[d.i].name) >= 0).map(one).join('')}</g><g id="sLab">${Object.keys(SITE).filter(b => ![B5, B6, B8].includes(b)).map(b => `<text class="flr${school(b) === 'ms' ? ' ms' : ''}" data-b="${esc(b)}" font-size="4">${esc(b)}</text>`).join('')}</g>`;
   } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g data-fl="${d.i}" transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
@@ -747,7 +754,7 @@ function renderPlan() {
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';
   if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
-  const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_;
+  const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_; if (site) poseSite();
 }
 function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }
 function renderPanel() {
@@ -885,7 +892,7 @@ function autoZoom() {
   const w = box.offsetWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth), room = parseFloat(box.style.maxHeight) - 20;
   z.value = Math.max(+z.min, Math.min(100, Math.floor(room / (w * vb.height / vb.width) * 100))); fitPlan();
 }
-$('zoom').oninput = fitPlan; $('gapR').oninput = () => renderPlan();
+$('zoom').oninput = fitPlan; $('gapR').oninput = () => { if (site) poseSite(); };
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
 let drag = null, dragged = false, raf = 0;
 $('plan').onpointerdown = e => { if (site && e.button === 0) drag = { x: e.clientX, y: e.clientY, rot: rotDeg, tilt, moved: false }; };
@@ -893,9 +900,10 @@ addEventListener('pointermove', e => {
   if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (Math.hypot(dx, dy) > 4) drag.moved = true;   // 끌어서 돌린 뒤 손을 뗀 것은 건물 누르기로 치지 않는다
   rotDeg = drag.rot - dx * 0.35; tilt = Math.min(1, Math.max(0.12, drag.tilt + dy * 0.0025));
-  if (!raf) raf = requestAnimationFrame(() => { raf = 0; renderPlan(); });
+  $('plan').classList.add('moving');
+  if (!raf) raf = requestAnimationFrame(() => { raf = 0; poseSite(); });
 });
-addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; });
+addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; $('plan').classList.remove('moving'); });
 $('plan').onclick = e => {
   if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물을 누르면 그 건물의 전체 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;

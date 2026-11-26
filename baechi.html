@@ -234,7 +234,7 @@
   @media (max-width: 960px) { #panel { right:16px; top:auto; bottom:16px; max-height:60vh; } ul.log li { grid-template-columns:86px minmax(0,1fr) auto; } ul.log .w { display:none; } }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
   @media print {
-    .noprint, #panel { display:none !important; }
+    .noprint, .mx, #panel { display:none !important; }
     header { position:static; border:0; } body { background:#fff; }
     main { display:block; padding:0 0 8px; } .card { border:0; }
     #sheet { display:block; }   /* 세로로 늘어놓는 틀(flex)은 인쇄에서 빈 쪽을 만든다 */
@@ -1079,7 +1079,7 @@ function renderReqs() {
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
-    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {
@@ -1311,6 +1311,7 @@ $('reqClose').onclick = () => $('reqDlg').close();
 $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
+  if (e.target.dataset.reqmdel != null) { if (ro()) return; applyRemote(); const [n, k] = e.target.dataset.reqmdel.split(':'); return reqMemo(+tr.dataset.f, tr.dataset.k, +n, +k); }   // 메모 줄의 × = 그 메모 지움
   if (e.target.dataset.rm != null) { if (ro()) return; applyRemote(); return reqMemo(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rm); }
   if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); return reqAct(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rq, false); }
   $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다

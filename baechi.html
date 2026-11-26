@@ -816,7 +816,8 @@ function evacRoutes(f, rooms, selKey) {
       // 대각선을 쓰지 않는다: 문은 벽에 수직으로 드나들고, 그 사이는 벽에 나란히 간다(기운 날개에서는 그 날개의 벽 방향이 기준)
       if (axis[k] && k !== i) { push(proj(axis[k], a)); push(proj(axis[k], b)); }
       else if (wa && wb) { const na = [-wa[1], wa[0]], t = dx * na[0] + dy * na[1];
-        if (Math.abs(wa[0] * wb[0] + wa[1] * wb[1]) > .7) { const m1 = go(a, na, t / 2); push(m1); push(go(m1, wa, dx * wa[0] + dy * wa[1])); }   // 마주 보는 벽: ㄹ자로
+        if (Math.abs(wa[0] * wb[0] + wa[1] * wb[1]) > .7) { const m1 = go(a, na, Math.sign(t) * Math.min(Math.abs(t) / 2, 1.2)); push(m1);   // 문에서 1.2m만 나와 벽을 따라 간 뒤 도착 문 앞에서 한 줄로 모인다(홀 한가운데에 세로줄이 여러 개 생기지 않게)
+ push(go(m1, wa, dx * wa[0] + dy * wa[1])); }   // 마주 보는 벽: ㄹ자로
         else push(go(a, wb, dx * wb[0] + dy * wb[1])); }   // 도착하는 문의 벽에 나란히 간 뒤 그 문으로 수직(벽이 비스듬히 만나는 홀에서도 사선이 안 생긴다)
         //                                                                                                            // 꺾인 벽: ㄱ자로
       else if (wa) push(go(a, [-wa[1], wa[0]], dx * -wa[1] + dy * wa[0]));        // 문 → 계단실 가운데: 문에서 수직으로 들어간 뒤 옆으로

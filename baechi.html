@@ -293,7 +293,7 @@
 <section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
-  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당·도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
+  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
 <dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
@@ -399,7 +399,15 @@ function longFloor(name, p) {
 // 고정 실 하나: p가 숫자 넷이면 사각형(x0,y0,x1,y1), 아니면 꼭짓점 목록
 const mkRoom = (id, name, p, use, o = {}) => { const x = fx(id, name, '', p.length === 4 && !Array.isArray(p[0]) ? rect(...p) : p); Object.assign(x.info, { use, ...o }); x.info.acN = x.info.acs.length; return x; };
 const acList = (n, t, y, m = '') => Array.from({ length: n }, () => ({ t, y, m }));
-const HALL = '강당·도서관동';
+const HALL = '강당·도서관동';   // 예전 이름(저장분 옮기기에만 쓴다)
+// 강당과 도서관동은 서로 이어지지 않은 다른 건물이다(사용자 확인 2026-11-26). 도면 좌표는 그대로 같이 쓰고(둘 사이 2m), 실을 x 좌표로 갈라 건물 둘로 둔다.
+const GYM = '강당', LIB = '도서관동';
+function splitHall(floors) {
+  const isGym = x => Math.min(...x.pts.map(p => p[0])) >= 14, out = [];
+  for (const b of [GYM, LIB]) for (const f of floors) { const fixed = (f.fixed || []).filter(x => isGym(x) === (b === GYM)), ids = new Set(fixed.map(x => x.id));
+    if (fixed.length) out.push({ ...f, bld: b, fixed, open: (f.open || []).filter(o => o.split('|').every(i => ids.has(i))) }); }
+  return out;
+}
 function hallFloors() {
   const mk = mkRoom, ac = acList;
   const core = () => [mk('ev', '승강기', [-3.15, 25.2, -0.45, 31.05], '공용'), mk('st', '계단실', [-0.45, 25.2, 2.35, 31.05], '공용')];
@@ -487,11 +495,11 @@ function annexFloors() {
 const DOORS = {
   [HS1]: [['', 0, 0, 0, -1], ['', 0, -17.84, 0, 1], ['L', -34, 0, 0, -1], ['L', -34, -10.7, 0, 1], ['R', 34, 0, 0, -1]],   // 현관(가운데 앞), 가운데 뒤, 왼쪽 계단실 앞·뒤(그림에서 아래·위), 오른쪽 계단실 아래쪽 — 계단실 문은 사용자 확인(2026-11-25)
   [HS2]: [['B', 63.85, -9.9, 0, 1], ['B', 63.85, 0, 0, -1], ['B', 5.4, -9.9, 0, 1], ['B', 119.2, -9.9, 0, 1]],             // 가운데 현관, 현관 뒤쪽(가운데 계단실 반대편 — 사용자 확인), 양 끝 계단 옆
-  [HALL]: [['', 15.1, 8.5, 1, 0], ['', 7.4, 23.1, -1, 0]],                                                              // 강당 HALL, 도서관 로비
+  [GYM]: [['', 15.1, 8.5, 1, 0]], [LIB]: [['', 7.4, 23.1, -1, 0]],                                                       // 강당 HALL, 도서관동 로비
   [MS1]: [['M', 42, 2.7, 0, -1], ['M', 4.3, 1.35, 1, 0], ['M', 42.55, -12.6, 0, 1], ['M', 83.05, -7.2, 0, 1, '운동장(중학교)']],             // 가운데 현관, 왼쪽 복도 끝, 계단실#2 뒤, 계단실#3 뒤
   [MS2]: [['', 15.75, 0, 0, -1], ['', 28.8, -11.7, 1, 0, '운동장(고등학교)']],                                                             // 홀, 창고·연결복도의 교장실 쪽(왼쪽) 벽 — 사용자 확인(2026-11-26)
 };
-const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84],
+const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [GYM]: [1, 0, 0, 1, -280.88, -77.14], [LIB]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84],
   [B6]: [1, 0, 0, 1, -167.75, -188.32],   // 배치도 값(-166.45)에서 1.3m 옆으로 옮김: 도구의 신관 가운데 뒤쪽 실(화장실 자리)이 배치도 테두리보다 넓게 그려져 6호동과 1m쯤 겹쳤다
   [B5]: [.861, .508, -.508, .861, -108.91, -165.32], [B8]: [1, 0, 0, 1, -296.99, -152.62] };   // 부속 건물: 6호동은 신관 아래, 5호동은 신관 왼쪽 날개 바깥(30° 기울어 있음), 8호동은 테니스장 옆
 const ST = '계단실';
@@ -527,6 +535,8 @@ function migrate(s) {
     if (a && !b.fixed.some(x => x.id === 'annex2')) { a.pts = rect(14, 0, 18, 8); a.info.area = ''; b.fixed.splice(b.fixed.indexOf(a) + 1, 0, { id: 'annex2', tf: 'R', pts: rect(18, 0, 22, 8), info: { ...info(a.info.name + '-2'), use: a.info.use } }); } s.v = 11; }
   if (s.v < 12) { for (const f of annexFloors()) if (!s.floors.some(x => x.bld === f.bld)) s.floors.push(f); s.v = 12; } // v12: 부속 건물 5·6·8호동 추가
   if (s.v < 13) { const nm = { '고등학교 급식시설(6호동)': B6, '중학교 기계실(5호동)': B5, '중학교 씨름연습장(8호동)': B8 }; for (const f of s.floors) f.bld = nm[f.bld] || f.bld; s.v = 13; } // v13: 부속 건물 이름을 호동 번호만으로
+  if (s.v < 14) { const i = s.floors.findIndex(f => f.bld === HALL);   // v14: 강당·도서관동 → 강당, 도서관동(다른 건물)
+    if (i >= 0) { const hs = s.floors.filter(f => f.bld === HALL); s.floors = s.floors.filter(f => f.bld !== HALL); s.floors.splice(i, 0, ...splitHall(hs)); } s.v = 14; }
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -535,7 +545,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 13, items: [], log: [], floors: [
+  return { v: 14, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -547,7 +557,7 @@ function defaults() {
       [[4, '수학전용실'], [12, '사회교과전용교실C'], [16, '미술실'], [18, ST]], ['지구과학실'], ['동아리실', ST, '특별실D'], ['화장실(남)', '화장실(남)']),
     mainFloor('5층', [[2, ST], [6, '전산실'], [18, '창의융합과학실']],
       [[6, '가사실'], [10, '특별실E'], [16, '체육실A'], [18, ST]], ['체육실B', '준비실', 2.5], ['창고', ST, '종교수업실'], ['화장실(남)', '화장실']),
-    longFloor('1층', 1), longFloor('2층', 2), longFloor('3층', 3), ...hallFloors(), ...middleFloors(), ...annexFloors(),
+    longFloor('1층', 1), longFloor('2층', 2), longFloor('3층', 3), ...splitHall(hallFloors()), ...middleFloors(), ...annexFloors(),
   ] };
 }
 
@@ -656,7 +666,8 @@ function locKeys(loc) {
   const m = norm(loc).match(/^\(([^()]+)\)(?:\((\d층|지하)\))?(.+)$/), full = canon(loc);
   if (!m) return [full];
   const num = m[3].match(/(?<!\d)\d{4}(?!\d)/);
-  return [full, `@${norm({ '신관': HS1, '본관': HS2, '다': HALL }[m[1]] || m[1])}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`];
+  const blds = m[1] === '다' || m[1] === norm(HALL) ? [LIB, GYM] : [{ '신관': HS1, '본관': HS2 }[m[1]] || m[1]];   // "(다)"(다목적동)와 예전 이름은 도서관동·강당 어느 쪽인지 적혀 있지 않아 둘 다에서 찾는다
+  return [full, ...blds.map(b => `@${norm(b)}|${m[2] === '지하' ? '지하1층' : m[2] || ''}|${num ? num[0] : canon(m[3])}`)];
 }
 function itemIndex() {                       // 열쇠 → 물품 목록
   const m = new Map(); for (const it of state.items) for (const k of locKeys(it.loc)) { if (!m.has(k)) m.set(k, []); m.get(k).push(it); } return m;
@@ -768,7 +779,7 @@ function fireMarks(f) {
 //  강당·도서관동: 2023 외벽개선공사 A-010 1층 평면(HALL → 강당 문 두 곳). 고등학교 본관·신관은 실 문이 그려진 자료가 없다.
 const RDOORS = {
   [MS2]: { '1층': [['', 5.2, -7.5], ['', 8.3, -7.5], ['', 12.7, -7.5], ['', 18.6, -7.5], ['', 35.2, -7.5]], '2층': [['', 27.8, -7.5]] },
-  [HALL]: { '1층': [['', 20.6, 6.9], ['', 20.6, 8.8]] },
+  [GYM]: { '1층': [['', 20.6, 6.9], ['', 20.6, 8.8]] },
 };
 // 대피 동선: 실과 복도·홀이 맞닿은 벽에서 문(RDOORS에 있으면 그 자리, 없으면 벽 가운데)을 잡고, 복도·홀·계단(공용)을 따라 가장 가까운 건물 출입구(1층)나 계단실(그 밖의 층)까지 가장 짧은 길을 찾는다.
 // 실은 복도·홀로만 열린다고 본다(계단실·옆 실과 맞닿은 벽은 문이 아니다). 그렇게 해서 길이 안 잡히는 실만 옆 실·계단실로 바로 나가게 한다(실을 지나갈 때는 거리 4배로 쳐서 되도록 피한다).
@@ -1447,7 +1458,7 @@ $('mapDlg').onclose = () => { if (ro()) return; if ($('mapDlg').returnValue !== 
 // 자체 점검: 벽을 허물었다 다시 세워도 면적 합과 실 수가 그대로여야 한다
 (function selfCheck() {
   console.assert(siteEvac().length >= 12, '바깥 대피 동선이 안 잡힘');
-  { const d0 = defaults(); for (const [b, n] of [[HS2, '2층'], [HS1, '3층'], [HS1, '1층'], [MS2, '1층'], [MS1, '2층'], [HALL, '2층'], [HALL, '4층']]) { const f0 = d0.floors.find(x => x.bld === b && x.name === n), rs = roomsOf(f0), e = evacRoutes(f0, rs);
+  { const d0 = defaults(); for (const [b, n] of [[HS2, '2층'], [HS1, '3층'], [HS1, '1층'], [MS2, '1층'], [MS1, '2층'], [GYM, '2층'], [LIB, '4층']]) { const f0 = d0.floors.find(x => x.bld === b && x.name === n), rs = roomsOf(f0), e = evacRoutes(f0, rs);
     const miss = rs.filter(r => r.info.use !== '공용' && !(e && e.dist[r.key] > 0)).map(r => r.info.name); console.assert(!miss.length, b + ' ' + n + ' 대피 동선 없는 실: ' + miss.join(', ')); } }
   const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl(HS1, '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();
   console.assert(Math.abs(roomsOf(f).filter(r => r.key.startsWith('s0')).reduce((a, r) => a + r.area, 0) - 36 * 8) < 1e-9, '신관 날개 면적 ≠ 288㎡');
@@ -1470,9 +1481,11 @@ $('mapDlg').onclose = () => { if (ro()) return; if ($('mapDlg').returnValue !== 
   { const keep = [state, cur]; state = d; cur = d.floors.indexOf(fl(HS1, '1층')); const rm = roomsOf(d.floors[cur]).find(r => r.info.name === '보건실'), q = n => roomItems(rm, n).reduce((a, it) => a + it.q, 0);
     addItem(rm, '침대', 2); addItem(rm, '침대', 1); d.items.push({ n: '침대', loc: '(신관)(1층)보건실', q: 1 }); setItemQty(rm, '침대', 2);
     console.assert(q('침대') === 2 && d.items.length === 1, '물품 수량 고치기 실패'); setItemQty(rm, '침대', 0); console.assert(d.items.length === 0, '물품 지우기 실패'); [state, cur] = keep; }
-  const hf = fl(HALL, '1층'), gym = roomsOf(hf).find(r => r.info.name === '강당');
-  console.assert(d.floors.filter(x => x.bld === HALL).length === 5 && Math.abs(gym.area - (22.1 * 20.6 - 1 * 2.95)) < 1e-6 && gym.info.acN === 4 && fixedWalls(hf).some(w => w.id === 'lib1|kit')
-    && migrate({ v: 4, floors: [] }).floors.filter(x => x.bld === HALL).length === 5 && locKeys('(다)(3층)세미나실')[1] === '@' + norm(HALL) + '|3층|세미나실' && locKeys('(중학교 본관)(1층)교무실')[1] === '@중학교본관|1층|교무실', '강당·도서관동 추가 실패');
+  const hf = fl(GYM, '1층'), gym = roomsOf(hf).find(r => r.info.name === '강당');
+  console.assert(d.floors.filter(x => x.bld === LIB).length === 5 && d.floors.filter(x => x.bld === GYM).length === 2 && !d.floors.some(x => x.bld === HALL) && Math.abs(gym.area - (22.1 * 20.6 - 1 * 2.95)) < 1e-6 && gym.info.acN === 4 && fixedWalls(fl(LIB, '1층')).some(w => w.id === 'lib1|kit')
+    && migrate({ v: 4, floors: [] }).floors.filter(x => x.bld === LIB || x.bld === GYM).length === 7 && locKeys('(다)(3층)세미나실')[1] === '@' + norm(LIB) + '|3층|세미나실' && locKeys('(다)(1층)강당')[2] === '@강당|1층|강당'
+    && (() => { const o = { v: 13, floors: [...hallFloors(), ...middleFloors()] }; o.floors[0].open = ['hall|gym', 'lib1|kit']; o.floors[0].fixed.find(x => x.id === 'gym').info.reqs = [{ t: 'x' }]; const m = migrate(o).floors;
+      return m.map(x => x.bld).slice(0, 8).join() === [GYM, GYM, LIB, LIB, LIB, LIB, LIB, MS1].join() && m[0].open.join() === 'hall|gym' && m[2].open.join() === 'lib1|kit' && m[0].fixed.find(x => x.id === 'gym').info.reqs.length === 1 && m[0].fixed.length + m[2].fixed.length === 14; })() && locKeys('(중학교 본관)(1층)교무실')[1] === '@중학교본관|1층|교무실', '강당·도서관동 추가·나누기 실패');
   { const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], a = ap(SITE[HS1], [-40, 0]), b = ap(SITE[HS2], [124.6, 0]);
     console.assert(Object.values(SITE).every(M => Math.abs(M[0] * M[3] - M[1] * M[2] - 1) < 1e-3) && Math.hypot(a[0] - b[0], a[1] - b[1]) > 5 && Math.hypot(a[0] - b[0], a[1] - b[1]) < 40, '건물 대지 위치가 이상함'); }
   { const m1 = fl(MS1, '1층'), m2 = fl(MS2, '1층'), r2 = roomsOf(m2), by = (f, n) => roomsOf(f).find(r => r.info.name === n);

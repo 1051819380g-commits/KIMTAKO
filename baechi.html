@@ -475,13 +475,13 @@ function annexFloors() {
   return [one(B6, '급식시설', 32.28, 15.56, '지원', 467.06, src + ' — 신관 지하 급식소(식당·조리장)와 같은 곳인지 확인 필요'),
     one(B5, '기계실', 21.24, -7.41, '지원', 119.7, src), one(B8, '씨름연습장', 12.52, 12.24, '특별실', 168, src)];
 }
-// 건물 출입구(1층에만 그린다): [좌표 틀(tf), x, y, 안쪽 방향 x, y]. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
+// 건물 출입구(1층에만 그린다): [좌표 틀(tf), x, y, 안쪽 방향 x, y, (전체 배치에서 대피할 운동장 — 없으면 가장 가까운 곳)]. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
 const DOORS = {
   [HS1]: [['', 0, 0, 0, -1], ['', 0, -17.84, 0, 1], ['L', -34, 0, 0, -1], ['L', -34, -10.7, 0, 1], ['R', 34, 0, 0, -1]],   // 현관(가운데 앞), 가운데 뒤, 왼쪽 계단실 앞·뒤(그림에서 아래·위), 오른쪽 계단실 아래쪽 — 계단실 문은 사용자 확인(2026-11-25)
   [HS2]: [['B', 63.85, -9.9, 0, 1], ['B', 63.85, 0, 0, -1], ['B', 5.4, -9.9, 0, 1], ['B', 119.2, -9.9, 0, 1]],             // 가운데 현관, 현관 뒤쪽(가운데 계단실 반대편 — 사용자 확인), 양 끝 계단 옆
   [HALL]: [['', 15.1, 8.5, 1, 0], ['', 7.4, 23.1, -1, 0]],                                                              // 강당 HALL, 도서관 로비
   [MS1]: [['M', 42, 2.7, 0, -1], ['M', 4.3, 1.35, 1, 0], ['M', 42.55, -12.6, 0, 1], ['M', 83.05, -7.2, 0, 1]],             // 가운데 현관, 왼쪽 복도 끝, 계단실#2 뒤, 계단실#3 뒤
-  [MS2]: [['', 15.75, 0, 0, -1], ['', 28.8, -11.7, 1, 0]],                                                             // 홀, 창고·연결복도의 교장실 쪽(왼쪽) 벽 — 사용자 확인(2026-11-26)
+  [MS2]: [['', 15.75, 0, 0, -1], ['', 28.8, -11.7, 1, 0, '운동장(고등학교)']],                                                             // 홀, 창고·연결복도의 교장실 쪽(왼쪽) 벽 — 사용자 확인(2026-11-26)
 };
 const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [HALL]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84],
   [B6]: [1, 0, 0, 1, -167.75, -188.32],   // 배치도 값(-166.45)에서 1.3m 옆으로 옮김: 도구의 신관 가운데 뒤쪽 실(화장실 자리)이 배치도 테두리보다 넓게 그려져 6호동과 1m쯤 겹쳤다
@@ -890,24 +890,27 @@ function siteEvac() {
   const grounds = GROUND.filter(([n]) => /운동장/.test(n)).map(([, g]) => g.map(([x, y]) => [-x, -y])), all = polys.flat().concat(grounds.flat());
   const G = 2, x0 = Math.min(...all.map(p => p[0])) - 6, y0 = Math.min(...all.map(p => p[1])) - 6, W = Math.ceil((Math.max(...all.map(p => p[0])) + 6 - x0) / G), H = Math.ceil((Math.max(...all.map(p => p[1])) + 6 - y0) / G);
   const at = i => [x0 + (i % W + .5) * G, y0 + (Math.floor(i / W) + .5) * G], cell = p => { const x = Math.floor((p[0] - x0) / G), y = Math.floor((p[1] - y0) / G); return x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x; };
-  const free = new Uint8Array(W * H), goal = new Uint8Array(W * H), dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]], step = (i, d) => cell([at(i)[0] + dirs[d][0] * G, at(i)[1] + dirs[d][1] * G]);
-  for (let i = 0; i < W * H; i++) { const p = at(i); free[i] = !polys.some(q => inP(p, q)) && !walls.some(w => near(p, w)); goal[i] = free[i] && grounds.some(q => inP(p, q)); }
+  const free = new Uint8Array(W * H), dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]], step = (i, d) => cell([at(i)[0] + dirs[d][0] * G, at(i)[1] + dirs[d][1] * G]);
+  for (let i = 0; i < W * H; i++) { const p = at(i); free[i] = !polys.some(q => inP(p, q)) && !walls.some(w => near(p, w)); }
   // 운동장 칸에서 거꾸로 퍼져 나간다. 상태 = (칸, 그 칸에서 나아갈 방향), 값 = 운동장까지 걸음 수 + 꺾은 횟수 × PEN
-  const PEN = 4, dist = new Int32Array(W * H * 4).fill(1e9), B = [[]];
-  for (let i = 0; i < W * H; i++) if (goal[i]) for (let d = 0; d < 4; d++) { dist[i * 4 + d] = 0; B[0].push(i * 4 + d); }
+  const PEN = 4; let goal, dist;
+  const spread = gs => { goal = new Uint8Array(W * H); dist = new Int32Array(W * H * 4).fill(1e9); const B = [[]];
+  for (let i = 0; i < W * H; i++) if (goal[i] = +(free[i] && gs.some(q => inP(at(i), q)))) for (let d = 0; d < 4; d++) { dist[i * 4 + d] = 0; B[0].push(i * 4 + d); }
   for (let c = 0; c < B.length; c++) for (const s of B[c] || []) { if (dist[s] !== c) continue; const j = s >> 2, d2 = s & 3;
     for (let d = 0; d < 4; d++) { const i = step(j, (d + 2) % 4); if (i < 0 || !free[i] || goal[i]) continue;
-      const n = c + 1 + (d !== d2 && !goal[j] ? PEN : 0); if (n < dist[i * 4 + d]) { dist[i * 4 + d] = n; (B[n] ||= []).push(i * 4 + d); } } }
+      const n = c + 1 + (d !== d2 && !goal[j] ? PEN : 0); if (n < dist[i * 4 + d]) { dist[i * 4 + d] = n; (B[n] ||= []).push(i * 4 + d); } } } };
+  spread(grounds);
   const best = (i, from) => { let d = -1, v = 1e9; for (let k = 0; k < 4; k++) { const n = dist[i * 4 + k] + (from != null && k !== from ? PEN : 0); if (n < v) { v = n; d = k; } } return d; };
   const out = [];
   for (const b in DOORS) { if (!SITE[b] || !state.floors.some(x => x.bld === b && x.name === '1층')) continue;
-    for (const [tf, x, y, nx, ny] of DOORS[b]) { const c = ap(SITE[b], TF[tf]([x, y])), o = ap(SITE[b], TF[tf]([x - nx, y - ny])), u = [o[0] - c[0], o[1] - c[1]];
+    for (const [tf, x, y, nx, ny, to] of DOORS[b]) { if (to) spread([GROUND.find(g => g[0] === to)[1].map(([gx, gy]) => [-gx, -gy])]);      // 운동장을 정해 둔 출입구
+      const c = ap(SITE[b], TF[tf]([x, y])), o = ap(SITE[b], TF[tf]([x - nx, y - ny])), u = [o[0] - c[0], o[1] - c[1]];
       let i = -1; for (let k = 1.5; k <= 6 && i < 0; k += .5) { const j = cell([c[0] + u[0] * k, c[1] + u[1] * k]); if (j >= 0 && free[j] && best(j) >= 0) i = j; }      // 문 앞으로 곧장 나가 처음 만나는 빈 칸
       if (i < 0) { let bd = 8; for (let j = 0; j < W * H; j++) if (free[j] && best(j) >= 0) { const p = at(j), dd = Math.hypot(p[0] - o[0], p[1] - o[1]); if (dd < bd) { bd = dd; i = j; } } }      // 문 앞이 막혀 있으면(옆 건물과 붙은 곳) 8m 안의 가장 가까운 빈 칸
-      if (i < 0) continue;
+      if (i < 0) { if (to) spread(grounds); continue; }
       const s = at(i), t = (s[0] - c[0]) * u[0] + (s[1] - c[1]) * u[1], pts = [c, [c[0] + u[0] * t, c[1] + u[1] * t], s]; let d = best(i);
       while (!goal[i]) { const j = step(i, d); if (goal[j]) { i = j; break; } const d2 = best(j, d); if (d2 !== d) pts.push(at(j)); i = j; d = d2; }
-      const e = at(i); pts.push([e[0] + dirs[d][0] * 4, e[1] + dirs[d][1] * 4]); out.push(pts); } }      // 운동장 안으로 4m 더 들어가서 끝낸다
+      const e = at(i); pts.push([e[0] + dirs[d][0] * 4, e[1] + dirs[d][1] * 4]); out.push(pts); if (to) spread(grounds); } }      // 운동장 안으로 4m 더 들어가서 끝낸다
   return out;
 }
 let siteEv = [];

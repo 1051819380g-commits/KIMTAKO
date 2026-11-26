@@ -970,8 +970,8 @@ function renderPlan() {
     siteEv = view === 'fire' && (siteLv == null || siteLv === '1층') ? siteEvac() : [];
     if (siteEv.length) h_ = h_.replace('<g id="sOver">', () => `<g id="sEvac"><defs><marker id="evB" viewBox="0 0 6 6" refX="5.2" refY="3" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 .6L6 3L0 5.4z" fill="#e0201b"/></marker></defs>${siteEv.map(() => '<polyline class="evac out" marker-end="url(#evB)"/>').join('')}</g><g id="sOver">`);
   } else for (const d of ds) {
-    if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g data-fl="${d.i}" transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
+    if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + .6}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }   // 층 이름은 그 층 그림의 왼쪽 아래
   }
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;

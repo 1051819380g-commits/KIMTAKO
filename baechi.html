@@ -818,7 +818,7 @@ function evacRoutes(f, rooms, selKey) {
   for (const c of doors) if (c.kn) out.html += `<line class="rdoor" x1="${(c.p[0] - c.u[0] * .55).toFixed(2)}" y1="${(c.p[1] - c.u[1] * .55).toFixed(2)}" x2="${(c.p[0] + c.u[0] * .55).toFixed(2)}" y2="${(c.p[1] + c.u[1] * .55).toFixed(2)}"><title>실 출입문(도면 확인)</title></line>`;
   rooms.forEach((r, i) => { if (pub[i] || gone[i] || dist[cen[i]] === Infinity) return;
     const pts = [pos[cen[i]]], push = p => { if (D(pts.at(-1), p) > .05) pts.push(p); };
-    for (let n = cen[i]; !tgt.has(n);) { const [m, k] = nxt[n]; const a = pos[n], b = pos[m], wa = wd[n], wb = wd[m], dx = b[0] - a[0], dy = b[1] - a[1], go = (o, u, t) => [o[0] + u[0] * t, o[1] + u[1] * t];
+    let n = cen[i]; for (; !tgt.has(n);) { const [m, k] = nxt[n]; const a = pos[n], b = pos[m], wa = wd[n], wb = wd[m], dx = b[0] - a[0], dy = b[1] - a[1], go = (o, u, t) => [o[0] + u[0] * t, o[1] + u[1] * t];
       // 대각선을 쓰지 않는다: 문은 벽에 수직으로 드나들고, 그 사이는 벽에 나란히 간다(기운 날개에서는 그 날개의 벽 방향이 기준)
       if (axis[k] && k !== i) { push(proj(axis[k], a)); push(proj(axis[k], b)); }
       else if (wa && wb) { const na = [-wa[1], wa[0]], t = dx * na[0] + dy * na[1];
@@ -832,6 +832,11 @@ function evacRoutes(f, rooms, selKey) {
     out.dist[r.key] = pts.reduce((a, p, j) => a + (j ? D(pts[j - 1], p) : 0), 0);
     const cls = 'evac' + (r.key === selKey ? ' on' : ''), cut = pts.length > 3 ? 3 : pts.length;
     out.html += `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(0, cut).map(P2).join(' ')}"/>` + (cut < pts.length ? `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(cut - 1).map(P2).join(' ')}"/>` : '');
+    // 복도 없이 계단실 여러 곳과 바로 맞닿은 실(신관 지하 식당 등)은 나머지 계단실로 가는 길도 그린다(양방향 피난). 그 계단실과 맞닿은 조각의 가운데에서 출발한다.
+    for (const c of doors) { const s = c.i === i ? c.j : c.j === i ? c.i : -1; if (s < 0 || !pure[s] || cen[s] === n || !tgt.has(cen[s])) continue;
+      const far = q => Math.min(...edges(q).map(e => segD(c.p, ...e))), a = centroid([parts[i].reduce((m, q) => far(q) < far(m) ? q : m)]), e = pos[cen[s]], nu = [-c.u[1], c.u[0]];
+      const al = (p, q, u) => (q[0] - p[0]) * u[0] + (q[1] - p[1]) * u[1], g = (o, u, t) => [o[0] + u[0] * t, o[1] + u[1] * t];
+      out.html += `<polyline class="${cls}" marker-end="url(#evA)" points="${[a, g(a, c.u, al(a, c.p, c.u)), c.p, g(c.p, nu, al(c.p, e, nu)), e].map(P2).join(' ')}"/>`; }
   });
   return out;
 }

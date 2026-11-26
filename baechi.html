@@ -104,6 +104,8 @@
   #flMenu { transform-origin:50% 0; animation:flGrow .18s ease-out; } @keyframes flGrow { from { opacity:0; transform:scaleY(.15); } }   /* 건물 단추에서 자라나듯 펼쳐진다 */
   #flMenu button { border:0; background:transparent; border-radius:6px; padding:6px 18px; text-align:left; white-space:nowrap; color:var(--ink); } #flMenu button:hover { background:var(--accent-soft); } #flMenu button.on { color:var(--accent); font-weight:700; }
   .req-item { position:relative; padding-right:28px; } .req-item .rx { position:absolute; top:2px; right:3px; padding:0 6px; border:0; background:none; font-size:17px; line-height:1.3; color:var(--sub); } .req-item .rx:hover { color:#b42318; }
+  #reqNew { margin:10px 0 4px; } #reqNew summary { display:inline-block; padding:4px 12px; border:1px solid #f3b8ae; border-radius:6px; background:#fff4f2; color:#b42318; font-size:13px; font-weight:600; cursor:pointer; list-style:none; } #reqNew summary::-webkit-details-marker { display:none; }
+  #reqNew[open] summary { margin-bottom:6px; } #reqNew .rsel { display:flex; gap:6px; } #reqNew .rsel select { flex:1; min-width:0; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
   #reqDlg { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
@@ -294,7 +296,7 @@
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당·도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="reqList"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-f" aria-label="건물·층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
   <p id="doneWhat" style="margin:0 0 10px; font-weight:600; white-space:pre-wrap; word-break:break-all;"></p>
@@ -1275,7 +1277,21 @@ for (const sec of document.querySelectorAll('section[data-fold]')) {
   btn.onclick = toggle; head.querySelector('h2').addEventListener('click', toggle);
 }
 $('reqView').onclick = e => { if (e.target.dataset.rv) { reqView = e.target.dataset.rv; renderReqs(); } };
-$('reqJump').onclick = () => { renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };
+// 목록 창에서 바로 등록: 건물·층 → 실을 고르고 내용을 적는다. 고르는 칸은 창을 열 때와 층을 바꿀 때 채운다(함께 쓰기로 화면이 다시 그려져도 적던 글이 남게 render와 따로 둔다).
+function fillReqNew(keepFloor) {
+  const F = $('rn-f'), R = $('rn-r');
+  if (!keepFloor) { F.innerHTML = state.floors.map((f, i) => `<option value="${i}">${esc(f.bld)} ${esc(f.name)}</option>`).join(''); F.value = cur; $('rn-who').value = lsv(KEY + '-who') || ''; }
+  R.innerHTML = roomsOf(state.floors[+F.value]).map(r => [r.info.name, r.key]).sort((a, b) => a[0].localeCompare(b[0], 'ko', { numeric: true })).map(([n, k]) => `<option value="${esc(k)}">${esc(n)}</option>`).join('');
+  if (!keepFloor && sel && +F.value === cur) R.value = sel;   // 실을 골라 둔 채로 열면 그 실이 먼저
+}
+$('rn-f').onchange = () => fillReqNew(true);
+$('rn-save').onclick = () => {
+  if (ro()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
+  lsv(KEY + '-who', who); applyRemote(); const r = roomsOf(state.floors[fi]).find(x => x.key === key); if (!r) return fillReqNew(true);
+  (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); const c = cur; cur = fi; log(`보수요청: ${r.info.name} — ${t}`); cur = c;
+  $('rn-text').value = ''; $('reqNew').open = false; save(); render();
+};
+$('reqJump').onclick = () => { fillReqNew(); renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };
 $('reqClose').onclick = () => $('reqDlg').close();
 $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {

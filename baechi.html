@@ -184,7 +184,7 @@
   .ground { fill:#ece7d6; stroke:#c2b99c; stroke-width:.3; stroke-linejoin:round; } svg text.gnd { fill:#8a8166; font-weight:600; }
   .door { pointer-events:none; fill:none; stroke-linecap:round; } .door .gap { stroke:#fff; stroke-width:.34; stroke-linecap:butt; } .door .leaf { stroke:var(--wall); stroke-width:.22; } .door .arc { stroke:var(--wall); stroke-width:.09; }
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
-  .evac { fill:none; stroke:#e0201b; stroke-width:.3; stroke-linejoin:round; stroke-linecap:round; pointer-events:none; opacity:.9; } .evac.on { stroke-width:.6; opacity:1; }
+  .evac { fill:none; stroke:#e0201b; stroke-width:.3; stroke-linejoin:round; stroke-linecap:round; pointer-events:none; opacity:.9; } .evac.on { stroke-width:.6; opacity:1; } .evac.out { stroke-width:1; } svg.site .sf .evac { stroke-width:.45; }
   .rdoor { stroke:#fff; stroke-width:.42; stroke-linecap:butt; } svg text.evx { fill:#e0201b; font-weight:700; } svg text.ev { fill:#e0201b; font-weight:600; }
   .fm rect { fill:#d92d20; stroke:#fff; stroke-width:.08; } .fm text { fill:#fff; font-weight:700; pointer-events:none; } .fm.d rect { fill:#e8830c; } .fm.g rect { fill:#7a1f1f; }
   .fmk { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border-radius:3px; background:#d92d20; color:#fff; font-size:11px; font-weight:700; margin-right:4px; }
@@ -835,7 +835,7 @@ function drawFloor(fi) {
   const xs = all.map(p => p[0]), ys = all.map(p => p[1]), m = 1.5;
   const x0 = Math.min(...xs) - m, y0 = Math.min(...ys) - m, w = Math.max(...xs) - x0 + m, h = Math.max(...ys) - y0 + m;
   let h_ = '', t_ = ''; const fw = fixedWalls(f), open = new Set(f.open || []);
-  const ev = view === 'fire' && !site ? evacRoutes(f, rooms, fi === cur ? sel : null) : null, fire = view === 'fire' && !site;
+  const fire = view === 'fire', ev = fire ? evacRoutes(f, rooms, fi === cur && !site ? sel : null) : null;
   const sil = rooms.flatMap(r => r.parts || [r.pts]).map(pts => `<polygon points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"/>`).join('');
   for (const r of rooms) {
     const on = fi === cur && sel === r.key;
@@ -878,6 +878,29 @@ function drawFloor(fi) {
   }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
+// 전체 배치의 바깥 대피 동선: 건물 출입구 → 가장 가까운 운동장. 건물(1층 실 테두리)을 뚫지 않게 건물 모서리 2m 바깥을 돌아가는 가장 짧은 꺾은선. → 대지 좌표(m) 점 목록들.
+// 담·단차·화단은 자료가 없어 보지 않는다(어림). ponytail: 모서리끼리 서로 보이는지 전부 견준다(O(n²·벽)) — 건물이 훨씬 늘면 격자 탐색으로.
+function siteEvac() {
+  const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], D = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const polys = [], P = [], starts = [], tgt = new Set();
+  for (const fl of state.floors) if (fl.name === '1층' && SITE[fl.bld]) polys.push(...roomsOf(fl).flatMap(r => r.parts || [r.pts]).map(q => q.map(p => ap(SITE[fl.bld], p))));
+  const inside = p => polys.some(q => { let c = false; for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > p[1]) !== (q[j][1] > p[1]) && p[0] < (q[j][0] - q[i][0]) * (p[1] - q[i][1]) / (q[j][1] - q[i][1]) + q[i][0]) c = !c; return c; });
+  const walls = polys.flatMap(q => q.map((p, i) => [p, q[(i + 1) % q.length]])), cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const clear = (a, b) => !walls.some(([p, q]) => cr(a, b, p) * cr(a, b, q) < 0 && cr(p, q, a) * cr(p, q, b) < 0);
+  const add = p => P.push(p) - 1;
+  for (const [name, g] of GROUND) if (/운동장/.test(name)) { const G = g.map(([x, y]) => [-x, -y]), c = centroid([G]);      // 목적지: 운동장 테두리에서 5m 안쪽
+    G.forEach((p, i) => { const q = G[(i + 1) % G.length]; for (const t of [0, .25, .5, .75]) { const e = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], d = D(e, c); tgt.add(add([e[0] + (c[0] - e[0]) * 5 / d, e[1] + (c[1] - e[1]) * 5 / d])); } }); }
+  for (const q of polys) q.forEach((p, i) => { const a = q[(i + q.length - 1) % q.length], b = q[(i + 1) % q.length], u = k => { const d = D(p, k) || 1; return [(p[0] - k[0]) / d, (p[1] - k[1]) / d]; }, ua = u(a), ub = u(b);
+    const c = [p[0] + (ua[0] + ub[0]) * 2, p[1] + (ua[1] + ub[1]) * 2]; if (!inside(c) && !P.some(o => D(o, c) < 1)) add(c); });      // 건물 모서리 바깥
+  for (const b in DOORS) { const fl = state.floors.find(x => x.bld === b && x.name === '1층'); if (!fl || !SITE[b]) continue;
+    for (const [tf, x, y, nx, ny] of DOORS[b]) { const o = ap(SITE[b], TF[tf]([x - nx * 2, y - ny * 2])); if (!inside(o)) starts.push([ap(SITE[b], TF[tf]([x, y])), add(o)]); } }
+  const dist = P.map((_, i) => tgt.has(i) ? 0 : Infinity), nxt = [], done = new Set();
+  for (;;) { let a = -1; for (let n = 0; n < P.length; n++) if (!done.has(n) && dist[n] < Infinity && (a < 0 || dist[n] < dist[a])) a = n;
+    if (a < 0) break; done.add(a);
+    for (let b = 0; b < P.length; b++) if (!done.has(b) && dist[a] + D(P[a], P[b]) < dist[b] && clear(P[a], P[b])) { dist[b] = dist[a] + D(P[a], P[b]); nxt[b] = a; } }
+  return starts.filter(([, n]) => dist[n] < Infinity).map(([c, n]) => { const pts = [c]; for (; n != null; n = nxt[n]) pts.push(P[n]); return pts; });
+}
+let siteEv = [];
 // 전체 배치의 자리 잡기(다시 그리지 않고 속성만 바꾼다). 건물마다 대지 위치로 옮기고(SITE) → 대지 가운데 C를 축으로 돌리고(rotDeg) → 눕힌다(tilt).
 // 층 높이는 "층 간격". 순서는 모든 건물을 통틀어 낮은 층부터, 같은 층끼리는 뒤에 있는 것부터(위에서 보면 높은 층이 늘 낮은 층을 가린다). 지하 → 바닥 → 지상.
 function poseSite() {
@@ -902,6 +925,7 @@ function poseSite() {
     const q = GROUND[i][1].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx, S * sy + T]; }), c = centroid([q]), t = pg.nextElementSibling;
     pg.setAttribute('points', q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')); t.setAttribute('x', c[0].toFixed(2)); t.setAttribute('y', (c[1] + 1).toFixed(2));
   });
+  svg.querySelectorAll('#sEvac polyline').forEach((pl, i) => pl.setAttribute('points', siteEv[i].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], x, y); return sx.toFixed(2) + ',' + (S * sy).toFixed(2); }).join(' ')));   // 바깥 대피 동선은 1층 바닥 높이
   const labels = [...svg.querySelectorAll('#sLab text')].filter(t => labOf[t.dataset.b]).map(t => ({ t, x: labOf[t.dataset.b][0], y: labOf[t.dataset.b][1] - 1.5, w: textW(t.dataset.b) * 4 }));
   spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
   for (const l of labels) { l.t.setAttribute('x', l.x.toFixed(2)); l.t.setAttribute('y', l.y.toFixed(2)); }
@@ -919,6 +943,8 @@ function renderPlan() {
     const one = d => { const fl = state.floors[d.i]; return `<g class="sf${school(fl.bld) === 'ms' ? ' ms' : ''}" data-b="${esc(fl.bld)}" data-l="${lv(fl.name)}" data-bb="${[d.x0, d.y0, d.w, d.h].join(' ')}">${`<g class="slab">${d.sil}</g>`.repeat(4)}<g class="top">${d.html}</g></g>`; };
     h_ = `<g id="sUnder">${its.filter(d => lv(state.floors[d.i].name) < 0).map(one).join('')}</g><g id="sGround">${GROUND.map(([name]) => `<polygon class="ground"/><text class="gnd" font-size="3">${esc(name)}</text>`).join('')}</g>`
       + `<g id="sOver">${its.filter(d => lv(state.floors[d.i].name) >= 0).map(one).join('')}</g><g id="sLab">${Object.keys(SITE).filter(b => ![B5, B6, B8].includes(b)).map(b => `<text class="flr${school(b) === 'ms' ? ' ms' : ''}" data-b="${esc(b)}" font-size="4">${esc(b)}</text>`).join('')}</g>`;
+    siteEv = view === 'fire' && (siteLv == null || siteLv === '1층') ? siteEvac() : [];
+    if (siteEv.length) h_ += `<g id="sEvac"><defs><marker id="evB" viewBox="0 0 6 6" refX="5.2" refY="3" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 .6L6 3L0 5.4z" fill="#e0201b"/></marker></defs>${siteEv.map(() => '<polyline class="evac out" marker-end="url(#evB)"/>').join('')}</g>`;
   } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g data-fl="${d.i}" transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;
@@ -931,7 +957,7 @@ function renderPlan() {
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(건물을 돌아가는 가장 짧은 길, 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
       + '<span><b class="fmk">소</b>옥내소화전</span><span><b class="fmk" style="border-radius:50%">P</b>소방펌프</span><span><b class="fmk" style="background:#e8830c">감</b>화재탐지</span><span><b class="fmk" style="background:#7a1f1f">방</b>방화문</span><span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
@@ -1339,6 +1365,7 @@ $('mapDlg').onclose = () => { if (ro()) return; if ($('mapDlg').returnValue !== 
 
 // 자체 점검: 벽을 허물었다 다시 세워도 면적 합과 실 수가 그대로여야 한다
 (function selfCheck() {
+  console.assert(siteEvac().length >= 12, '바깥 대피 동선이 안 잡힘');
   { const d0 = defaults(); for (const [b, n] of [[HS2, '2층'], [HS1, '3층'], [HS1, '1층'], [MS2, '1층'], [MS1, '2층'], [HALL, '2층'], [HALL, '4층']]) { const f0 = d0.floors.find(x => x.bld === b && x.name === n), rs = roomsOf(f0), e = evacRoutes(f0, rs);
     const miss = rs.filter(r => r.info.use !== '공용' && !(e && e.dist[r.key] > 0)).map(r => r.info.name); console.assert(!miss.length, b + ' ' + n + ' 대피 동선 없는 실: ' + miss.join(', ')); } }
   const d = defaults(), fl = (b, n) => d.floors.find(x => x.bld === b && x.name === n), f = fl(HS1, '1층'), sum = () => roomsOf(f).reduce((a, r) => a + r.area, 0), n0 = roomsOf(f).length, a0 = sum();

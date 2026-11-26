@@ -878,27 +878,37 @@ function drawFloor(fi) {
   }
   return { html: h_, sil, x0, y0, w, h, n: rooms.filter(r => !['공용', '화장실'].includes(r.info.use)).length, area: rooms.reduce((a, r) => a + r.area, 0) };
 }
-// 전체 배치의 바깥 대피 동선: 건물 출입구 → 가장 가까운 운동장. 건물(1층 실 테두리)을 뚫지 않게 건물 모서리 2m 바깥을 돌아가는 가장 짧은 꺾은선. → 대지 좌표(m) 점 목록들.
-// 담·단차·화단은 자료가 없어 보지 않는다(어림). ponytail: 모서리끼리 서로 보이는지 전부 견준다(O(n²·벽)) — 건물이 훨씬 늘면 격자 탐색으로.
+// 전체 배치의 바깥 대피 동선: 건물 출입구 → 가장 가까운 운동장(중·고 구분 없음). 대지를 2m 격자로 나눠 건물(1층 실 테두리에서 1.2m 안쪽까지)을 피해 가로·세로로만 가고,
+// 꺾을 때마다 8m를 더 쳐서 되도록 덜 꺾는 길을 고른다(대각선 없음). → 대지 좌표(m) 점 목록들. 담·단차·화단은 자료가 없어 보지 않는다(어림).
+// ponytail: 그릴 때마다 격자 칸 × 벽을 전부 견준다(1만여 칸 × 수백 벽) — 느려지면 결과를 state 바뀔 때만 다시 계산.
 function siteEvac() {
-  const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], D = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-  const polys = [], P = [], starts = [], tgt = new Set();
+  const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], polys = [];
   for (const fl of state.floors) if (fl.name === '1층' && SITE[fl.bld]) polys.push(...roomsOf(fl).flatMap(r => r.parts || [r.pts]).map(q => q.map(p => ap(SITE[fl.bld], p))));
-  const inside = p => polys.some(q => { let c = false; for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > p[1]) !== (q[j][1] > p[1]) && p[0] < (q[j][0] - q[i][0]) * (p[1] - q[i][1]) / (q[j][1] - q[i][1]) + q[i][0]) c = !c; return c; });
-  const walls = polys.flatMap(q => q.map((p, i) => [p, q[(i + 1) % q.length]])), cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-  const clear = (a, b) => !walls.some(([p, q]) => cr(a, b, p) * cr(a, b, q) < 0 && cr(p, q, a) * cr(p, q, b) < 0);
-  const add = p => P.push(p) - 1;
-  for (const [name, g] of GROUND) if (/운동장/.test(name)) { const G = g.map(([x, y]) => [-x, -y]), c = centroid([G]);      // 목적지: 운동장 테두리에서 5m 안쪽
-    G.forEach((p, i) => { const q = G[(i + 1) % G.length]; for (const t of [0, .25, .5, .75]) { const e = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t], d = D(e, c); tgt.add(add([e[0] + (c[0] - e[0]) * 5 / d, e[1] + (c[1] - e[1]) * 5 / d])); } }); }
-  for (const q of polys) q.forEach((p, i) => { const a = q[(i + q.length - 1) % q.length], b = q[(i + 1) % q.length], u = k => { const d = D(p, k) || 1; return [(p[0] - k[0]) / d, (p[1] - k[1]) / d]; }, ua = u(a), ub = u(b);
-    const c = [p[0] + (ua[0] + ub[0]) * 2, p[1] + (ua[1] + ub[1]) * 2]; if (!inside(c) && !P.some(o => D(o, c) < 1)) add(c); });      // 건물 모서리 바깥
-  for (const b in DOORS) { const fl = state.floors.find(x => x.bld === b && x.name === '1층'); if (!fl || !SITE[b]) continue;
-    for (const [tf, x, y, nx, ny] of DOORS[b]) { const o = ap(SITE[b], TF[tf]([x - nx * 2, y - ny * 2])); if (!inside(o)) starts.push([ap(SITE[b], TF[tf]([x, y])), add(o)]); } }
-  const dist = P.map((_, i) => tgt.has(i) ? 0 : Infinity), nxt = [], done = new Set();
-  for (;;) { let a = -1; for (let n = 0; n < P.length; n++) if (!done.has(n) && dist[n] < Infinity && (a < 0 || dist[n] < dist[a])) a = n;
-    if (a < 0) break; done.add(a);
-    for (let b = 0; b < P.length; b++) if (!done.has(b) && dist[a] + D(P[a], P[b]) < dist[b] && clear(P[a], P[b])) { dist[b] = dist[a] + D(P[a], P[b]); nxt[b] = a; } }
-  return starts.filter(([, n]) => dist[n] < Infinity).map(([c, n]) => { const pts = [c]; for (; n != null; n = nxt[n]) pts.push(P[n]); return pts; });
+  const inP = (p, q) => { let c = false; for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > p[1]) !== (q[j][1] > p[1]) && p[0] < (q[j][0] - q[i][0]) * (p[1] - q[i][1]) / (q[j][1] - q[i][1]) + q[i][0]) c = !c; return c; };
+  const walls = polys.flatMap(q => q.map((p, i) => [p, q[(i + 1) % q.length]]));
+  const near = (c, [p, q]) => { const dx = q[0] - p[0], dy = q[1] - p[1], t = Math.max(0, Math.min(1, ((c[0] - p[0]) * dx + (c[1] - p[1]) * dy) / (dx * dx + dy * dy || 1))); return Math.hypot(c[0] - p[0] - t * dx, c[1] - p[1] - t * dy) < 1.2; };
+  const grounds = GROUND.filter(([n]) => /운동장/.test(n)).map(([, g]) => g.map(([x, y]) => [-x, -y])), all = polys.flat().concat(grounds.flat());
+  const G = 2, x0 = Math.min(...all.map(p => p[0])) - 6, y0 = Math.min(...all.map(p => p[1])) - 6, W = Math.ceil((Math.max(...all.map(p => p[0])) + 6 - x0) / G), H = Math.ceil((Math.max(...all.map(p => p[1])) + 6 - y0) / G);
+  const at = i => [x0 + (i % W + .5) * G, y0 + (Math.floor(i / W) + .5) * G], cell = p => { const x = Math.floor((p[0] - x0) / G), y = Math.floor((p[1] - y0) / G); return x < 0 || y < 0 || x >= W || y >= H ? -1 : y * W + x; };
+  const free = new Uint8Array(W * H), goal = new Uint8Array(W * H), dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]], step = (i, d) => cell([at(i)[0] + dirs[d][0] * G, at(i)[1] + dirs[d][1] * G]);
+  for (let i = 0; i < W * H; i++) { const p = at(i); free[i] = !polys.some(q => inP(p, q)) && !walls.some(w => near(p, w)); goal[i] = free[i] && grounds.some(q => inP(p, q)); }
+  // 운동장 칸에서 거꾸로 퍼져 나간다. 상태 = (칸, 그 칸에서 나아갈 방향), 값 = 운동장까지 걸음 수 + 꺾은 횟수 × PEN
+  const PEN = 4, dist = new Int32Array(W * H * 4).fill(1e9), B = [[]];
+  for (let i = 0; i < W * H; i++) if (goal[i]) for (let d = 0; d < 4; d++) { dist[i * 4 + d] = 0; B[0].push(i * 4 + d); }
+  for (let c = 0; c < B.length; c++) for (const s of B[c] || []) { if (dist[s] !== c) continue; const j = s >> 2, d2 = s & 3;
+    for (let d = 0; d < 4; d++) { const i = step(j, (d + 2) % 4); if (i < 0 || !free[i] || goal[i]) continue;
+      const n = c + 1 + (d !== d2 && !goal[j] ? PEN : 0); if (n < dist[i * 4 + d]) { dist[i * 4 + d] = n; (B[n] ||= []).push(i * 4 + d); } } }
+  const best = (i, from) => { let d = -1, v = 1e9; for (let k = 0; k < 4; k++) { const n = dist[i * 4 + k] + (from != null && k !== from ? PEN : 0); if (n < v) { v = n; d = k; } } return d; };
+  const out = [];
+  for (const b in DOORS) { if (!SITE[b] || !state.floors.some(x => x.bld === b && x.name === '1층')) continue;
+    for (const [tf, x, y, nx, ny] of DOORS[b]) { const c = ap(SITE[b], TF[tf]([x, y])), o = ap(SITE[b], TF[tf]([x - nx, y - ny])), u = [o[0] - c[0], o[1] - c[1]];
+      let i = -1; for (let k = 1.5; k <= 6 && i < 0; k += .5) { const j = cell([c[0] + u[0] * k, c[1] + u[1] * k]); if (j >= 0 && free[j] && best(j) >= 0) i = j; }      // 문 앞으로 곧장 나가 처음 만나는 빈 칸
+      if (i < 0) { let bd = 8; for (let j = 0; j < W * H; j++) if (free[j] && best(j) >= 0) { const p = at(j), dd = Math.hypot(p[0] - o[0], p[1] - o[1]); if (dd < bd) { bd = dd; i = j; } } }      // 문 앞이 막혀 있으면(옆 건물과 붙은 곳) 8m 안의 가장 가까운 빈 칸
+      if (i < 0) continue;
+      const s = at(i), t = (s[0] - c[0]) * u[0] + (s[1] - c[1]) * u[1], pts = [c, [c[0] + u[0] * t, c[1] + u[1] * t], s]; let d = best(i);
+      while (!goal[i]) { const j = step(i, d); if (goal[j]) { i = j; break; } const d2 = best(j, d); if (d2 !== d) pts.push(at(j)); i = j; d = d2; }
+      const e = at(i); pts.push([e[0] + dirs[d][0] * 4, e[1] + dirs[d][1] * 4]); out.push(pts); } }      // 운동장 안으로 4m 더 들어가서 끝낸다
+  return out;
 }
 let siteEv = [];
 // 전체 배치의 자리 잡기(다시 그리지 않고 속성만 바꾼다). 건물마다 대지 위치로 옮기고(SITE) → 대지 가운데 C를 축으로 돌리고(rotDeg) → 눕힌다(tilt).
@@ -957,7 +967,7 @@ function renderPlan() {
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(건물을 돌아가는 가장 짧은 길, 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
       + '<span><b class="fmk">소</b>옥내소화전</span><span><b class="fmk" style="border-radius:50%">P</b>소방펌프</span><span><b class="fmk" style="background:#e8830c">감</b>화재탐지</span><span><b class="fmk" style="background:#7a1f1f">방</b>방화문</span><span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;

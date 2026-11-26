@@ -106,6 +106,7 @@
   .req-item { position:relative; padding-right:28px; } .req-item .rx { position:absolute; top:2px; right:3px; padding:0 6px; border:0; background:none; font-size:17px; line-height:1.3; color:var(--sub); } .req-item .rx:hover { color:#b42318; }
   #reqNew { margin:10px 0 4px; } #reqNew summary { display:inline-block; padding:4px 12px; border:1px solid #f3b8ae; border-radius:6px; background:#fff4f2; color:#b42318; font-size:13px; font-weight:600; cursor:pointer; list-style:none; } #reqNew summary::-webkit-details-marker { display:none; }
   #reqNew[open] summary { margin-bottom:6px; } #reqNew .rsel { display:flex; gap:6px; } #reqNew .rsel select { flex:1; min-width:0; } #reqNew .rsel #rn-r { flex:2; }
+  #reqList td.noprint { white-space:nowrap; text-align:right; } #reqList .rdel { padding:0 7px; border:0; background:none; font-size:17px; line-height:1.3; color:var(--sub); } #reqList .rdel:hover { color:#b42318; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
   #reqDlg { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
@@ -1079,7 +1080,7 @@ function renderReqs() {
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
-    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button> <button class="rdel" data-rdel="${n}" title="이 보수요청 지우기" aria-label="지움">×</button></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {
@@ -1312,6 +1313,7 @@ $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); 
 $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
   if (e.target.dataset.reqmdel != null) { if (ro()) return; applyRemote(); const [n, k] = e.target.dataset.reqmdel.split(':'); return reqMemo(+tr.dataset.f, tr.dataset.k, +n, +k); }   // 메모 줄의 × = 그 메모 지움
+  if (e.target.dataset.rdel != null) { if (ro()) return; applyRemote(); return reqAct(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rdel, true); }   // 줄 끝의 × = 그 보수요청 지움(확인 창)
   if (e.target.dataset.rm != null) { if (ro()) return; applyRemote(); return reqMemo(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rm); }
   if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); return reqAct(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rq, false); }
   $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다

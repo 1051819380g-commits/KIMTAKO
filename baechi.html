@@ -779,16 +779,16 @@ function evacRoutes(f, rooms, selKey) {
   const okDoor = c => { if (pub[c.i] && pub[c.j]) return true; if (pub[c.i] === pub[c.j]) return false; const r = pub[c.i] ? c.j : c.i, p = pub[c.i] ? c.i : c.j;
     return !pure[p] && (hasKn.has(r) ? c.kn : hasCor.has(r) ? isCor(p) : true); };
   const solve = doors => {
-    const pos = [], adj = [], inRoom = rooms.map(() => []), add = p => (pos.push(p), adj.push([]), pos.length - 1);
+    const pos = [], wd = [], adj = [], inRoom = rooms.map(() => []), add = (p, w) => (pos.push(p), wd.push(w), adj.push([]), pos.length - 1);   // wd = 그 문이 달린 벽의 방향(실 가운데는 없음)
     const link = (a, b, w, k) => { const d = D(pos[a], pos[b]) * w; adj[a].push([b, d, k]); adj[b].push([a, d, k]); };
     const cen = parts.map(ps => add(centroid(ps)));                       // 0..N-1 = 실 가운데
-    for (const c of doors) { const n = add(c.p); inRoom[c.i].push(n); inRoom[c.j].push(n); }
+    for (const c of doors) { const n = add(c.p, c.u); inRoom[c.i].push(n); inRoom[c.j].push(n); }
     const tgt = new Set();
-    if (f.name === '1층') for (const [tf, x, y] of DOORS[f.bld] || []) {   // 1층: 건물 출입구가 목적지. 문이 붙은 실(공용 먼저)을 찾아 잇는다
+    if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {   // 1층: 건물 출입구가 목적지. 문이 붙은 실(공용 먼저)을 찾아 잇는다
       const c = TF[tf]([x, y]), near = [];
       rooms.forEach((r, i) => { if (!gone[i]) for (const A of parts[i]) for (const [p0, p1] of edges(A)) { const d = segD(c, p0, p1); if (d < .4) near.push([pub[i] ? 0 : 1, d, i]); } });
       if (!near.length) continue; near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-      const n = add(c); inRoom[near[0][2]].push(n); tgt.add(n);
+      const q = TF[tf]([x + nx, y + ny]), n = add(c, [-(q[1] - c[1]), q[0] - c[0]]); inRoom[near[0][2]].push(n); tgt.add(n);
     }
     if (!tgt.size) stair.forEach((s, i) => { if (s) tgt.add(cen[i]); });
     if (!tgt.size) return null;
@@ -798,12 +798,12 @@ function evacRoutes(f, rooms, selKey) {
     for (;;) { let a = -1; for (let n = 0; n < pos.length; n++) if (!done.has(n) && dist[n] < Infinity && (a < 0 || dist[n] < dist[a])) a = n;
       if (a < 0) break; done.add(a); if (a < N && !tgt.has(a)) continue;    // 실 가운데는 출발점일 뿐, 지나가는 길이 아니다
       for (const [b, d, k] of adj[a]) if (dist[a] + d < dist[b]) { dist[b] = dist[a] + d; nxt[b] = [a, k]; } }
-    return { pos, cen, tgt, dist, nxt };
+    return { pos, wd, cen, tgt, dist, nxt };
   };
   let doors = cand.filter(okDoor), G = solve(doors); if (!G) return null;
   const lost = new Set(rooms.map((r, i) => i).filter(i => !pub[i] && !gone[i] && G.dist[G.cen[i]] === Infinity));
   if (lost.size) { doors = doors.concat(cand.filter(c => !okDoor(c) && (lost.has(c.i) || lost.has(c.j)))); G = solve(doors); }
-  const { pos, cen, tgt, dist, nxt } = G;
+  const { pos, wd, cen, tgt, dist, nxt } = G;
   // 길쭉한 복도에서는 가운데 줄을 따라가게 그려 여러 실의 동선이 한 줄로 겹치게 한다
   const axis = rooms.map((r, k) => { if (!pub[k] || r.parts) return null; let best = null; for (const [p, q] of edges(r.pts)) { const l = D(p, q); if (!best || l > best.l) best = { l, u: [(q[0] - p[0]) / l, (q[1] - p[1]) / l] }; }
     return best.l > 3 * shoelace(r.pts) / best.l ? { c: centroid([r.pts]), u: best.u } : null; });
@@ -812,7 +812,16 @@ function evacRoutes(f, rooms, selKey) {
   for (const c of doors) if (c.kn) out.html += `<line class="rdoor" x1="${(c.p[0] - c.u[0] * .55).toFixed(2)}" y1="${(c.p[1] - c.u[1] * .55).toFixed(2)}" x2="${(c.p[0] + c.u[0] * .55).toFixed(2)}" y2="${(c.p[1] + c.u[1] * .55).toFixed(2)}"><title>실 출입문(도면 확인)</title></line>`;
   rooms.forEach((r, i) => { if (pub[i] || gone[i] || dist[cen[i]] === Infinity) return;
     const pts = [pos[cen[i]]], push = p => { if (D(pts.at(-1), p) > .05) pts.push(p); };
-    for (let n = cen[i]; !tgt.has(n);) { const [m, k] = nxt[n]; if (axis[k] && k !== i) { push(proj(axis[k], pos[n])); push(proj(axis[k], pos[m])); } push(pos[m]); n = m; }
+    for (let n = cen[i]; !tgt.has(n);) { const [m, k] = nxt[n]; const a = pos[n], b = pos[m], wa = wd[n], wb = wd[m], dx = b[0] - a[0], dy = b[1] - a[1], go = (o, u, t) => [o[0] + u[0] * t, o[1] + u[1] * t];
+      // 대각선을 쓰지 않는다: 문은 벽에 수직으로 드나들고, 그 사이는 벽에 나란히 간다(기운 날개에서는 그 날개의 벽 방향이 기준)
+      if (axis[k] && k !== i) { push(proj(axis[k], a)); push(proj(axis[k], b)); }
+      else if (wa && wb) { const na = [-wa[1], wa[0]], t = dx * na[0] + dy * na[1];
+        if (Math.abs(wa[0] * wb[0] + wa[1] * wb[1]) > .7) { const m1 = go(a, na, t / 2); push(m1); push(go(m1, wa, dx * wa[0] + dy * wa[1])); }   // 마주 보는 벽: ㄹ자로
+        else push(go(a, wb, dx * wb[0] + dy * wb[1])); }   // 도착하는 문의 벽에 나란히 간 뒤 그 문으로 수직(벽이 비스듬히 만나는 홀에서도 사선이 안 생긴다)
+        //                                                                                                            // 꺾인 벽: ㄱ자로
+      else if (wa) push(go(a, [-wa[1], wa[0]], dx * -wa[1] + dy * wa[0]));        // 문 → 계단실 가운데: 문에서 수직으로 들어간 뒤 옆으로
+      else if (wb) push(go(a, wb, dx * wb[0] + dy * wb[1]));                      // 실 가운데 → 문: 벽에 나란히 간 뒤 문으로 수직
+      push(b); n = m; }
     out.dist[r.key] = pts.reduce((a, p, j) => a + (j ? D(pts[j - 1], p) : 0), 0);
     const cls = 'evac' + (r.key === selKey ? ' on' : ''), cut = pts.length > 3 ? 3 : pts.length;
     out.html += `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(0, cut).map(P2).join(' ')}"/>` + (cut < pts.length ? `<polyline class="${cls}" marker-end="url(#evA)" points="${pts.slice(cut - 1).map(P2).join(' ')}"/>` : '');
@@ -921,7 +930,7 @@ function renderPlan() {
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 거리</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
       + '<span><b class="fmk">소</b>옥내소화전</span><span><b class="fmk" style="border-radius:50%">P</b>소방펌프</span><span><b class="fmk" style="background:#e8830c">감</b>화재탐지</span><span><b class="fmk" style="background:#7a1f1f">방</b>방화문</span><span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;

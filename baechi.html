@@ -186,7 +186,7 @@
   .slab { pointer-events:none; } .slab polygon { fill:#8d99a8; stroke:#8d99a8; stroke-width:.25; stroke-linejoin:round; }
   .evac { fill:none; stroke:#e0201b; stroke-width:.3; stroke-linejoin:round; stroke-linecap:round; pointer-events:none; opacity:.9; } .evac.on { stroke-width:.6; opacity:1; } .evac.out { stroke-width:1; } svg.site .sf .evac { stroke-width:.45; }
   .rdoor { stroke:#fff; stroke-width:.42; stroke-linecap:butt; } svg text.evx { fill:#e0201b; font-weight:700; } svg text.ev { fill:#e0201b; font-weight:600; }
-  .fm rect { fill:#d92d20; stroke:#fff; stroke-width:.08; } .fm text { fill:#fff; font-weight:700; pointer-events:none; } .fm.d rect { fill:#e8830c; } .fm.g rect { fill:#7a1f1f; }
+  .fm text { fill:#fff; font-weight:800; pointer-events:none; } .fmi { vertical-align:-4px; margin-right:4px; }
   .fmk { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border-radius:3px; background:#d92d20; color:#fff; font-size:11px; font-weight:700; margin-right:4px; }
   .room { stroke:var(--wall); stroke-width:.2; stroke-linejoin:round; cursor:pointer; transition:filter .12s; }
   .room:hover { filter:brightness(.95); }
@@ -743,11 +743,17 @@ const FIRE = {
     '1층': [['탐지기', '', 4.5, -15.6, '당직실: 무인경비·화재탐지']] },
   [B5]: { '1층': [['펌프', '', 10.6, -5.2, '소방펌프 — 엑셀에 "1층기계실"로만 적혀 있어 5호동 기계실로 봄, 확인 필요']] },
 };
-const FIRE_SYM = { 소화전: ['h', '소'], 펌프: ['p', 'P'], 탐지기: ['d', '감'], 방화문: ['g', '방'] };
+// 소방시설 아이콘(24×24, 가운데가 원점): 소화전 = 빨간 네모에 호스 릴, 펌프 = 보라 동그라미 P, 탐지기 = 주황 네모에 경종, 방화문 = 파란 네모에 문. 동선(빨강)과 섞이지 않게 흰 테두리를 두른다.
+const FIRE_SYM = {
+  소화전: '<rect x="-11" y="-11" width="22" height="22" rx="4" fill="#d92d20" stroke="#fff" stroke-width="2"/><circle r="5" cy="-1.5" fill="none" stroke="#fff" stroke-width="2.6"/><circle r="1.3" cy="-1.5" fill="#fff"/><path d="M-5 3.5V7.5H8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+  펌프: '<circle r="11" fill="#6d28d9" stroke="#fff" stroke-width="2"/><text y="5.6" font-size="16">P</text>',
+  탐지기: '<rect x="-11" y="-11" width="22" height="22" rx="4" fill="#e8830c" stroke="#fff" stroke-width="2"/><path d="M-7 4.5h14l-2.5-3.5v-4a4.5 4.5 0 0 0-9 0v4z" fill="#fff"/><circle cy="7.2" r="1.7" fill="#fff"/>',
+  방화문: '<rect x="-11" y="-11" width="22" height="22" rx="4" fill="#0b5cad" stroke="#fff" stroke-width="2"/><path d="M-5 8V-8H5V8z" fill="#fff"/><circle cx="2.4" cy="1" r="1.2" fill="#0b5cad"/>',
+};
 function fireMarks(f) {
   const F = FIRE[f.bld] || {};
-  return [...(f.name.startsWith('지하') ? [] : F['*'] || []), ...(F[f.name] || [])].map(([k, tf, x, y, t]) => { const [cx, cy] = TF[tf]([x, y]), [c, l] = FIRE_SYM[k];
-    return `<g class="fm ${c}" transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)})"><title>${esc(t || k)}</title><rect x="-.6" y="-.6" width="1.2" height="1.2" rx="${c === 'p' ? .6 : .18}"/><text y=".31" font-size=".82">${l}</text></g>`; }).join('');
+  return [...(f.name.startsWith('지하') ? [] : F['*'] || []), ...(F[f.name] || [])].map(([k, tf, x, y, t]) => { const [cx, cy] = TF[tf]([x, y]);
+    return `<g class="fm" transform="translate(${cx.toFixed(2)} ${cy.toFixed(2)}) scale(.1)"><title>${esc(t || k)}</title>${FIRE_SYM[k]}</g>`; }).join('');
 }
 // 실 출입문: 받은 도면에 문이 그려진 곳만 옮긴 것. [좌표 틀, x, y] — 실과 복도·홀이 맞닿은 벽 위의 점. 여기 없는 실은 맞닿은 벽의 가운데를 문으로 본다.
 //  중학교 본관: 2022 환경개선공사 A-203 1·2층 평면(교장실·평가관리실·회의실 문, 교무실은 홀 쪽·계단 쪽 두 곳, 2층 도서관 쌍여닫이). 3·4층 교실과 구관은 천장 도면이라 실 문이 없다.
@@ -971,7 +977,7 @@ function renderPlan() {
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
   $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
-      + '<span><b class="fmk">소</b>옥내소화전</span><span><b class="fmk" style="border-radius:50%">P</b>소방펌프</span><span><b class="fmk" style="background:#e8830c">감</b>화재탐지</span><span><b class="fmk" style="background:#7a1f1f">방</b>방화문</span><span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
+      + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('') + '<span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';

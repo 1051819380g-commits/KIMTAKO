@@ -98,7 +98,10 @@
   .req-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #d92d20; border-radius:6px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
   .req-item.done { border-left-color:var(--line-strong); color:var(--sub); } .req-item.done .rt { text-decoration:line-through; }
   .req-meta { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:3px; font-size:11px; color:var(--sub); white-space:normal; }
-  .pm { display:inline-block; width:100%; margin-top:2px; font-size:12px; font-weight:600; color:#175cd3; white-space:pre-wrap; } .pm span { font-weight:400; color:var(--sub); }
+  .pm { display:inline-block; width:100%; margin-top:2px; font-size:12px; font-weight:600; color:#175cd3; white-space:pre-wrap; } .pm span { font-weight:400; color:var(--sub); } .pm .mx { margin-left:4px; padding:0 4px; border:0; background:none; font-size:13px; line-height:1; color:var(--sub); } .pm .mx:hover { color:#b42318; }
+  /* 건물 단추 오른쪽에 펼쳐지는 층 목록 */
+  #flMenu { position:fixed; z-index:60; display:flex; flex-direction:column; padding:3px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 6px 18px rgba(22,33,46,.2); } #flMenu[hidden] { display:none; }
+  #flMenu button { border:0; background:transparent; border-radius:6px; padding:6px 18px; text-align:left; white-space:nowrap; color:var(--ink); } #flMenu button:hover { background:var(--accent-soft); } #flMenu button.on { color:var(--accent); font-weight:700; }
   .req-item { position:relative; padding-right:28px; } .req-item .rx { position:absolute; top:2px; right:3px; padding:0 6px; border:0; background:none; font-size:17px; line-height:1.3; color:var(--sub); } .req-item .rx:hover { color:#b42318; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
@@ -1003,7 +1006,7 @@ function renderPanel() {
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><button type="button" class="rx" data-reqdel="${n}" title="이 보수요청 지우기" aria-label="지움">×</button><span class="rt">${esc(q.t)}</span>${pmHtml(q)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음)">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><button type="button" class="rx" data-reqdel="${n}" title="이 보수요청 지우기" aria-label="지움">×</button><span class="rt">${esc(q.t)}</span>${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1018,7 +1021,7 @@ function renderPanel() {
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
   if (ro()) for (const x of p.querySelectorAll('input, select, textarea')) x.disabled = true;
 }
-// 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, m 진행 메모, md 메모 적은 날}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
+// 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
 // 보수요청 완료·되돌리기·지우기. fi = 층 번호, key = 실 키. 완료할 때는 완료일을 고르는 창을 띄운다(처음 값은 오늘).
 function reqAct(fi, key, n, del) {
@@ -1040,15 +1043,19 @@ function reqAct(fi, key, n, del) {
   }
   save(); render();
 }
-// 진행 메모: 담당자가 "접수하였음", "A/S 불렀음"처럼 적어 요청자에게 알린다. 요청마다 하나(고쳐 쓰면 덮어쓴다, 비우면 지움).
-// ponytail: 메모 하나만 둔다 — 날짜별 이력이 필요해지면 q.m을 목록으로.
-const pmHtml = q => q.m ? `<span class="pm">↳ ${esc(q.m)} <span>(${esc(q.md || '')})</span></span>` : '';
-function reqMemo(fi, key, n) {
+// 진행 메모: 담당자가 "접수하였음", "A/S 불렀음"처럼 적어 요청자에게 알린다. 적을 때마다 날짜와 함께 쌓인다(q.ms = [{d 날짜, t 내용}]).
+// 예전에는 요청마다 하나(q.m, q.md)였다 — msOf가 그것도 한 줄로 읽고, 새로 적거나 지울 때 q.ms로 옮긴다.
+const msOf = q => q.ms || (q.m ? [{ d: q.md || '', t: q.m }] : []);
+const pmHtml = (q, n) => msOf(q).map((m, k) => `<span class="pm">↳ <span>${esc(m.d)}</span> ${esc(m.t)}${n == null ? '' : `<button type="button" class="mx" data-reqmdel="${n}:${k}" title="이 메모 지우기" aria-label="메모 지움">×</button>`}</span>`).join('');
+// k가 없으면 메모 추가(입력 창), 있으면 k번째 메모 지움
+function reqMemo(fi, key, n, k) {
   const r = roomsOf(state.floors[fi]).find(x => x.key === key), q = r && (r.info.reqs || [])[n]; if (!q) return;
-  let t = prompt(`「${r.info.name}」 ${q.t}
+  const ms = msOf(q).slice(); let t;
+  if (k == null) { t = (prompt(`「${r.info.name}」 ${q.t}
 
-진행 상황 메모 (예: 접수하였음, A/S 불렀음). 비우면 지웁니다.`, q.m || ''); if (t == null || (t = t.trim()) === (q.m || '')) return;
-  q.m = t; q.md = t ? today() : ''; const c = cur; cur = fi; log(`보수요청 진행 메모: ${r.info.name} — ${q.t} → ${t || '(지움)'}`); cur = c; save(); render();
+진행 상황 메모를 적으면 오늘 날짜로 쌓입니다. (예: 접수하였음, A/S 불렀음)`, '') || '').trim(); if (!t) return; ms.push({ d: today(), t }); }
+  else { if (!ms[k] || !confirm(`진행 메모 "${ms[k].t}"을(를) 지웁니다. 계속할까요?`)) return; t = ms.splice(k, 1)[0].t + ' (지움)'; }
+  q.ms = ms; delete q.m; delete q.md; const c = cur; cur = fi; log(`보수요청 진행 메모: ${r.info.name} — ${q.t} → ${t}`); cur = c; save(); render();
 }
 function renderReqs() {
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
@@ -1143,7 +1150,19 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
-    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); autoZoom(); scrollTo(0, 0); } };   // 건물을 바꾸면 화면을 맨 위로
+    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { site = false; allView = true; open = school(b); cur = state.floors.findIndex(f => f.bld === b && f.name === '1층'); sel = null; render(); autoZoom(); scrollTo(0, 0); requestAnimationFrame(() => showFlMenu(b)); } };   // 건물을 바꾸면 화면을 맨 위로
+// 건물 단추를 누르면 그 오른쪽에 층 목록이 세로로 펼쳐진다(위층이 위). 층을 고르거나 바깥을 누르면 닫힌다. 가로 층 단추 줄은 그대로 쓴다.
+const flMenu = document.body.appendChild(Object.assign(document.createElement('div'), { id: 'flMenu', className: 'noprint', hidden: true }));
+function showFlMenu(b) {
+  const btn = [...document.querySelectorAll('#bldTabs [data-b]')].find(x => x.dataset.b === b); if (!btn) return;
+  flMenu.innerHTML = '<button data-f="all" class="on">전체</button>' + state.floors.map((f, i) => [f, i]).filter(([f]) => f.bld === b).sort((p, q) => lvOf(q[0].name) - lvOf(p[0].name)).map(([f, i]) => `<button data-f="${i}">${esc(f.name)}</button>`).join('');
+  flMenu.hidden = false; const r = btn.getBoundingClientRect();
+  flMenu.style.left = Math.max(4, Math.min(r.right + 4, innerWidth - flMenu.offsetWidth - 4)) + 'px'; flMenu.style.top = Math.max(4, Math.min(r.top, innerHeight - flMenu.offsetHeight - 4)) + 'px';
+}
+flMenu.onclick = e => { if (e.target.dataset.f == null) return; flMenu.hidden = true; $('floorTabs').onclick(e); };
+addEventListener('pointerdown', e => { if (!flMenu.contains(e.target)) flMenu.hidden = true; }, true);
+for (const ev of ['scroll', 'resize']) addEventListener(ev, () => { flMenu.hidden = true; });
+addEventListener('keydown', e => { if (e.key === 'Escape') flMenu.hidden = true; });
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
   const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); };
@@ -1272,6 +1291,7 @@ $('panel').onclick = e => {
     lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
     (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); return render();
   }
+  if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
   if (d.reqmemo != null) { applyRemote(); if (!findSel()) return; return reqMemo(cur, sel, +d.reqmemo); }
   if (d.reqdone != null || d.reqdel != null) { applyRemote(); if (!findSel()) return; return reqAct(cur, sel, +(d.reqdone ?? d.reqdel), d.reqdel != null); }
   if (d.acadd == null && d.acdel == null && d.itadd == null && d.itdel == null) return;

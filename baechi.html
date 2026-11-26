@@ -938,7 +938,7 @@ function poseSite() {
     const q = GROUND[i][1].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], -x, -y); R = Math.max(R, Math.hypot(sx - C[0], sy - C[1])); return [sx, S * sy + T]; }), c = centroid([q]), t = pg.nextElementSibling;
     pg.setAttribute('points', q.map(v => v.map(n => n.toFixed(2)).join(',')).join(' ')); t.setAttribute('x', c[0].toFixed(2)); t.setAttribute('y', (c[1] + 1).toFixed(2));
   });
-  svg.querySelectorAll('#sEvac polyline').forEach((pl, i) => pl.setAttribute('points', siteEv[i].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], x, y); return sx.toFixed(2) + ',' + (S * sy).toFixed(2); }).join(' ')));   // 바깥 대피 동선은 1층 바닥 높이
+  svg.querySelectorAll('#sEvac polyline').forEach((pl, i) => pl.setAttribute('points', siteEv[i].map(([x, y]) => { const [sx, sy] = turn([1, 0, 0, 1, 0, 0], x, y); return sx.toFixed(2) + ',' + (S * sy + T).toFixed(2); }).join(' ')));   // 바깥 대피 동선은 운동장과 같은 높이(건물에 가려진다)
   const labels = [...svg.querySelectorAll('#sLab text')].filter(t => labOf[t.dataset.b]).map(t => ({ t, x: labOf[t.dataset.b][0], y: labOf[t.dataset.b][1] - 1.5, w: textW(t.dataset.b) * 4 }));
   spread(labels, 5.4);   // 이름끼리 겹치면 겹친 만큼만 위아래로 벌린다(돌리는 동안 겹침이 생기고 풀리는 데 맞춰 조금씩 움직인다)
   for (const l of labels) { l.t.setAttribute('x', l.x.toFixed(2)); l.t.setAttribute('y', l.y.toFixed(2)); }
@@ -957,7 +957,7 @@ function renderPlan() {
     h_ = `<g id="sUnder">${its.filter(d => lv(state.floors[d.i].name) < 0).map(one).join('')}</g><g id="sGround">${GROUND.map(([name]) => `<polygon class="ground"/><text class="gnd" font-size="3">${esc(name)}</text>`).join('')}</g>`
       + `<g id="sOver">${its.filter(d => lv(state.floors[d.i].name) >= 0).map(one).join('')}</g><g id="sLab">${Object.keys(SITE).filter(b => ![B5, B6, B8].includes(b)).map(b => `<text class="flr${school(b) === 'ms' ? ' ms' : ''}" data-b="${esc(b)}" font-size="4">${esc(b)}</text>`).join('')}</g>`;
     siteEv = view === 'fire' && (siteLv == null || siteLv === '1층') ? siteEvac() : [];
-    if (siteEv.length) h_ += `<g id="sEvac"><defs><marker id="evB" viewBox="0 0 6 6" refX="5.2" refY="3" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 .6L6 3L0 5.4z" fill="#e0201b"/></marker></defs>${siteEv.map(() => '<polyline class="evac out" marker-end="url(#evB)"/>').join('')}</g>`;
+    if (siteEv.length) h_ = h_.replace('<g id="sOver">', () => `<g id="sEvac"><defs><marker id="evB" viewBox="0 0 6 6" refX="5.2" refY="3" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 .6L6 3L0 5.4z" fill="#e0201b"/></marker></defs>${siteEv.map(() => '<polyline class="evac out" marker-end="url(#evB)"/>').join('')}</g><g id="sOver">`);
   } else for (const d of ds) {
     if (allView) { h_ += `<text class="flr" x="${x0 + m}" y="${h + 2.2}" font-size="2">${esc(state.floors[d.i].name)}</text>`; h += 1.6; }
     h_ += `<g data-fl="${d.i}" transform="translate(0 ${(h - d.y0).toFixed(2)})">${d.html}</g>`; h += d.h;

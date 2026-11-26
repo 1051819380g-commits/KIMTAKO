@@ -1179,7 +1179,7 @@ addEventListener('pointerdown', e => { if (!flMenu.contains(e.target)) flMenu.hi
 for (const ev of ['scroll', 'resize']) addEventListener(ev, () => { flMenu.hidden = true; });
 addEventListener('keydown', e => { if (e.key === 'Escape') flMenu.hidden = true; });
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
-  const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); };
+  const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); $('planbox').scrollTop = 0; scrollTo(0, 0); };   // 층 단추를 누르면 화면(도면 상자 안도) 맨 위로
 $('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); };
 $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
@@ -1245,11 +1245,14 @@ $('planbox').addEventListener('click', e => { if (tMoved) { e.stopPropagation();
 addEventListener('pointerup', tpEnd); addEventListener('pointercancel', tpEnd);
 addEventListener('resize', fitPlan);
 // 화면(건물·층·전체 배치)을 바꾸면 "도면 크기" 값을 도면이 한 화면에 들어오는 값으로 잡는다(100%를 넘기지는 않는다). 높이를 누르는 것이 아니라 값 자체를 정하므로 막대를 움직이면 늘 크기가 바뀐다.
-function autoZoom() {
+// one(층 번호)을 주면 전체 층 보기에서 그 층 하나가 한 화면에 차는 크기로 잡고, 상자 안에서 그 층이 맨 위에 오게 내린다.
+function autoZoom(one) {
   const box = $('planbox'), z = $('zoom'), vb = $('plan').viewBox.baseVal, cs = getComputedStyle(box);
   // 폭은 스크롤 막대가 없을 때 기준으로 잰다(막대가 떠 있는 동안 재면 맞춘 뒤 막대가 사라지면서 도면이 넓어져 다시 넘친다)
   const w = box.offsetWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth), room = parseFloat(box.style.maxHeight) - 20;
-  z.value = Math.max(+z.min, Math.min(100, Math.floor(room / (w * vb.height / vb.width) * 100))); fitPlan();
+  const g = one == null ? null : document.querySelector(`#plan g[data-fl="${one}"]`), hh = g ? g.getBBox().height + 3 : vb.height;
+  z.value = Math.max(+z.min, Math.min(100, Math.floor(room / (w * hh / vb.width) * 100))); fitPlan();
+  if (g) box.scrollTop += g.getBoundingClientRect().top - box.getBoundingClientRect().top - 12;
 }
 $('zoom').oninput = fitPlan; $('gapR').oninput = () => { if (site) poseSite(); };
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
@@ -1264,10 +1267,10 @@ addEventListener('pointermove', e => {
 });
 addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; $('plan').classList.remove('moving'); });
 $('plan').onclick = e => {
-  if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물의 층을 누르면 그 층으로 넘어간다
+  if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물의 층을 누르면 그 건물의 전체 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;
-    const b = state.floors[+fi].bld; site = false; allView = false; open = school(b); sel = null;
-    cur = +fi; render(); autoZoom(); return scrollTo(0, 0);   // 누른 층 하나만 화면에 맞춰 크게 보여 준다(건물 전체는 층 단추줄의 "전체")
+    const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
+    cur = +fi; render(); autoZoom(cur); return scrollTo(0, 0);   // 건물 전체 층 보기로 넘어가되, 누른 층이 한 화면에 차는 크기로 맨 위에 보이게 한다
   }
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;

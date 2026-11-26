@@ -1264,11 +1264,10 @@ addEventListener('pointermove', e => {
 });
 addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; $('plan').classList.remove('moving'); });
 $('plan').onclick = e => {
-  if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물을 누르면 그 건물의 전체 층으로 넘어간다
+  if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물의 층을 누르면 그 층으로 넘어간다
     const fi = e.target.dataset.f; if (dragged || fi == null) return;
-    const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
-    cur = +fi; render(); autoZoom();          // 누른 층이 화면 가운데 오도록 내려간다(한 화면에 다 들어오면 움직이지 않는다)
-    return document.querySelector(`#plan g[data-fl="${cur}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const b = state.floors[+fi].bld; site = false; allView = false; open = school(b); sel = null;
+    cur = +fi; render(); autoZoom(); return scrollTo(0, 0);   // 누른 층 하나만 화면에 맞춰 크게 보여 준다(건물 전체는 층 단추줄의 "전체")
   }
   const t = e.target;
   if (t.dataset.f) cur = +t.dataset.f;

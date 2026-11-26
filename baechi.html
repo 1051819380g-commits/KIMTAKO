@@ -99,6 +99,7 @@
   .req-item.done { border-left-color:var(--line-strong); color:var(--sub); } .req-item.done .rt { text-decoration:line-through; }
   .req-meta { display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center; margin-top:3px; font-size:11px; color:var(--sub); white-space:normal; }
   .pm { display:inline-block; width:100%; margin-top:2px; font-size:12px; font-weight:600; color:#175cd3; white-space:pre-wrap; } .pm span { font-weight:400; color:var(--sub); }
+  .req-item { position:relative; padding-right:28px; } .req-item .rx { position:absolute; top:2px; right:3px; padding:0 6px; border:0; background:none; font-size:17px; line-height:1.3; color:var(--sub); } .req-item .rx:hover { color:#b42318; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
   #reqDlg { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
@@ -1002,7 +1003,7 @@ function renderPanel() {
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span>${pmHtml(q)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음)">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button><button type="button" data-reqdel="${n}">지움</button></div></div>`).join('')}</div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><button type="button" class="rx" data-reqdel="${n}" title="이 보수요청 지우기" aria-label="지움">×</button><span class="rt">${esc(q.t)}</span>${pmHtml(q)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음)">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>

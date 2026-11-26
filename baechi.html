@@ -866,7 +866,7 @@ function drawFloor(fi) {
     // 이름·면적·에어컨 글자는 실 안에 들어가는 가장 큰 크기로: 실 가운데를 지나는 가로·세로 폭을 재서, 한 줄/두 줄 가운데 더 크게 쓸 수 있는 쪽을 고른다
     const parts = r.parts || [r.pts], box = fitBox(parts, centroid(parts), r.w), [cx, cy] = box.c;
     const nm = r.info.name, half = Math.ceil(nm.length / 2), extra = [];
-    if (fire) { if (ev && ev.dist[r.key] != null) extra.push('→ ' + Math.round(ev.dist[r.key]) + 'm'); }   // 소방·안전: 면적·에어컨 대신 대피 거리
+    if (fire) {}   // 소방·안전: 면적·에어컨을 빼고 실 이름만(대피 거리 숫자는 사용자 요청으로 뺌 — 화살표만)
     else if (r.info.use !== '공용' || r.w > 6) extra.push(fmt(r.area) + '㎡');
     const nq = ro() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
     if (!fire && (+r.info.acN > 0 || nq)) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : ''].filter(Boolean).join(' '));
@@ -989,7 +989,7 @@ function renderPlan() {
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실, 숫자는 걷는 거리' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
       + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('') + '<span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;

@@ -643,7 +643,8 @@ function defaults0() {
 
 // ── 상태 ──
 let state; try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
-state = state && state.floors ? migrate(state) : defaults();
+const hasPw = (() => { try { return !!localStorage.getItem(KEY + '-pw') || /^#[A-Za-z0-9_-]+$/.test(location.hash); } catch (e) { return false; } })();
+state = state && state.floors && (!DB || hasPw) ? migrate(state) : defaults();
 const home = () => Math.max(0, state.floors.findIndex(f => f.name === '1층'));
 const school = b => [MS1, MS2, B5, B8].includes(b) ? 'ms' : 'hs';
 let open = null;                                            // 건물 단추가 펼쳐진 학교('hs'·'ms'), 없으면 null
@@ -1370,15 +1371,19 @@ function renderLog() {
 // 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
 const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
+// 저장 자리(보안, 2026-11-27): 자료는 sec/<암호>에 둔다 — 암호를 모르면 주소를 알 수 없어 읽지 못한다(예전의 baechi 자리는 누구나 읽을 수 있었다).
+// 암호가 없으면 파일에 들어 있는 기본 도면만 보인다(물품·보수요청·하자보증·사진·고친 내용은 안 보임).
+// es = 지금 듣고 있는 연결, src = 읽고 있는 자리('sec' 암호 자리 / 'old' 예전 자리 — 아직 안 옮겼을 때), locked = 암호는 넣었지만 자료를 아직 못 받음(그동안은 고치지 못한다)
+let es = null, src = '', locked = false;
 // 보기 전용: 함께 쓰기를 쓰는데 편집 암호가 없으면 배치도·정보를 보기만 하고 고치는 단추·입력칸은 숨기거나 막는다.
-const ro = () => !!DB && !pw;
+const ro = () => !!DB && (!pw || locked);
 if (/^#[A-Za-z0-9_-]+$/.test(location.hash)) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
 const syncMsg = t => { $('syncBtn').textContent = t; };
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 function askPw() {
-  const v = (prompt('편집 암호를 넣으면 고친 내용이 다른 사람 화면에도 바로 반영됩니다.\n비워 두면 이 기기에서만 보이고, 다른 사람이 고치면 사라집니다.') || '').trim();
+  const v = (prompt('암호를 넣으면 저장된 배치도·물품·보수요청을 불러오고 고칠 수 있습니다.') || '').trim();
   if (v && !/^[A-Za-z0-9_-]+$/.test(v)) { alert('편집 암호는 영문·숫자만 씁니다.'); return false; }
-  if (v) { pw = v; lsv(KEY + '-pw', pw); render(); } return !!v;
+  if (v) { pw = v; lsv(KEY + '-pw', pw); pwChanged(); } return !!v;
 }
 function queuePush() {
   if (!pw && !asked) { asked = true; askPw(); }
@@ -1386,13 +1391,31 @@ function queuePush() {
   clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…');
 }
 async function push() {
-  const t = Date.now();
+  const t = Date.now(), s = JSON.stringify(state), send = body => fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...body, ['gate/' + pw]: t }) });
   try {
-    const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ baechi: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }) });
-    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); render(); return syncMsg('편집 암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
+    let r = await send({ ['sec/' + pw]: { s, t }, baechi: null }), old = false;   // 암호 자리에 올리고 예전 자리는 비운다
+    if (r.status === 401 && src === 'old') { r = await send({ baechi: { s, t } }); old = true; }   // Firebase 규칙을 아직 안 바꿨으면 예전 자리에 올린다
+    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return syncMsg('암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
     if (!r.ok) throw new Error(r.status);
-    syncMsg('함께 쓰기: 저장됨');
+    syncMsg(old ? '함께 쓰기: 저장됨(예전 자리 — Firebase 규칙을 바꾸면 암호 자리로 옮겨집니다)' : '함께 쓰기: 저장됨');
+    if (!old && src === 'old') listen('sec');   // 방금 암호 자리로 옮겼으면 이제 그 자리를 듣는다
   } catch (e) { syncMsg('함께 쓰기: 올리지 못함 — 눌러서 다시 시도'); }
+}
+// 자료 듣기: 암호 자리를 먼저 듣고, 비어 있거나 막혀 있으면 예전 자리에서 받는다(옮기기 전). 둘 다 없으면 암호가 틀린 것으로 본다.
+function listen(kind) {
+  if (es) es.close(); src = kind; let got = false; const me = es = new EventSource(DB + (kind === 'sec' ? '/sec/' + pw : '/baechi') + '.json');
+  const none = () => { if (got || es !== me) return; if (kind === 'sec') return listen('old'); syncMsg('이 암호로 저장된 자료가 없습니다 — 눌러서 암호 다시 넣기'); };
+  const on = e => { if (es !== me) return; const d = JSON.parse(e.data); if (d.path !== '/') return; if (!d.data || !d.data.s) return none();
+    got = true; remote = d.data.s; const was = locked; locked = false; if (!typing()) applyRemote(); if (was) render(); syncMsg('함께 쓰기: 켜짐'); };
+  es.addEventListener('put', on); es.addEventListener('patch', on);
+  es.onerror = () => { if (es !== me) return; if (!got) { me.close(); return none(); } syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…'); };
+}
+// 암호가 바뀌었을 때(넣음·틀려서 지워짐): 넣었으면 자료를 받고, 없으면 기본 도면으로 돌아가고 이 기기에 남은 자료도 지운다
+function pwChanged() {
+  if (!DB) return render(); if (es) { es.close(); es = null; } remote = null;
+  if (pw) { locked = true; syncMsg('함께 쓰기: 잇는 중…'); listen('sec'); }
+  else { locked = false; state = defaults(); cur = Math.min(cur, state.floors.length - 1); sel = null; lsv(KEY, ''); syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기'); }
+  render();
 }
 function applyRemote() {
   if (!remote) return; const s = remote; remote = null;
@@ -1405,12 +1428,9 @@ function applyRemote() {
 }
 if (DB) {
   $('syncBtn').hidden = false; syncMsg('함께 쓰기: 잇는 중…');
-  $('syncBtn').onclick = () => { if (pw || askPw()) { syncMsg('함께 쓰기: 올리는 중…'); push(); } };
-  const es = new EventSource(DB + '/baechi.json');
-  const on = e => { const d = JSON.parse(e.data); if (d.path === '/' && d.data && d.data.s) { remote = d.data.s; if (!typing()) applyRemote(); }
-    syncMsg(pw ? '함께 쓰기: 켜짐' : '함께 쓰기: 보기만 — 눌러서 편집 암호 넣기'); };
-  es.addEventListener('put', on); es.addEventListener('patch', on);
-  es.onerror = () => syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…');
+  $('syncBtn').onclick = () => { if (!pw) return askPw(); if (locked) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return askPw(); }   // 자료를 못 받은 암호는 지우고 다시 묻는다
+    syncMsg('함께 쓰기: 올리는 중…'); push(); };
+  if (pw) { locked = true; listen('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
   $('panel').addEventListener('focusout', () => setTimeout(() => { if (!typing()) applyRemote(); }));
 }
 

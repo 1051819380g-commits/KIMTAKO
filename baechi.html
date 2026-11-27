@@ -595,6 +595,7 @@ function migrate(s) {
   if (s.v < 15) {   // v15: 시험으로 올린 보수요청(2026-11-27까지 요청분)을 모두 비운다(사용자 요청 2026-11-27). 그 뒤에 올린 것은 건드리지 않는다
     const walk = o => { if (!o || typeof o !== 'object') return; if (Array.isArray(o.reqs)) { o.reqs = o.reqs.filter(q => !(q.d <= '2026-11-27')); if (!o.reqs.length) delete o.reqs; } for (const k in o) if (k !== 'reqs') walk(o[k]); };
     walk(s.floors); s.v = 15; }
+  if (s.v < 16) { nameStairs(s.floors); s.v = 16; }   // v16: 계단실 이름을 방위로
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -602,7 +603,22 @@ function migrate(s) {
   }
   s.items ||= []; s.log ||= []; return s;
 }
-function defaults() {
+// 계단실 이름을 방위로 바꾼다(사용자 요청 2026-11-27): 동편계단·서편계단·남편계단·북편계단·중앙계단.
+// 방위 근거: 2021 환경개선공사 배치도(A-101, 지음건축)의 방위표 — 전체 배치 좌표에서 북쪽이 +x(오른쪽, 약 14° 위), 동쪽이 +y(아래)다.
+// 건물마다 계단이 늘어선 축(E = 동서, N = 남북)을 정해 두고, 층 가운데에서 그 축으로 8m 넘게 벗어난 계단을 양 끝, 나머지를 중앙으로 부른다.
+// 계단이 하나뿐인 건물(도서관동 등)과 이미 다른 이름을 붙인 실은 그대로 둔다. '계단실', '계단실#2'처럼 처음 이름으로 시작하는 실만 바꾼다(뒤에 붙은 '·현관' 등은 남긴다).
+const ST_AXIS = { [HS1]: 'N', [HS2]: 'E', [MS1]: 'N', [MS2]: 'E' };
+function nameStairs(floors) {
+  const ap = (M, [x, y]) => [M[0] * x + M[2] * y + M[4], M[1] * x + M[3] * y + M[5]], cen = ps => [ps.reduce((a, p) => a + p[0], 0) / ps.length, ps.reduce((a, p) => a + p[1], 0) / ps.length];
+  for (const f of floors) { const ax = ST_AXIS[f.bld], M = SITE[f.bld]; if (!ax || !M) continue;
+    let rs; try { rs = roomsOf(f); } catch (e) { continue; }   // 덜 갖춰진 옛 저장분의 층은 건너뛴다
+    const u = ax === 'E' ? [.24, .97] : [.97, -.24], mid = cen(rs.flatMap(r => r.pts).map(p => ap(M, p)));
+    for (const r of rs) { if (!/^계단실(#\d+)?/.test(r.info.name)) continue; const c = cen(r.pts.map(p => ap(M, p))), v = (c[0] - mid[0]) * u[0] + (c[1] - mid[1]) * u[1];
+      r.info.name = r.info.name.replace(/^계단실(#\d+)?/, (Math.abs(v) <= 8 ? '중앙' : ax === 'E' ? (v > 0 ? '동편' : '서편') : (v > 0 ? '북편' : '남편')) + '계단'); } }
+  return floors;
+}
+function defaults() { const s = defaults0(); nameStairs(s.floors); s.v = 16; return s; }
+function defaults0() {
   return { v: 15, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],

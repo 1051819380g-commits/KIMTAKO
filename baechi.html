@@ -152,6 +152,8 @@
     #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
+  /* 머리줄 오른쪽 위: 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 예전처럼 제목 옆) */
+  @media not all and (pointer:coarse) and (max-width: 960px) { #reqJump { order:2; margin-left:auto; } #wkJump { order:3; } .bar > .grp.push { order:4; margin-left:0; } }
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
   .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
   .acs-head button { padding:2px 9px; font-size:12px; }
@@ -297,13 +299,13 @@
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
     <div class="grp push noprint">
+      <button id="printPlan">도면 인쇄</button>
       <details id="setMenu"><summary title="물품대장 넣기, 엑셀로 내보내기, 저장파일 내보내기·불러오기">⚙ 설정 ▾</summary><div class="set-box">
         <button id="itemBtn">물품대장 넣기</button>
         <button id="csvBtn">엑셀(CSV)로 내보내기</button>
         <button id="saveBtn">저장파일 내보내기</button>
         <button id="loadBtn">저장파일 불러오기</button>
       </div></details>
-      <button id="printPlan">도면 인쇄</button>
       <input type="file" id="loadFile" accept=".json" hidden>
       <input type="file" id="phFile" accept="image/*" multiple hidden>
       <input type="file" id="itemFile" accept=".xlsx,.xls,.csv" hidden>

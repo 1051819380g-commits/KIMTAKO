@@ -60,6 +60,12 @@
   .stat b { font-size:24px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.15; }
   .stat b small { font-size:13px; font-weight:500; color:var(--sub); margin-left:2px; }
   .stat span { font-size:12px; color:var(--sub); }
+  /* 합계는 보기 단추 줄의 오른쪽 끝에 한 줄로(전체 배치는 학교별 두 줄) — 사용자 요청 2026-11-27 */
+  .bar #stats { order:9; margin-left:auto; padding:0; gap:0 16px; justify-content:flex-end; align-items:baseline; } .bar #stats.two { gap:1px; align-items:flex-end; }
+  .bar #stats .srow { display:flex; gap:0 16px; align-items:baseline; justify-content:flex-end; } .bar #stats .srow em { font-size:12px; }
+  .bar #stats .stat { flex-direction:row; align-items:baseline; gap:4px; } .bar #stats .stat span { order:-1; font-size:11px; white-space:nowrap; }
+  .bar #stats .stat b, .bar #stats.two .stat b { font-size:15px; line-height:1.25; } .bar #stats .stat b small { font-size:11px; margin-left:1px; }
+  .bar #gapLbl { margin-left:0; }
   .stat.warn b { color:var(--warn); }
 
   main { padding:10px 20px 14px; }
@@ -332,10 +338,10 @@
     <span id="syncState" class="hint"></span>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다. 휴대폰에서는 두 손가락으로 끌어 옮기고 벌리거나 오므려 크기를 바꿉니다.">도면 크기 <input type="range" id="zoom" min="10" max="300" value="100"></label>
+    <div class="stats" id="stats"></div>
   </div>
 </header>
 
-<div class="stats" id="stats"></div>
 <main>
   <div class="card" id="sheet">
     <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span><button id="wkMulti" class="noprint" hidden title="고른 실들에 같은 공사·물품 하자보증을 한꺼번에 적습니다. 고르기를 풀려면 Esc 또는 빈 곳·다른 실을 그냥 누르기"></button><span id="acTot"></span></div>
@@ -1381,11 +1387,11 @@ function renderTable() {
     const A = acc[site ? school(f.bld) : 'one'] ||= { area: 0, n: 0, ac: 0, no: 0, it: 0 }; A.area += r.area; A.ac += +i.acN || 0; A.it += its.length;
     if (need) { A.n++; if (!+i.acN) A.no++; }
     rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
-  const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span>${esc(name)} 전체 면적</span></div>
-    <div class="stat"><b>${A.n}<small>실</small></b><span>교실·특별실·관리·지원</span></div>
+  const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span title="${esc(name)} 전체 면적">면적</span></div>
+    <div class="stat"><b>${A.n}<small>실</small></b><span title="교실·특별실·관리·지원 실 수">주요 실</span></div>
     <div class="stat"><b>${A.ac}<small>대</small></b><span>에어컨</span></div>
     <div class="stat${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span>에어컨 없는 실</span></div>
-    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span>실에 연결된 물품</span></div>`;
+    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품">물품</span></div>`;
   $('stats').classList.toggle('two', site);
   $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || { area: 0, n: 0, ac: 0, no: 0, it: 0 }, b);
   $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;

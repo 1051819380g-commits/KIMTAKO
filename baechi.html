@@ -595,7 +595,7 @@ function annexFloors() {
   return [one(B6, '급식시설', 32.28, 15.56, '지원', 467.06, src + ' — 신관 지하 급식소(식당·조리장)와 같은 곳인지 확인 필요'),
     one(B5, '기계실', 21.24, -7.41, '지원', 119.7, src), one(B8, '씨름연습장', 12.52, 12.24, '특별실', 168, src)];
 }
-// 건물 출입구: [좌표 틀(tf), x, y, 안쪽 방향 x, y, (전체 배치에서 대피할 운동장 — 없으면 가장 가까운 곳), (층 이름 — 없으면 1층)]. 1층이 아닌 층의 출입구는 그 층 도면에만 그리고 전체 배치의 바깥 동선에는 넣지 않는다. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
+// 건물 출입구: [좌표 틀(tf), x, y, 안쪽 방향 x, y, (전체 배치에서 대피할 운동장 — 없으면 가장 가까운 곳), (층 이름 — 없으면 1층)]. 1층이 아닌 층의 출입구(땅이 높은 쪽으로 바로 나가는 문)도 전체 배치의 바깥 동선에 넣는다(사용자 요청 2026-11-27). 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
 const DOORS = {
   [HS1]: [['', 0, 0, 0, -1], ['', 0, -17.84, 0, 1], ['L', -34, 0, 0, -1], ['L', -34, -10.7, 0, 1], ['R', 34, 0, 0, -1]],   // 현관(가운데 앞), 가운데 뒤, 왼쪽 계단실 앞·뒤(그림에서 아래·위), 오른쪽 계단실 아래쪽 — 계단실 문은 사용자 확인(2026-11-25)
   [HS2]: [['B', 63.85, -9.9, 0, 1], ['B', 63.85, 0, 0, -1], ['B', 5.4, -9.9, 0, 1], ['B', 119.2, -9.9, 0, 1]],             // 가운데 현관, 현관 뒤쪽(가운데 계단실 반대편 — 사용자 확인), 양 끝 계단 옆
@@ -1070,7 +1070,7 @@ function siteEvac() {
   const best = (i, from) => { let d = -1, v = 1e9; for (let k = 0; k < 4; k++) { const n = dist[i * 4 + k] + (from != null && k !== from ? PEN : 0); if (n < v) { v = n; d = k; } } return d; };
   const out = [];
   for (const b in DOORS) { if (!SITE[b] || !state.floors.some(x => x.bld === b && x.name === '1층')) continue;
-    for (const [tf, x, y, nx, ny, to, lv] of DOORS[b]) { if (lv && lv !== '1층') continue; if (to) spread([GROUND.find(g => g[0] === to)[1].map(([gx, gy]) => [-gx, -gy])]);      // 운동장을 정해 둔 출입구
+    for (const [tf, x, y, nx, ny, to] of DOORS[b]) { if (to) spread([GROUND.find(g => g[0] === to)[1].map(([gx, gy]) => [-gx, -gy])]);      // 운동장을 정해 둔 출입구
       const c = ap(SITE[b], TF[tf]([x, y])), o = ap(SITE[b], TF[tf]([x - nx, y - ny])), u = [o[0] - c[0], o[1] - c[1]];
       let i = -1; for (let k = 1.5; k <= 6 && i < 0; k += .5) { const j = cell([c[0] + u[0] * k, c[1] + u[1] * k]); if (j >= 0 && free[j] && best(j) >= 0) i = j; }      // 문 앞으로 곧장 나가 처음 만나는 빈 칸
       if (i < 0) { let bd = 8; for (let j = 0; j < W * H; j++) if (free[j] && best(j) >= 0) { const p = at(j), dd = Math.hypot(p[0] - o[0], p[1] - o[1]); if (dd < bd) { bd = dd; i = j; } } }      // 문 앞이 막혀 있으면(옆 건물과 붙은 곳) 8m 안의 가장 가까운 빈 칸

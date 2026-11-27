@@ -79,6 +79,8 @@
   .sheet-head b { font-size:18px; font-weight:700; letter-spacing:-.01em; }
   .sheet-head span { color:var(--sub); font-size:12px; }
   .sheet-head #wkMulti { margin-left:auto; align-self:center; padding:3px 10px; font-size:12px; font-weight:600; color:#1e7a43; background:#eaf7ee; border-color:#b7e0c4; } #wkMulti:not([hidden]) ~ #acTot { margin-left:0; }
+  /* 에어컨 현황(도면 위 천장형·스탠드형 대수, 합계의 에어컨·에어컨 없는 실)은 에어컨 보기에서만(사용자 요청 2026-11-27) */
+  body:not(.v-ac) #acTot, body:not(.v-ac) #stats .acst { display:none !important; }
   .sheet-head #acTot { margin-left:auto; display:flex; flex-wrap:wrap; gap:4px 6px; justify-content:flex-end; }
   #acTot b { font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:1px 9px; white-space:nowrap; }
   #planbox { overflow:auto; max-height:66vh; padding:8px 10px; margin:8px 10px 0; border:1px solid var(--line); border-radius:4px;
@@ -850,7 +852,7 @@ function addItem(r, name, n) {
 // ── 그리기 ──
 // 여러 실 고르기(Ctrl+누르기): '층번호 실키' → [층 번호, 실 키]. 지금 화면에 보이는 실만 남긴다(다른 건물·층으로 가면 풀린다).
 const multi = new Map();
-function render() { document.body.classList.toggle('ro', noReq()); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
+function render() { document.body.classList.toggle('ro', noReq()); document.body.classList.toggle('v-ac', view === 'ac'); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
   for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site, pb = $('planbox'), keep = [pb.scrollLeft, pb.scrollTop]; render.site = site;
@@ -1426,8 +1428,8 @@ function renderTable() {
     rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
   const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span title="${esc(name)} 전체 면적" data-s="면적">면적</span></div>
     <div class="stat"><b>${A.n}<small>실</small></b><span title="교실·특별실·관리·지원 실 수" data-s="실">실 현황</span></div>
-    <div class="stat"><b>${A.ac}<small>대</small></b><span data-s="에어컨">에어컨</span></div>
-    <div class="stat${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span data-s="미설치">에어컨 없는 실</span></div>
+    <div class="stat acst"><b>${A.ac}<small>대</small></b><span data-s="에어컨">에어컨</span></div>
+    <div class="stat acst${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span data-s="미설치">에어컨 없는 실</span></div>
     <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품" data-s="물품">물품</span></div>`;
   $('stats').classList.toggle('two', site);
   $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || { area: 0, n: 0, ac: 0, no: 0, it: 0 }, b);

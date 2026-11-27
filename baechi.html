@@ -80,8 +80,9 @@
   .sheet-head span { color:var(--sub); font-size:12px; }
   .sheet-head #wkMulti { margin-left:auto; align-self:center; padding:3px 10px; font-size:12px; font-weight:600; color:#1e7a43; background:#eaf7ee; border-color:#b7e0c4; } #wkMulti:not([hidden]) ~ #acTot { margin-left:0; }
   /* 에어컨 현황(도면 위 천장형·스탠드형 대수, 합계의 에어컨·에어컨 없는 실)은 에어컨 보기에서만(사용자 요청 2026-11-27) */
-  body:not(.v-ac) #acTot, body:not(.v-ac) #stats .acst, body:not(.v-use) #stats .usest, body:not(.v-fire) #stats .firest, body:not(.v-work) #stats .wkst, body.v-use #stats .nst { display:none !important; }   /* 용도 보기는 용도별 실 수가 '실 현황'을 대신한다 */
-  #stats .usest span i.sw { display:inline-block; width:9px; height:9px; border:1px solid rgba(0,0,0,.18); border-radius:2px; margin-right:3px; vertical-align:-1px; }
+  body:not(.v-ac) #stats .acst { display:none !important; }
+  #acTot b.pu { color:var(--ink); background:var(--paper); border:1px solid var(--line); } #acTot b.pf { color:#b42318; background:#fff1ef; } #acTot b.pw { color:#1e7a43; background:#eaf7ee; } #acTot b.pw.soon { color:#c2570a; background:#fff1e0; }
+  #acTot i.sw, #stats .usest span i.sw { display:inline-block; width:9px; height:9px; border:1px solid rgba(0,0,0,.18); border-radius:2px; margin-right:3px; vertical-align:-1px; }
   .sheet-head #acTot { margin-left:auto; display:flex; flex-wrap:wrap; gap:4px 6px; justify-content:flex-end; }
   #acTot b { font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:1px 9px; white-space:nowrap; }
   #planbox { overflow:auto; max-height:66vh; padding:8px 10px; margin:8px 10px 0; border:1px solid var(--line); border-radius:4px;
@@ -1438,11 +1439,12 @@ function renderTable() {
     <div class="stat nst"><b>${A.n}<small>실</small></b><span title="교실·특별실·관리·지원 실 수" data-s="실">실 현황</span></div>
     <div class="stat acst"><b>${A.ac}<small>대</small></b><span data-s="에어컨">에어컨</span></div>
     <div class="stat acst${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span data-s="미설치">에어컨 없는 실</span></div>
-    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품" data-s="물품">물품</span></div>
-    ${Object.keys(USES).filter(u => A.use[u]).map(u => `<div class="stat usest"><b>${A.use[u]}<small>실</small></b><span><i class="sw" style="background:${USES[u]}"></i>${u}</span></div>`).join('')}
-    ${[['소화전', '옥내소화전', '소화전'], ['펌프', '소방펌프', '펌프'], ['탐지기', '화재탐지', '탐지'], ['방화문', '방화문', '방화문']].filter(([k]) => A.fire[k]).map(([k, t, sh]) => `<div class="stat firest"><b>${A.fire[k]}<small>곳</small></b><span data-s="${sh}">${t}</span></div>`).join('') || '<div class="stat firest"><b>0<small>곳</small></b><span>소방시설</span></div>'}
-    <div class="stat wkst"><b>${A.wk}<small>건</small></b><span title="하자보증 기간이 남은 공사·물품(실·층·건물 전체 포함)" data-s="보증 중">보증 중</span></div>
-    <div class="stat wkst${A.wkSoon ? ' warn' : ''}"><b>${A.wkSoon}<small>건</small></b><span title="90일 안에 하자보증이 끝나는 것" data-s="만료 임박">만료 임박</span></div>`;
+    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품" data-s="물품">물품</span></div>`;
+  // 도면 제목 옆 알약(예전 에어컨 대수 자리): 에어컨 보기는 형식별 대수(renderPlan), 다른 보기는 그 보기의 현황 — 사용자 요청 2026-11-27
+  if (view !== 'ac') { const T = newAcc(); for (const A of Object.values(acc)) { for (const k in A.use) T.use[k] = (T.use[k] || 0) + A.use[k]; for (const k in A.fire) T.fire[k] = (T.fire[k] || 0) + A.fire[k]; T.wk += A.wk; T.wkSoon += A.wkSoon; }
+    $('acTot').innerHTML = view === 'use' ? Object.keys(USES).filter(u => T.use[u]).map(u => `<b class="pu"><i class="sw" style="background:${USES[u]}"></i>${u} ${T.use[u]}실</b>`).join('')
+      : view === 'fire' ? ([['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].filter(([k]) => T.fire[k]).map(([k, t]) => `<b class="pf">${t} ${T.fire[k]}곳</b>`).join('') || '<b class="pf">소방시설 0곳</b>')
+      : view === 'work' ? `<b class="pw">보증 중 ${T.wk}건</b><b class="pw${T.wkSoon ? ' soon' : ''}">만료 임박 ${T.wkSoon}건</b>` : ''; }
   $('stats').classList.toggle('two', site);
   $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || newAcc(), b);
   $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;

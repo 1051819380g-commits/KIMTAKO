@@ -238,7 +238,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:.35px; stroke-linejoin:round; }
   #planbox.all { max-height:none; }
-  #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:6px auto auto; }   /* 전체 배치: 도면을 상자 위쪽에 붙이고 좌우로만 가운데(사용자 요청 2026-11-27) — 키우면 아래쪽으로 커진다 */
+  #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:auto; }   /* 전체 배치: 도면을 상자 가운데에(넘칠 때는 자동 여백이 0이 되어 잘리지 않는다) */
   /* 목록 인쇄(보수요청·하자보증): 목록만 따로 옮겨 가로 A4로 */
   #listPrint { display:none; }
   @media print { body.list-print > :not(#listPrint) { display:none !important; } body.list-print #listPrint { display:block; }
@@ -834,7 +834,7 @@ function render() { document.body.classList.toggle('ro', noReq()); document.body
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site; render.site = site;
   renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
-  if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = 0; }   // 전체 배치에 들어오면 좌우로는 가운데, 위아래로는 맨 위를 보여 준다
+  if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
 }
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;
@@ -1668,9 +1668,15 @@ $('planbox').addEventListener('wheel', e => {
   const g1 = $('plan').getBoundingClientRect(); box.scrollLeft += g1.left + fx * g1.width - e.clientX; box.scrollTop += g1.top + fy * g1.height - e.clientY;
 }, { passive: false });
 // 오른쪽 단추로 끌기: 도면 상자 안에서 화면 이동. 끌었을 때는 오른쪽 단추 메뉴를 띄우지 않는다.
-let pan = null, panned = false;
-$('planbox').addEventListener('pointerdown', e => { if (e.button === 2) pan = { x: e.clientX, y: e.clientY, l: $('planbox').scrollLeft, t: $('planbox').scrollTop, moved: false }; });
-addEventListener('pointermove', e => { if (!pan) return; const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (Math.hypot(dx, dy) > 3) pan.moved = true; $('planbox').scrollLeft = pan.l - dx; $('planbox').scrollTop = pan.t - dy; });
+// 스크롤로 못 가는 만큼(도면이 상자보다 작을 때 등)은 도면 자체를 밀어서 옮긴다(off) — 작은 도면도 끌어 옮길 수 있게(사용자 요청 2026-11-27). 화면(건물·층)을 바꾸면 제자리로 돌아온다.
+let pan = null, panned = false, off = [0, 0];
+const setOff = (x, y) => { off = [x, y]; $('plan').style.translate = x || y ? x + 'px ' + y + 'px' : ''; };
+$('planbox').addEventListener('pointerdown', e => { if (e.button === 2) pan = { x: e.clientX, y: e.clientY, l: $('planbox').scrollLeft, t: $('planbox').scrollTop, ox: off[0], oy: off[1], moved: false }; });
+addEventListener('pointermove', e => { if (!pan) return; const dx = e.clientX - pan.x, dy = e.clientY - pan.y, b = $('planbox'); if (Math.hypot(dx, dy) > 3) pan.moved = true;
+  // 먼저 밀어 둔 것을 되돌리는 방향으로 쓰고, 남는 만큼 스크롤하고, 그래도 남으면 다시 민다
+  let wx = pan.ox + dx, wy = pan.oy + dy; b.scrollLeft = pan.l; b.scrollTop = pan.t;
+  const sx = Math.max(-(b.scrollWidth - b.clientWidth - pan.l), Math.min(pan.l, wx)), sy = Math.max(-(b.scrollHeight - b.clientHeight - pan.t), Math.min(pan.t, wy));
+  b.scrollLeft = pan.l - sx; b.scrollTop = pan.t - sy; setOff(wx - (pan.l - b.scrollLeft), wy - (pan.t - b.scrollTop)); });
 addEventListener('pointerup', () => { if (pan) { panned = pan.moved; pan = null; } });
 $('planbox').addEventListener('contextmenu', e => { if (panned || pan) { e.preventDefault(); panned = false; } });
 // 휴대폰: 두 손가락으로 끌면 도면 상자 안에서 화면 이동, 벌리거나 오므리면 크기 조절. 한 손가락 끌기는 그대로 돌리기다.
@@ -1716,6 +1722,7 @@ addEventListener('resize', fitPlan);
 // 화면(건물·층·전체 배치)을 바꾸면 "도면 크기" 값을 도면이 한 화면에 들어오는 값으로 잡는다(100%를 넘기지는 않는다). 높이를 누르는 것이 아니라 값 자체를 정하므로 막대를 움직이면 늘 크기가 바뀐다.
 // one(층 번호)을 주면 전체 층 보기에서 그 층 하나가 한 화면에 차는 크기로 잡고, 상자 안에서 그 층이 맨 위에 오게 내린다.
 function autoZoom(one) {
+  setOff(0, 0);   // 화면을 바꾸면 끌어 옮긴 것은 제자리로
   const box = $('planbox'), z = $('zoom'), vb = $('plan').viewBox.baseVal, cs = getComputedStyle(box);
   // 폭은 스크롤 막대가 없을 때 기준으로 잰다(막대가 떠 있는 동안 재면 맞춘 뒤 막대가 사라지면서 도면이 넓어져 다시 넘친다)
   const w = box.offsetWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth), room = parseFloat(box.style.maxHeight) - 20;

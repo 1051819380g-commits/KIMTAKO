@@ -95,8 +95,11 @@
   .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
   .reqs { margin:-4px 0 14px; }
   /* 보수요청 사진 */
-  .phl { display:grid; gap:3px; font-size:11px; color:var(--sub); } .phb { margin-left:6px; padding:0 7px; font-size:12px; white-space:nowrap; }
-  #phDlg { width:min(900px, calc(100vw - 32px)); box-sizing:border-box; } #phBox figure { margin:10px 0 16px; text-align:center; } #phBox img { display:block; max-width:100%; max-height:72vh; margin:0 auto 6px; border:1px solid var(--line); border-radius:6px; }
+  .req-form :is(select, textarea, input) { padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); } .req-form :is(select, textarea, input):hover { border-color:var(--line-strong); } .req-form textarea { resize:vertical; }   /* 보수요청 입력 칸도 실 정보 입력 칸과 같은 모양 */
+  .phz { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:7px 9px; border:1px dashed var(--line-strong); border-radius:6px; background:var(--surface); font-size:12px; color:var(--sub); }
+  .phz button { padding:3px 10px; font-size:12px; white-space:nowrap; } .phz-t { flex:1; min-width:140px; line-height:1.5; word-break:break-all; }
+  .ph-over { outline:2px dashed var(--accent); outline-offset:-2px; background:var(--accent-soft) !important; }   /* 사진을 끌어 올려놓은 자리 */ .phb { margin-left:6px; padding:0 7px; font-size:12px; white-space:nowrap; }
+  #phDlg { width:min(900px, calc(100vw - 48px)); max-height:calc(100vh - 80px); box-sizing:border-box; padding:18px 20px 20px; overflow:auto; } #phBox figure { margin:10px 0 16px; text-align:center; } #phBox img { display:block; max-width:100%; max-height:72vh; margin:0 auto 6px; border:1px solid var(--line); border-radius:6px; }
   #phBox button { padding:1px 8px; font-size:12px; } #phTitle { white-space:pre-wrap; word-break:break-all; }
   /* 공사·하자보증 */
   .wk-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid var(--line-strong); border-radius:6px; font-size:13px; line-height:1.5; word-break:break-all; }
@@ -104,9 +107,11 @@
   .wk-item .req-meta button { padding:1px 8px; font-size:11px; } .wk-item.soon .wk-st { color:#c2570a; font-weight:600; } .wk-item.ok .wk-st { color:#1e7a43; font-weight:600; }
   .wk-sc { font-size:11px; padding:0 6px; border:1px solid var(--line); border-radius:9px; color:var(--sub); font-weight:400; }
   .wk-note { margin-top:6px; padding:6px 9px; border-radius:6px; background:#eaf7ee; border:1px solid #b7e0c4; font-size:12px; line-height:1.5; white-space:normal; }
-  #wkDlg { width:min(520px, calc(100vw - 32px)); box-sizing:border-box; } #wkList { width:min(1100px, calc(100vw - 32px)); box-sizing:border-box; }
+  #wkDlg { width:min(520px, calc(100vw - 32px)); box-sizing:border-box; }
   #wkDlg .wkf { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; } #wkDlg .wkf label { display:grid; gap:3px; font-size:12px; color:var(--sub); } #wkDlg .wkf .wide { grid-column:1 / -1; }
-  #wkDlg .wkf :is(input, select) { width:100%; box-sizing:border-box; font-size:14px; }
+  #wkDlg .wkf :is(input, select), #wkNew select { width:100%; box-sizing:border-box; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
+  #wkDlg .wkf :is(input, select):hover, #wkNew select:hover { border-color:var(--line-strong); } #wkDlg h2 { margin:0 0 12px; } #wkDlg .hint { margin:10px 0 0; }
+  #wkNew select { width:auto; } #wkNew button { white-space:nowrap; }
   #wkNew { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; } #wkNew select { flex:1; min-width:90px; } #wkNew #wn-r { flex:2; }
   #wkRows tr[data-wk] { cursor:pointer; } #wkRows tr.exp td { color:var(--sub); } #wkRows tr.soon td.st { color:#c2570a; font-weight:600; } #wkRows button { padding:1px 8px; font-size:12px; } #wkRows td { white-space:normal; } #wkJump b { color:#c2570a; }
   .req-form { display:grid; gap:6px; padding:9px; border:1px solid #f3b8ae; border-radius:6px; background:#fff8f6; }
@@ -124,10 +129,10 @@
   #reqList td.noprint { white-space:nowrap; text-align:right; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
-  #reqDlg { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
-  #reqDlg .sec-head { position:relative; padding-right:36px; } #reqDlg .p-close { top:-4px; right:-6px; } #reqDlg h2 { margin:0; }
+  #reqDlg, #wkList { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
+  :is(#reqDlg, #wkList, #phDlg) .sec-head { position:relative; padding-right:36px; } :is(#reqDlg, #wkList, #phDlg) .p-close { top:-4px; right:-6px; } :is(#reqDlg, #wkList, #phDlg) h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
-  @media (pointer:coarse) and (max-width: 960px) { #reqDlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
+  @media (pointer:coarse) and (max-width: 960px) { #reqDlg, #wkList { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
     .sheet-head { flex-wrap:wrap; } #sheetTitle { white-space:nowrap; } #sheetSub { flex:1 1 100%; order:3; }   /* 제목이 세로로 한 글자씩 쪼개지지 않게: 제목·에어컨 대수 한 줄, 안내는 아랫줄 */
     #doneDlg { min-width:0; width:calc(100vw - 32px); box-sizing:border-box; } #doneDlg input[type=date] { font-size:16px; flex:1; }
     #reqDlg #reqList .scroll { max-height:none; }
@@ -138,7 +143,7 @@
     #reqList td.nm { color:var(--ink); font-weight:700; }
     #reqList td.rt { display:block; margin:4px 0 2px; min-width:0; font-size:15px; color:var(--ink); }
     #reqList td.rd { margin-left:0; } #reqList td.rd::before { content:'요청 '; } #reqList td.dd:empty { display:none; } #reqList td.dd::before { content:'· 완료 '; } #reqList td.who:empty { display:none; } #reqList td.who::before { content:'· '; }
-    #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } #reqDlg .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
+    #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
@@ -320,8 +325,8 @@
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><label class="phl">📷 사진 (3장까지 — 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요)<input type="file" id="rn-ph" accept="image/*" multiple></label><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
-<dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="push" id="phClose">닫기</button></div><div id="phBox"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><button type="button" data-phzpick>📷 사진 고르기</button><span class="phz-t" data-t="여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요">여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="p-close" id="phClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="phBox"></div></dialog>
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
   <div class="wkf">
@@ -338,7 +343,7 @@
   <p class="hint">공종별 기간은 건설산업기본법 시행령 별표 4, 전기공사업법 시행령 별표 3의2, 정보통신공사업법 시행령 제37조, 소방시설공사업법 시행령 제6조(법제처 현행, 2026-11-27 확인)를 따랐습니다. 공종이 섞인 공사는 세부 공종별로 따로 적고, 나눌 수 없으면 주된 공종으로 적습니다. 물품은 계약서·보증서에 적힌 기간을 넣습니다.</p>
   <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
 </form></dialog>
-<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button class="push" id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button id="wkClose">닫기</button></div>
+<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button class="p-close" id="wkClose" aria-label="닫기" title="닫기 (Esc)">×</button></div>
 <div id="wkNew" class="noprint"><select id="wn-b" aria-label="건물"></select><select id="wn-f" aria-label="층"></select><select id="wn-r" aria-label="실"></select><button type="button" class="primary" id="wn-add">＋ 하자보증 추가</button></div><div id="wkRows"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
@@ -1070,8 +1075,8 @@ function renderPanel() {
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
-  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><label class="phl">📷 사진 (3장까지 — 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요)<input type="file" id="r-ph" accept="image/*" multiple></label><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
+  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><button type="button" data-phzpick>📷 사진 고르기</button><span class="phz-t" data-t="여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요">여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1252,6 +1257,22 @@ async function phAttach(fi, key, n, files) {
   applyRemote(); x = phReq(fi, key, n); if (!x || x.q.t !== t0) return alert('사진을 올리는 사이에 요청 목록이 바뀌어 붙이지 못했습니다. 다시 해 주세요.');
   x.q.ph = [...(x.q.ph || []), ...ids]; save(); render();
 }
+// 사진 고르는 칸(.phz): 단추로 고르거나 끌어다 놓는다. 고른 파일 이름을 칸에 적는다.
+function phzLabel(z) { const fs = [...z.querySelector('input').files], t = z.querySelector('.phz-t'); t.textContent = fs.length ? `고른 사진 ${fs.length}장: ${fs.map(x => x.name).join(', ')}` : t.dataset.t; }
+addEventListener('click', e => { const z = e.target.dataset && e.target.dataset.phzpick != null && e.target.closest('.phz'); if (z) z.querySelector('input').click(); });
+addEventListener('change', e => { const z = e.target.type === 'file' && e.target.closest('.phz'); if (z) phzLabel(z); });
+// 끌어다 놓을 수 있는 자리: 사진 고르는 칸, 실 정보 창의 요청 칸, 목록의 요청 줄. 그 밖의 자리에 놓으면 아무 일도 없다(브라우저가 사진 파일을 열어 화면이 넘어가지 않게 막는다).
+const phZone = t => !ro() && t.closest ? t.closest('.phz, #panel .req-item[data-rn], #reqList tr[data-k]') : null;
+const phOver = z => { for (const x of document.querySelectorAll('.ph-over')) if (x !== z) x.classList.remove('ph-over'); if (z) z.classList.add('ph-over'); };
+const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); const z = phZone(e.target); e.dataTransfer.dropEffect = z ? 'copy' : 'none'; phOver(z); });
+addEventListener('dragleave', e => { if (!e.relatedTarget) phOver(null); });
+addEventListener('drop', e => {
+  if (!hasFiles(e)) return; e.preventDefault(); phOver(null); const z = phZone(e.target), files = [...e.dataTransfer.files].filter(x => x.type.startsWith('image/')); if (!z || !files.length) return;
+  if (z.classList.contains('phz')) { const inp = z.querySelector('input'), dt = new DataTransfer(); for (const x of [...inp.files, ...files].slice(0, PH_MAX)) dt.items.add(x); inp.files = dt.files; phzLabel(z); }   // 등록 칸: 고른 사진에 더한다
+  else if (z.dataset.rn != null) phAttach(cur, sel, +z.dataset.rn, files);   // 실 정보 창의 요청 칸: 바로 붙인다
+  else { const b = z.querySelector('[data-rph]'); if (b) phAttach(+z.dataset.f, z.dataset.k, +b.dataset.rph, files); }   // 목록의 요청 줄
+});
 let phT = null;
 function phPick(fi, key, n) { phT = [fi, key, n]; $('phFile').value = ''; $('phFile').click(); }
 $('phFile').onchange = () => { if (phT) phAttach(...phT, [...$('phFile').files]); };
@@ -1514,7 +1535,7 @@ $('rn-save').onclick = () => {
   if (ro()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
   lsv(KEY + '-who', who); applyRemote(); const r = roomsOf(state.floors[fi]).find(x => x.key === key); if (!r) return fillReqNew(2);
   (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); const c = cur; cur = fi; log(`보수요청: ${r.info.name} — ${t}`); cur = c;
-  const pf = [...$('rn-ph').files]; $('rn-ph').value = '';
+  const pf = [...$('rn-ph').files]; $('rn-ph').value = ''; phzLabel($('rn-ph').parentNode);
   $('rn-text').value = ''; $('reqNew').open = false; save(); render(); phAttach(fi, key, r.info.reqs.length - 1, pf);
 };
 $('reqJump').onclick = () => { fillReqNew(); renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };

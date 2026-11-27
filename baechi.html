@@ -105,7 +105,7 @@
   .reqs { margin:-4px 0 14px; }
   /* 암호 입력 창 */
   #pwDlg { width:min(380px, calc(100vw - 32px)); min-width:0; box-sizing:border-box; } #pwDlg h2 { margin:0 0 4px; } #pwDlg #pwNow { margin:0; }
-  #pwIn { width:100%; box-sizing:border-box; margin:12px 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); font-size:16px; } #pwIn:hover, #pwIn:focus { border-color:var(--line-strong); }
+  #pwIn { width:100%; box-sizing:border-box; margin:12px 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); font-size:16px; } #pwIn:hover, #pwIn:focus { border-color:var(--line-strong); } #pwIn { text-transform:uppercase; } #pwIn::placeholder { text-transform:none; }
   #pwDlg ul { margin:10px 0 0; padding-left:18px; } #pwDlg .acts #pwClear { margin-right:auto; }
   /* 보수요청 사진 */
   .req-form :is(select, textarea, input) { padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); } .req-form :is(select, textarea, input):hover { border-color:var(--line-strong); } .req-form textarea { resize:vertical; }   /* 보수요청 입력 칸도 실 정보 입력 칸과 같은 모양 */
@@ -351,7 +351,6 @@
   <p class="hint" id="pwNow"></p>
   <input type="password" id="pwIn" autocomplete="off" placeholder="암호" aria-label="암호">
   <label class="chk"><input type="checkbox" id="pwShow"> 암호 보기</label>
-  <ul class="hint"><li><b>행정실 암호</b> — 모두 보고 고칩니다</li><li><b>교원 암호</b> — 도면을 보고 보수요청·실 메모·물품을 고칩니다</li></ul>
   <div class="acts"><button type="button" id="pwClear" title="암호를 지우고 배치도만 봅니다(함께 쓰는 PC에서 쓴 뒤 누르세요)">암호 지우기</button><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">확인</button></div>
 </form></dialog>
 <dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="p-close" id="phClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="phBox"></div></dialog>
@@ -1431,13 +1430,14 @@ $('pwShow').onchange = () => { $('pwIn').type = $('pwShow').checked ? 'text' : '
 $('pwClear').onclick = () => $('pwDlg').close('clear');
 $('pwDlg').onclick = e => { if (e.target === $('pwDlg')) $('pwDlg').close('cancel'); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('pwDlg').onclose = () => { const how = $('pwDlg').returnValue, t = $('pwIn').value.trim(); $('pwIn').value = '';
-  if (how === 'clear') { pw = ''; lsv(KEY + '-pw', ''); return pwChanged(); }
+  if (how === 'clear') { pw = ''; pwTry = []; lsv(KEY + '-pw', ''); return pwChanged(); }
   if (how !== 'ok' || !t) return; if (!KEYOK.test(t)) return alert('암호는 영문·숫자만 씁니다.');
-  pw = t; lsv(KEY + '-pw', pw); pwChanged(); };
+  // 대소문자를 가리지 않고 넣을 수 있게: 대문자로 바꾼 것부터 찾아 보고, 없으면 넣은 그대로, 소문자 순으로 찾는다(사용자 요청 — 암호는 대문자로 정해 두는 것을 권한다)
+  const c = [...new Set([t.toUpperCase(), t, t.toLowerCase()])]; pw = c[0]; pwTry = c.slice(1); lsv(KEY + '-pw', pw); pwChanged(); };
 function queuePush() { if (!pw || !role) return; clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…'); }
 // 올릴 글: 본 자료(교원 암호를 정했으면 보수요청을 뺀다), 교원용 사본(물품·하자보증·이력·교원 암호를 뺀다)
 // 물품대장과 실 메모는 교원도 고칠 수 있게 tw/<교원 암호>에 따로 둔다(2026-11-27 사용자 요청). 그 자리가 생긴 뒤(twSent)에는 본 자료에서 물품을 빼고, 메모는 tw의 것이 이긴다.
-let esTw = null, twSent = '', twRemote = null, twReady = false;
+let esTw = null, twSent = '', twRemote = null, twReady = false, pwTry = [];
 const mainJson = () => JSON.stringify(state, (k, v) => k === 'reqs' && state.tpw ? undefined : k === 'items' && twSent && Array.isArray(v) ? [] : v);
 const openJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }, (k, v) => k === 'reqs' || k === 'works' ? undefined : k === 'memo' || k === 'alias' ? '' : v);
 // 암호가 없을 때(또는 틀렸을 때): 공개용 사본을 듣고 그대로 보여 준다. 아직 없으면 파일에 든 기본 도면이 남는다.
@@ -1451,6 +1451,21 @@ const twRef = (f, r) => f.bld + '|' + f.name + '|' + r.key;
 const twJson = () => { const memo = {}; for (const f of state.floors) for (const r of roomsOf(f)) if (r.info.memo) memo[twRef(f, r)] = r.info.memo; return JSON.stringify({ items: state.items, memo }); };
 function applyTw(s) { let d; try { d = JSON.parse(s); } catch (e) { return; }
   state.items = Array.isArray(d.items) ? d.items : []; const m = d.memo || {}; for (const f of state.floors) for (const r of roomsOf(f)) r.info.memo = m[twRef(f, r)] || ''; }
+// 한 번만: REQ_WIPE 날짜까지 올라온 보수요청(시험분)을 모두 지운다(사용자 요청 2026-11-27). 붙은 사진과 변경 이력의 보수요청 줄도 같이 지운다.
+// 보수요청은 화면에서 지울 수 없게 해 두었으므로, 이렇게 행정실 화면이 열릴 때 한 번 치운다. 치웠다는 표시는 state.reqWiped에 남긴다.
+const REQ_WIPE = '2026-11-27'; let wiping = false;
+async function wipeOldReqs() {
+  if (role !== 'admin' || wiping || state.reqWiped === REQ_WIPE) return; const tk = tkey(); if (tk && (!reqReady || needAttach)) return; wiping = true;
+  try {
+    const old = q => !(q.d > REQ_WIPE), t = Date.now(), body = {};
+    if (tk) { for (const id of Object.keys(reqStore)) { const n = reqStore[id]; if (!n || !old(n)) continue; body['req/' + tk + '/' + id] = null; for (const p of n.ph || []) if (phOk(p)) body['photo/' + p] = null; }
+      if (Object.keys(body).length) { const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...body, ['gate/' + pw]: t }) }); if (!r.ok) return; }
+      for (const k of Object.keys(body)) if (k.startsWith('req/')) delete reqStore[k.split('/')[2]];
+      attachReqs(); }
+    else for (const f of state.floors) for (const r of roomsOf(f)) if (r.info.reqs) { r.info.reqs = r.info.reqs.filter(q => !old(q)); if (!r.info.reqs.length) delete r.info.reqs; }   // 교원 암호를 아직 안 정했으면 본 자료 안의 것을 지운다
+    state.log = state.log.filter(l => !(/^보수요청/.test(l.t) && !(l.d > REQ_WIPE))); state.reqWiped = REQ_WIPE; save(); render();
+  } catch (e) {} finally { wiping = false; }
+}
 function listenTw(tk) {
   if (esTw) esTw.close(); esTw = null; twSent = ''; twRemote = null; twReady = false; if (!tk) return;
   const me = esTw = new EventSource(DB + '/tw/' + tk + '.json');
@@ -1500,10 +1515,12 @@ async function push() {
 // 본 자료 듣기: 행정실 자리(sec) → 교원 자리(pub) → 예전 공개 자리(old, 옮기기 전) 순서로 찾는다. 어디서 받았는지로 권한이 정해진다. 어디에도 없으면 암호가 틀린 것.
 function tryMain(kind) {
   if (es) es.close(); let got = false; const me = es = new EventSource(DB + (kind === 'sec' ? '/sec/' + pw : kind === 'pub' ? '/pub/' + pw : '/baechi') + '.json');
-  const none = () => { if (got || es !== me) return; me.close(); const nx = { sec: 'pub', pub: 'old' }[kind]; if (nx) return tryMain(nx); es = null; listenOpen(); syncMsg('이 암호로 저장된 자료가 없습니다 — 암호를 다시 넣으세요'); };
+  const none = () => { if (got || es !== me) return; me.close(); const nx = { sec: 'pub', pub: 'old' }[kind]; if (nx) return tryMain(nx);
+    if (pwTry.length) { pw = pwTry.shift(); lsv(KEY + '-pw', pw); return tryMain('sec'); }   // 대소문자를 바꿔 다시 찾아 본다
+    es = null; listenOpen(); syncMsg('이 암호로 저장된 자료가 없습니다 — 암호를 다시 넣으세요'); };
   const on = e => { if (es !== me) return; const d = JSON.parse(e.data); if (d.path !== '/') return; if (!d.data || !d.data.s) return none();
     const first = !got; got = true; src = kind; role = kind === 'pub' ? 'teacher' : 'admin'; remote = mainSent = d.data.s;
-    if (first || !typing()) applyRemote(); if (first) { listenReq(); render(); } syncMsg(syncOn()); };
+    if (first || !typing()) applyRemote(); if (first) { listenReq(); render(); wipeOldReqs(); } syncMsg(syncOn()); };
   me.addEventListener('put', on); me.addEventListener('patch', on);
   me.onerror = () => { if (es !== me) return; if (!got) return none(); syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…'); };
 }
@@ -1551,6 +1568,7 @@ function applyRemote() {
   if (needAttach && reqReady && tkey()) { needAttach = false; attachReqs(); ch = true; }
   if (twRemote && tkey()) { const s = twRemote; twRemote = null; if (s !== twJson()) { applyTw(s); ch = true; } }
   if (ch) { if (!findSel()) sel = null; render(); }
+  wipeOldReqs();
 }
 if (DB) {
   $('syncBtn').hidden = false;

@@ -1509,7 +1509,9 @@ function autoZoom(one) {
   z.value = Math.max(+z.min, Math.min(100, Math.floor(room / (w * hh / vb.width) * 100))); fitPlan();
   if (g) box.scrollTop += g.getBoundingClientRect().top - box.getBoundingClientRect().top - 12;
 }
-$('zoom').oninput = fitPlan; $('gapR').oninput = () => { if (site) poseSite(); };
+$('zoom').oninput = fitPlan; // 층 간격: 1층(바닥)이 화면에서 제자리에 있고 위층은 위로, 지하는 아래로 벌어지게 한다 — 도면이 위로 늘어난 만큼 상자 안을 따라 내려 준다(사용자 요청).
+$('gapR').oninput = () => { if (!site) return; const g = $('plan').querySelector('#sGround polygon'), y0 = g ? g.getBoundingClientRect().top : 0;
+  poseSite(); if (g) $('planbox').scrollTop += g.getBoundingClientRect().top - y0; };
 // 전체 배치: 도면을 끌면 좌우로는 건물이 돌고, 위아래로는 내려다보는 각도가 바뀐다.
 let drag = null, dragged = false, raf = 0;
 $('plan').onpointerdown = e => { if (site && e.button === 0) drag = { x: e.clientX, y: e.clientY, rot: rotDeg, tilt, moved: false }; };

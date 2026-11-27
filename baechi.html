@@ -27,6 +27,12 @@
   .brand h1 { font-size:17px; font-weight:700; margin:0; letter-spacing:-.01em; }
   .grp { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .push { margin-left:auto; }
+  /* 설정 메뉴: 물품대장 넣기·엑셀·저장파일 내보내기·불러오기를 한 단추 아래로 묶는다 */
+  #setMenu { position:relative; } #setMenu summary { list-style:none; cursor:pointer; user-select:none; border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:5px 11px; font-weight:500; white-space:nowrap; }
+  #setMenu summary::-webkit-details-marker { display:none; } #setMenu summary:hover, #setMenu[open] summary { background:var(--accent-soft); border-color:var(--line-strong); }
+  .set-box { position:absolute; right:0; top:calc(100% + 4px); z-index:40; display:grid; gap:2px; min-width:180px; padding:5px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(22,33,46,.18); }
+  .set-box button { border:0; text-align:left; padding:7px 10px; white-space:nowrap; }
+  @media (max-width: 760px) { .set-box { right:auto; left:0; } }
 
   button { border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:5px 11px; cursor:pointer; font-weight:500; transition:background .12s, border-color .12s; }
   button:hover { background:var(--accent-soft); border-color:var(--line-strong); }
@@ -87,7 +93,7 @@
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
-  body.ro :is(#stats, main ~ section, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
   body.ro #panel :is(input, select, textarea):disabled { opacity:1; color:var(--ink); background:var(--sheet); -webkit-text-fill-color:var(--ink); }
   body.ro #panel :disabled::placeholder { -webkit-text-fill-color:transparent; color:transparent; }
   /* 보수요청 */
@@ -290,10 +296,12 @@
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
     <div class="grp push noprint">
-      <button id="itemBtn" class="primary">물품대장 넣기</button>
-      <button id="csvBtn">엑셀(CSV)로</button>
-      <button id="saveBtn">저장파일 내보내기</button>
-      <button id="loadBtn">불러오기</button>
+      <details id="setMenu"><summary title="물품대장 넣기, 엑셀로 내보내기, 저장파일 내보내기·불러오기">⚙ 설정 ▾</summary><div class="set-box">
+        <button id="itemBtn">물품대장 넣기</button>
+        <button id="csvBtn">엑셀(CSV)로 내보내기</button>
+        <button id="saveBtn">저장파일 내보내기</button>
+        <button id="loadBtn">저장파일 불러오기</button>
+      </div></details>
       <button id="printPlan">도면만 인쇄</button>
       <button onclick="print()">전체 인쇄</button>
       <input type="file" id="loadFile" accept=".json" hidden>
@@ -1552,6 +1560,7 @@ function printList(title, cnt, rows) {
 }
 $('reqPrint').onclick = () => printList(`남제학원 보수요청 목록 (${reqView === 'all' ? '전체' : '진행 중'})`, $('reqCnt').textContent, $('reqList'));
 $('wkPrint').onclick = () => printList(`남제학원 공사·하자보증 목록 (${{ on: '보증 중', exp: '만료', all: '전체' }[wkView]})`, $('wkCnt').textContent, $('wkRows'));
+addEventListener('click', e => { const m = $('setMenu'); if (m.open && (!m.contains(e.target) || e.target.closest('.set-box button'))) m.open = false; });   // 설정 메뉴: 바깥을 누르거나 항목을 고르면 닫힌다
 $('reqClose').onclick = () => $('reqDlg').close();
 $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {

@@ -196,6 +196,12 @@
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:.35px; stroke-linejoin:round; }
   #planbox.all { max-height:none; }
   #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:auto; }   /* 전체 배치: 도면을 상자 가운데에(넘칠 때는 자동 여백이 0이 되어 잘리지 않는다) */
+  /* 목록 인쇄(보수요청·하자보증): 목록만 따로 옮겨 가로 A4로 */
+  #listPrint { display:none; }
+  @media print { body.list-print > :not(#listPrint) { display:none !important; } body.list-print #listPrint { display:block; }
+    #listPrint h1 { font-size:18px; margin:0 0 4px; } #listPrint > p { margin:0 0 10px; font-size:12px; color:#444; } #listPrint .scroll { max-height:none; overflow:visible; }
+    #listPrint table { width:100%; border-collapse:collapse; font-size:11px; } #listPrint :is(th, td) { border:1px solid #999; padding:4px 6px; text-align:left; vertical-align:top; white-space:normal; word-break:break-all; }
+    #listPrint th { background:#eee; -webkit-print-color-adjust:exact; print-color-adjust:exact; white-space:nowrap; } #listPrint .pm { display:block; } #listPrint tr { break-inside:avoid; } }
   #printStack { display:none; } @media print { #printStack { display:block; } }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { cursor:pointer; } #plan.site .hit { display:none; }
   .sf.ms .slab polygon { fill:#c08a4e; stroke:#c08a4e; } svg text.flr.ms { fill:#9a5a17; }
@@ -309,7 +315,7 @@
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
   <div class="wkf">
@@ -326,7 +332,7 @@
   <p class="hint">공종별 기간은 건설산업기본법 시행령 별표 4, 전기공사업법 시행령 별표 3의2, 정보통신공사업법 시행령 제37조, 소방시설공사업법 시행령 제6조(법제처 현행, 2026-11-27 확인)를 따랐습니다. 공종이 섞인 공사는 세부 공종별로 따로 적고, 나눌 수 없으면 주된 공종으로 적습니다. 물품은 계약서·보증서에 적힌 기간을 넣습니다.</p>
   <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
 </form></dialog>
-<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button class="push" id="wkClose">닫기</button></div>
+<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button class="push" id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button id="wkClose">닫기</button></div>
 <div id="wkNew" class="noprint"><select id="wn-b" aria-label="건물"></select><select id="wn-f" aria-label="층"></select><select id="wn-r" aria-label="실"></select><button type="button" class="primary" id="wn-add">＋ 하자보증 추가</button></div><div id="wkRows"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
@@ -1456,6 +1462,16 @@ $('rn-save').onclick = () => {
   $('rn-text').value = ''; $('reqNew').open = false; save(); render();
 };
 $('reqJump').onclick = () => { fillReqNew(); renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };
+// 목록 인쇄: 창에 보이는 표를 그대로 옮겨 찍는다(단추 칸은 .noprint라 빠진다)
+function printList(title, cnt, rows) {
+  const box = document.createElement('div'), st = document.createElement('style'); box.id = 'listPrint'; st.textContent = '@page { size: A4 landscape; margin: 12mm; }';
+  box.innerHTML = `<h1>${esc(title)}</h1><p>${esc(cnt)} · 출력일 ${today()}</p>` + rows.innerHTML;
+  document.head.append(st); document.body.append(box); document.body.classList.add('list-print');
+  addEventListener('afterprint', () => { st.remove(); box.remove(); document.body.classList.remove('list-print'); }, { once: true });
+  print();
+}
+$('reqPrint').onclick = () => printList(`남제학원 보수요청 목록 (${reqView === 'all' ? '전체' : '진행 중'})`, $('reqCnt').textContent, $('reqList'));
+$('wkPrint').onclick = () => printList(`남제학원 공사·하자보증 목록 (${{ on: '보증 중', exp: '만료', all: '전체' }[wkView]})`, $('wkCnt').textContent, $('wkRows'));
 $('reqClose').onclick = () => $('reqDlg').close();
 $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {

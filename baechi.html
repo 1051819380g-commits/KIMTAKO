@@ -94,6 +94,10 @@
   .req-btn { margin-left:8px; padding:2px 9px; font-size:12px; font-weight:600; vertical-align:3px; color:#b42318; background:#fff4f2; border-color:#f3b8ae; }
   .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
   .reqs { margin:-4px 0 14px; }
+  /* 보수요청 사진 */
+  .phl { display:grid; gap:3px; font-size:11px; color:var(--sub); } .phb { margin-left:6px; padding:0 7px; font-size:12px; white-space:nowrap; }
+  #phDlg { width:min(900px, calc(100vw - 32px)); box-sizing:border-box; } #phBox figure { margin:10px 0 16px; text-align:center; } #phBox img { display:block; max-width:100%; max-height:72vh; margin:0 auto 6px; border:1px solid var(--line); border-radius:6px; }
+  #phBox button { padding:1px 8px; font-size:12px; } #phTitle { white-space:pre-wrap; word-break:break-all; }
   /* 공사·하자보증 */
   .wk-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid var(--line-strong); border-radius:6px; font-size:13px; line-height:1.5; word-break:break-all; }
   .wk-item.ok { border-left-color:#2e9e5b; } .wk-item.soon { border-left-color:#f08c00; } .wk-item.exp { color:var(--sub); }
@@ -288,6 +292,7 @@
       <button id="printPlan">도면만 인쇄</button>
       <button onclick="print()">전체 인쇄</button>
       <input type="file" id="loadFile" accept=".json" hidden>
+      <input type="file" id="phFile" accept="image/*" multiple hidden>
       <input type="file" id="itemFile" accept=".xlsx,.xls,.csv" hidden>
     </div>
   </div>
@@ -315,7 +320,8 @@
   <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
 </section>
 
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><label class="phl">📷 사진 (3장까지 — 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요)<input type="file" id="rn-ph" accept="image/*" multiple></label><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="push" id="phClose">닫기</button></div><div id="phBox"></div></dialog>
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
   <div class="wkf">
@@ -1064,8 +1070,8 @@ function renderPanel() {
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
-  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span>${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
+  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><label class="phl">📷 사진 (3장까지 — 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요)<input type="file" id="r-ph" accept="image/*" multiple></label><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1217,6 +1223,55 @@ $('wkList').onclick = e => {
   const tr = e.target.closest('tr[data-wk]'), x = tr && wkGet(tr.dataset.wk); if (!x || x.fi < 0) return;
   $('wkList').close(); cur = x.fi; sel = x.key || null; site = false; allView = false; open = school(state.floors[cur].bld); view = 'work'; render(); autoZoom(); scrollTo(0, 0);   // 그 위치로 가서 하자보증 보기로
 };
+// 보수요청 사진: 사진은 배치도 자료(한 덩어리)에 넣지 않고 Firebase의 photo/<번호> 자리에 따로 올린다(줄여서 장당 150KB 안팎). 요청에는 번호만 적는다(q.ph = [번호…], 3장까지).
+// 쓰기는 배치도와 같이 gate/<암호>를 함께 바꾼다 — Firebase 규칙에 photo 자리 쓰기가 열려 있어야 한다. 저장소가 공개라 주소를 알면 누구나 볼 수 있다(학생 얼굴·개인정보 사진 금지).
+const PH_MAX = 3, phOk = id => /^[a-z0-9]+$/.test(id);
+const phBtn = (q, n) => (q.ph || []).length ? `<button type="button" class="phb noprint" data-reqphv="${n}" title="사진 보기">📷 ${q.ph.length}</button>` : '';
+const phReq = (fi, key, n) => { const r = state.floors[fi] && roomsOf(state.floors[fi]).find(x => x.key === key), q = r && (r.info.reqs || [])[n]; return q ? { r, q } : null; };
+// 긴 변 1280px, JPEG 품질 0.7로 줄인다
+function phShrink(file) { return new Promise((ok, no) => { const img = new Image(), u = URL.createObjectURL(file);
+  img.onload = () => { const k = Math.min(1, 1280 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c.toDataURL('image/jpeg', .7)); };
+  img.onerror = () => { URL.revokeObjectURL(u); no(new Error('그림 파일을 읽지 못했습니다')); }; img.src = u; }); }
+async function phUpload(files) {
+  const ids = []; if (!files.length) return ids;
+  if (!DB || !pw) { alert('사진은 함께 쓰기(편집 암호)를 쓸 때만 올릴 수 있습니다.'); return ids; }
+  syncMsg('함께 쓰기: 사진 올리는 중…');
+  for (const file of files) try { const d = await phShrink(file), t = Date.now(), id = t.toString(36) + Math.random().toString(36).slice(2, 6);
+    const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['photo/' + id]: { d, t }, ['gate/' + pw]: t }) });
+    if (!r.ok) throw new Error(r.status === 401 ? '권한이 없습니다(401). Firebase 규칙에 photo 자리 쓰기가 열려 있는지 확인하세요' : '오류 ' + r.status); ids.push(id);
+  } catch (e) { alert('사진을 올리지 못했습니다: ' + e.message); break; }
+  syncMsg('함께 쓰기: 저장됨'); return ids;
+}
+// 요청(fi층 key실의 n번째)에 사진을 붙인다
+async function phAttach(fi, key, n, files) {
+  let x = phReq(fi, key, n); if (!x || !files.length || ro()) return; const t0 = x.q.t, room = PH_MAX - (x.q.ph || []).length;
+  if (room <= 0) return alert(`사진은 요청마다 ${PH_MAX}장까지입니다.`);
+  if (files.length > room) alert(`사진은 요청마다 ${PH_MAX}장까지라 앞의 ${room}장만 올립니다.`);
+  const ids = await phUpload(files.slice(0, room)); if (!ids.length) return;
+  applyRemote(); x = phReq(fi, key, n); if (!x || x.q.t !== t0) return alert('사진을 올리는 사이에 요청 목록이 바뀌어 붙이지 못했습니다. 다시 해 주세요.');
+  x.q.ph = [...(x.q.ph || []), ...ids]; save(); render();
+}
+let phT = null;
+function phPick(fi, key, n) { phT = [fi, key, n]; $('phFile').value = ''; $('phFile').click(); }
+$('phFile').onchange = () => { if (phT) phAttach(...phT, [...$('phFile').files]); };
+// 사진 팝업: 누를 때 불러온다
+function phShow(fi, key, n) {
+  const x = phReq(fi, key, n); if (!x) return; const box = $('phBox'), ids = (x.q.ph || []).filter(phOk);
+  $('phTitle').textContent = `📷 ${x.r.info.name} — ${x.q.t}`; box.dataset.at = JSON.stringify([fi, key, n]);
+  box.innerHTML = ids.map(id => `<figure data-id="${id}"><p class="hint">불러오는 중…</p>${ro() ? '' : `<button type="button" data-phdel="${id}">이 사진 지움</button>`}</figure>`).join('') || '<p class="hint">사진이 없습니다.</p>';
+  if (!$('phDlg').open) $('phDlg').showModal();
+  for (const id of ids) fetch(`${DB}/photo/${id}/d.json`).then(r => r.json()).then(d => { const p = box.querySelector(`figure[data-id="${id}"] p`); if (!p) return;
+    if (typeof d === 'string' && d.startsWith('data:image/')) { const im = new Image(); im.src = d; im.alt = '보수요청 사진'; p.replaceWith(im); } else p.textContent = '사진을 찾을 수 없습니다.'; })
+    .catch(() => { const p = box.querySelector(`figure[data-id="${id}"] p`); if (p) p.textContent = '사진을 불러오지 못했습니다.'; });
+}
+$('phClose').onclick = () => $('phDlg').close();
+$('phDlg').onclick = e => { if (e.target === $('phDlg')) $('phDlg').close(); };
+$('phBox').onclick = e => { const id = e.target.dataset.phdel; if (!id || ro() || !confirm('이 사진을 지웁니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+  const [fi, key, n] = JSON.parse($('phBox').dataset.at); applyRemote(); const x = phReq(fi, key, n); if (!x) return $('phDlg').close();
+  x.q.ph = (x.q.ph || []).filter(p => p !== id); if (!x.q.ph.length) delete x.q.ph; save(); render();
+  fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['photo/' + id]: null, ['gate/' + pw]: Date.now() }) }).catch(() => {});
+  x.q.ph ? phShow(fi, key, n) : $('phDlg').close(); };
 function renderReqs() {
   renderWks();
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
@@ -1226,7 +1281,7 @@ function renderReqs() {
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
-    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}${q.done ? '' : wkOnOf(f, r.info).map(w => `<span class="pm">🔧 하자보증 중: ${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''} (~${esc(w.e)})</span>`).join('')}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${phBtn(q, n)}${pmHtml(q, n)}${q.done ? '' : wkOnOf(f, r.info).map(w => `<span class="pm">🔧 하자보증 중: ${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''} (~${esc(w.e)})</span>`).join('')}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {
@@ -1459,7 +1514,8 @@ $('rn-save').onclick = () => {
   if (ro()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
   lsv(KEY + '-who', who); applyRemote(); const r = roomsOf(state.floors[fi]).find(x => x.key === key); if (!r) return fillReqNew(2);
   (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); const c = cur; cur = fi; log(`보수요청: ${r.info.name} — ${t}`); cur = c;
-  $('rn-text').value = ''; $('reqNew').open = false; save(); render();
+  const pf = [...$('rn-ph').files]; $('rn-ph').value = '';
+  $('rn-text').value = ''; $('reqNew').open = false; save(); render(); phAttach(fi, key, r.info.reqs.length - 1, pf);
 };
 $('reqJump').onclick = () => { fillReqNew(); renderReqs(); $('reqDlg').showModal(); $('reqDlg').scrollTop = 0; };
 // 목록 인쇄: 창에 보이는 표를 그대로 옮겨 찍는다(단추 칸은 .noprint라 빠진다)
@@ -1477,6 +1533,8 @@ $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); 
 $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
   if (e.target.dataset.reqmdel != null) { if (ro()) return; applyRemote(); const [n, k] = e.target.dataset.reqmdel.split(':'); return reqMemo(+tr.dataset.f, tr.dataset.k, +n, +k); }   // 메모 줄의 × = 그 메모 지움
+  if (e.target.dataset.reqphv != null) return phShow(+tr.dataset.f, tr.dataset.k, +e.target.dataset.reqphv);
+  if (e.target.dataset.rph != null) return ro() || phPick(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rph);
   if (e.target.dataset.rm != null) { if (ro()) return; applyRemote(); return reqMemo(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rm); }
   if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); return reqAct(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rq); }
   $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다
@@ -1489,9 +1547,10 @@ $('panel').onclick = e => {
   if (d.reqsave != null) {
     const t = $('r-text').value.trim(), who = $('r-who').value.trim(); if (!t) return $('r-text').focus();
     lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
-    (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); return render();
+    const pf = [...$('r-ph').files]; (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); render(); return phAttach(cur, sel, r.info.reqs.length - 1, pf);
   }
   if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
+  if (d.reqphv != null) return phShow(cur, sel, +d.reqphv); if (d.reqph != null) return phPick(cur, sel, +d.reqph);
   if (d.reqmemo != null) { applyRemote(); if (!findSel()) return; return reqMemo(cur, sel, +d.reqmemo); }
   if (d.reqdone != null) { applyRemote(); if (!findSel()) return; return reqAct(cur, sel, +d.reqdone); }
   if (d.wkadd != null) return wkOpen(); if (d.wkedit != null) return wkOpen(d.wkedit); if (d.wkdel != null) return wkDel(d.wkdel);
@@ -1506,7 +1565,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => { if (ro()) return;
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;

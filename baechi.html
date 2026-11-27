@@ -238,7 +238,7 @@
   svg text.dim { fill:var(--sub); text-anchor:start; }
   svg text.flr { fill:var(--accent); text-anchor:start; font-weight:700; paint-order:stroke; stroke:#fff; stroke-width:.35px; stroke-linejoin:round; }
   #planbox.all { max-height:none; }
-  #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:auto; }   /* 전체 배치: 도면을 상자 가운데에(넘칠 때는 자동 여백이 0이 되어 잘리지 않는다) */
+  #planbox.fixed { overflow:hidden; display:flex; } #planbox.fixed #plan { flex:none; margin:6px auto auto; }   /* 전체 배치: 도면을 상자 위쪽에 붙이고 좌우로만 가운데(사용자 요청 2026-11-27) — 키우면 아래쪽으로 커진다 */
   /* 목록 인쇄(보수요청·하자보증): 목록만 따로 옮겨 가로 A4로 */
   #listPrint { display:none; }
   @media print { body.list-print > :not(#listPrint) { display:none !important; } body.list-print #listPrint { display:block; }
@@ -834,7 +834,7 @@ function render() { document.body.classList.toggle('ro', noReq()); document.body
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site; render.site = site;
   renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
-  if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
+  if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = 0; }   // 전체 배치에 들어오면 좌우로는 가운데, 위아래로는 맨 위를 보여 준다
 }
 function renderTabs() {
   const blds = [...new Set(state.floors.map(f => f.bld))], b = state.floors[cur].bld;

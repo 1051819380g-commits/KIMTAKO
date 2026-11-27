@@ -86,13 +86,23 @@
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
-  body.ro :is(#stats, main ~ section, #reqJump, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  body.ro :is(#stats, main ~ section, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
   body.ro #panel :is(input, select, textarea):disabled { opacity:1; color:var(--ink); background:var(--sheet); -webkit-text-fill-color:var(--ink); }
   body.ro #panel :disabled::placeholder { -webkit-text-fill-color:transparent; color:transparent; }
   /* 보수요청 */
   .req-btn { margin-left:8px; padding:2px 9px; font-size:12px; font-weight:600; vertical-align:3px; color:#b42318; background:#fff4f2; border-color:#f3b8ae; }
   .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
   .reqs { margin:-4px 0 14px; }
+  /* 공사·하자보증 */
+  .wk-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid var(--line-strong); border-radius:6px; font-size:13px; line-height:1.5; word-break:break-all; }
+  .wk-item.ok { border-left-color:#2e9e5b; } .wk-item.soon { border-left-color:#f08c00; } .wk-item.exp { color:var(--sub); }
+  .wk-item .req-meta button { padding:1px 8px; font-size:11px; } .wk-item.soon .wk-st { color:#c2570a; font-weight:600; } .wk-item.ok .wk-st { color:#1e7a43; font-weight:600; }
+  .wk-sc { font-size:11px; padding:0 6px; border:1px solid var(--line); border-radius:9px; color:var(--sub); font-weight:400; }
+  .wk-note { margin-top:6px; padding:6px 9px; border-radius:6px; background:#eaf7ee; border:1px solid #b7e0c4; font-size:12px; line-height:1.5; white-space:normal; }
+  #wkDlg { width:min(520px, calc(100vw - 32px)); box-sizing:border-box; } #wkList { width:min(1100px, calc(100vw - 32px)); box-sizing:border-box; }
+  #wkDlg .wkf { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; } #wkDlg .wkf label { display:grid; gap:3px; font-size:12px; color:var(--sub); } #wkDlg .wkf .wide { grid-column:1 / -1; }
+  #wkDlg .wkf :is(input, select) { width:100%; box-sizing:border-box; font-size:14px; }
+  #wkRows tr[data-wk] { cursor:pointer; } #wkRows tr.exp td { color:var(--sub); } #wkRows tr.soon td.st { color:#c2570a; font-weight:600; } #wkRows button { padding:1px 8px; font-size:12px; } #wkRows td { white-space:normal; } #wkJump b { color:#c2570a; }
   .req-form { display:grid; gap:6px; padding:9px; border:1px solid #f3b8ae; border-radius:6px; background:#fff8f6; }
   .req-form textarea, .req-form input { width:100%; box-sizing:border-box; } .req-form .rb { display:flex; gap:6px; justify-content:flex-end; }
   .req-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #d92d20; border-radius:6px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
@@ -258,6 +268,7 @@
   <div class="bar">
     <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
     <button id="reqJump" class="noprint" title="보수요청 목록으로">🚨 보수요청</button>
+    <button id="wkJump" class="noprint" title="공사·물품 하자보증 목록으로">🔧 하자보증</button>
     <button id="menuBtn" class="noprint" aria-expanded="false">메뉴 ▾</button>
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
@@ -273,7 +284,7 @@
     </div>
   </div>
   <div class="bar noprint">
-    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button></div>
+    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button><button id="vWork" title="공사했거나 물품을 들인 실을 하자보증 기간에 따라 칠합니다">하자보증</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
     <button id="syncBtn" hidden></button>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
@@ -297,6 +308,23 @@
 </section>
 
 <dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="wkDlg"><form method="dialog">
+  <h2 id="wkTitle"></h2>
+  <div class="wkf">
+    <label>구분<select id="wk-kind"><option>공사</option><option>물품</option></select></label>
+    <label>범위<select id="wk-sc"></select></label>
+    <label class="wide">이름<input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품"></label>
+    <label class="wide" id="wk-typeL">공종 (고르면 법정 하자담보책임기간이 들어갑니다)<select id="wk-type"></select></label>
+    <label>업체<input id="wk-co" placeholder="업체 이름"></label>
+    <label>업체 전화<input id="wk-tel" placeholder="대표전화"></label>
+    <label>준공일(납품일)<input type="date" id="wk-d" required></label>
+    <label>보증 기간(년)<input type="number" id="wk-y" min="0" max="20" step="0.5" placeholder="예: 2"></label>
+    <label class="wide">하자보증 만료일 (준공일과 기간으로 자동 계산 — 계약서와 다르면 직접 고치세요)<input type="date" id="wk-e"></label>
+  </div>
+  <p class="hint">공종별 기간은 건설산업기본법 시행령 별표 4, 전기공사업법 시행령 별표 3의2, 정보통신공사업법 시행령 제37조, 소방시설공사업법 시행령 제6조(법제처 현행, 2026-11-27 확인)를 따랐습니다. 공종이 섞인 공사는 세부 공종별로 따로 적고, 나눌 수 없으면 주된 공종으로 적습니다. 물품은 계약서·보증서에 적힌 기간을 넣습니다.</p>
+  <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
+</form></dialog>
+<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><button class="push" id="wkClose">닫기</button></div><div id="wkRows"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
   <p id="doneWhat" style="margin:0 0 10px; font-weight:600; white-space:pre-wrap; word-break:break-all;"></p>
@@ -703,10 +731,11 @@ function renderTabs() {
     const names = [...new Set(state.floors.filter(f => SITE[f.bld]).map(f => f.name))].sort((p, q) => lvOf(p) - lvOf(q) || p.localeCompare(q));
     $('floorTabs').innerHTML = `<button class="${siteLv == null ? 'on' : ''}" data-lv="">전체</button>` + names.map(n => `<button class="${siteLv === n ? 'on' : ''}" data-lv="${esc(n)}">${esc(n)}</button>`).join('');
   } else $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
-  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : '';
+  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : ''; $('vWork').className = view === 'work' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
 }
-function fill(i) {
+function fill(i, f) {
+  if (view === 'work') return WK_FILL[wkBest(f ? wkFor(f, i) : i.works || [])];
   if (view === 'use') return USES[i.use] || '#fff';
   if (view === 'fire') return /계단/.test(i.name) ? '#c9ebd3' : i.use === '공용' ? '#fff' : '#f1f2f4';   // 소방·안전: 피난 계단만 초록, 나머지는 옅게(동선이 잘 보이게)
   if (+i.acN > 0) return AC_FILL.on;
@@ -869,7 +898,7 @@ function drawFloor(fi) {
   const sil = rooms.flatMap(r => r.parts || [r.pts]).map(pts => `<polygon points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"/>`).join('');
   for (const r of rooms) {
     const on = fi === cur && sel === r.key;
-    for (const pts of r.parts || [r.pts]) h_ += `<polygon class="room${on ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info)}" points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
+    for (const pts of r.parts || [r.pts]) h_ += `<polygon class="room${on ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info, f)}" points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
     if (r.parts) for (const w of fw) if (open.has(w.id) && r.ids.includes(w.id.split('|')[0])) {
       const d = Math.hypot(w.q[0] - w.p[0], w.q[1] - w.p[1]), e = (on ? .3 : .12) / d, at = t => [w.p[0] + (w.q[0] - w.p[0]) * t, w.p[1] + (w.q[1] - w.p[1]) * t].map(n => n.toFixed(2)), a = at(e), b = at(1 - e);
       t_ += `<line stroke="${fill(r.info)}" stroke-width="${on ? .7 : .3}" pointer-events="none" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`;
@@ -880,13 +909,14 @@ function drawFloor(fi) {
     if (fire) {}   // 소방·안전: 면적·에어컨을 빼고 실 이름만(대피 거리 숫자는 사용자 요청으로 뺌 — 화살표만)
     else if (r.info.use !== '공용' || r.w > 6) extra.push(fmt(r.area) + '㎡');
     const nq = ro() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
-    if (!fire && (+r.info.acN > 0 || nq)) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : ''].filter(Boolean).join(' '));
+    const nw = ro() ? 0 : (r.info.works || []).filter(w => wkOn(w)).length;   // 하자보증 기간이 남은 공사·물품이 있으면 🔧
+    if (!fire && (+r.info.acN > 0 || nq || nw)) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : '', nw ? '🔧' : ''].filter(Boolean).join(' '));
     const tryFit = (names, ex) => ({ lines: [...names, ...ex], nameN: names.length,
       fs: Math.min(1.3, box.w * 0.9 / Math.max(.1, ...names.map(textW), ...ex.map(t => textW(t) * 0.85)), box.h * 0.88 / ((names.length + ex.length * 0.85) * 1.2)) });
     const cands = ex => [tryFit([nm], ex), ...(nm.length > 3 ? [tryFit([nm.slice(0, half), nm.slice(half)], ex)] : [])].sort((x, y) => y.fs - x.fs)[0];
-    let best = cands(extra); if (best.fs < 0.45 && extra.length) { const alt = cands(extra.filter(t => t[0] === '❄' || t.startsWith('🚨'))); if (alt.fs > best.fs) best = alt; }   // 너무 작아지면 면적 줄은 뺀다
+    let best = cands(extra); if (best.fs < 0.45 && extra.length) { const alt = cands(extra.filter(t => /^(❄|🚨|🔧)/.test(t))); if (alt.fs > best.fs) best = alt; }   // 너무 작아지면 면적 줄은 뺀다
     const { lines, nameN, fs } = best;
-    lines.forEach((t, j) => { t_ += `<text class="${j < nameN ? 'nm' : t[0] === '❄' || t.startsWith('🚨') ? 'acb' : fire ? 'ev' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
+    lines.forEach((t, j) => { t_ += `<text class="${j < nameN ? 'nm' : /^(❄|🚨|🔧)/.test(t) ? 'acb' : fire ? 'ev' : 'ar'}" x="${cx.toFixed(2)}" y="${(cy + (j - (lines.length - 1) / 2) * fs * 1.25 + fs * 0.35).toFixed(2)}" font-size="${(j < nameN ? fs : fs * 0.85).toFixed(2)}">${esc(t)}</text>`; });
   }
   h_ += t_; if (ev) h_ += ev.html; if (fire) h_ += fireMarks(f);
   // 기둥(신관 4m, 본관 9m 간격) — 도면다운 표시
@@ -1002,6 +1032,7 @@ function renderPlan() {
   $('planbox').classList.toggle('all', allView || site);
   $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
       + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('') + '<span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
+    : view === 'work' ? ['ok', 'soon', 'exp'].map(s => `<span><span class="sw" style="background:${WK_FILL[s]}"></span>${WK_LBL[s]}${s === 'soon' ? '(90일 안)' : ''}</span>`).join('') + '<span>🔧 = 이 실에 보증 기간이 남은 공사·물품 있음 · 층·건물 전체 공사는 해당 실이 모두 칠해집니다</span>'
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';
@@ -1014,12 +1045,13 @@ function renderPanel() {
   if (ro()) { p.hidden = true; sheetMark(null); return; }   // 보기 전용이면 실 정보 창을 띄우지 않는다(도면에서 고른 실만 표시)
   p.hidden = !r; sheetMark(r); if (!r) return;
   const i = r.info, its = itemsFor(i, itemIndex(), state.floors[cur]), grp = new Map();
-  const reqs = i.reqs || [], openN = reqs.filter(q => !q.done).length, rk = cur + ':' + r.key;
+  const reqs = i.reqs || [], openN = reqs.filter(q => !q.done).length, rk = cur + ':' + r.key, F = state.floors[cur];
+  const ws = wkAll().filter(x => x.key ? x.fi === cur && x.key === r.key : x.w.b === F.bld && (!x.w.fl || x.w.fl === F.name));   // 이 실 + 이 층 전체 + 이 건물 전체
   for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
-  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
+  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
     ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}"><span class="rt">${esc(q.t)}</span>${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
@@ -1030,6 +1062,8 @@ function renderPanel() {
     <label for="i-memo">메모</label><textarea id="i-memo" data-k="memo" rows="3">${esc(i.memo)}</textarea>
     <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
   </div>
+  <h2 class="it-head"><span>공사·하자보증 ${ws.length ? ws.length + '건' : ''}</span><button type="button" data-wkadd>+ 공사·물품 추가</button></h2>
+  ${ws.length ? ws.sort(wkSort).map(wkHtml).join('') : '<p class="hint">이 실(또는 층·건물 전체)에 한 공사나 새로 들인 물품을 적으면 하자보증 만료일을 챙깁니다.</p>'}
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
@@ -1070,7 +1104,87 @@ function reqMemo(fi, key, n, k) {
   else { if (!ms[k] || !confirm(`진행 메모 "${ms[k].t}"을(를) 지웁니다. 계속할까요?`)) return; t = ms.splice(k, 1)[0].t + ' (지움)'; }
   q.ms = ms; delete q.m; delete q.md; const c = cur; cur = fi; log(`보수요청 진행 메모: ${r.info.name} — ${q.t} → ${t}`); cur = c; save(); render();
 }
+// 공사·하자보증: 공사를 했거나 물품을 들였을 때 준공일(납품일)·업체·하자보증 만료일을 적어 둔다(사용자 요청 2026-11-27).
+// 실 하나짜리는 실 정보(info.works)에, 층·건물 전체는 state.works에 {b 건물, fl 층 이름('' = 건물 전체)}를 붙여 담는다.
+// 항목 = {kind 공사|물품, t 이름, type 공종, co 업체, tel 업체 전화, d 준공일, y 보증 년수, e 만료일}. 보기 전용에는 보이지 않는다(보수요청과 같음).
+// 공종별 기간(년)의 근거 — 지방계약법 시행규칙 제68조가 가리키는 법령(법제처 현행, 2026-11-27 확인):
+//   건설산업기본법 시행령 별표 4(제14호 건축·제15호 전문공사), 전기공사업법 시행령 별표 3의2, 정보통신공사업법 시행령 제37조, 소방시설공사업법 시행령 제6조.
+//   ⚠️ 건설산업기본법 시행령은 2027-01-23 시행 예정 개정(제36698호)이 있다 — 그때 별표 4가 바뀌는지 확인할 것.
+const WK_TYPES = [['건축 일반(구조·전문공사 외 기타 부분)', 1], ['실내건축(천장·바닥·칸막이 등)', 1], ['미장·타일', 1], ['도장', 1], ['창호 설치', 1], ['판금', 1], ['보일러 설치', 1], ['그 밖의 건물 내 설비', 1],
+  ['급배수·냉난방·환기·공기조화·자동제어·가스', 2], ['석공사·조적', 2], ['철물', 2], ['토공', 2], ['조경(시설물·식재)', 2], ['아스팔트 포장', 2],
+  ['방수', 3], ['지붕', 3], ['철근콘크리트·콘크리트 포장', 3], ['승강기·인양기기 설비', 3], ['건축물 구조상 주요부분', 5],
+  ['전기(건축물 전기설비)', 1], ['전기(변전설비)', 3], ['정보통신(구내 통신 등)', 1],
+  ['소방(비상경보·비상방송·피난기구·유도등·비상조명등·무선통신보조)', 2], ['소방(소화전·스프링클러·자동화재탐지·자동소화장치 등)', 3]];
+const WK_FILL = { ok: '#c9ebd3', soon: '#ffd8a8', exp: '#e3e5e8', '': '#fff' }, WK_LBL = { ok: '보증 중', soon: '만료 임박', exp: '보증 끝남', '': '기간 없음' };
+// 만료일 = 준공일에서 y년 뒤의 전날(준공일부터 센다)
+const wkEnd = (d, y) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '') || !(y > 0)) return ''; const t = new Date(d + 'T00:00:00'), p = n => String(n).padStart(2, '0');
+  t.setMonth(t.getMonth() + Math.round(y * 12)); t.setDate(t.getDate() - 1); return `${t.getFullYear()}-${p(t.getMonth() + 1)}-${p(t.getDate())}`; };
+const wkSt = w => !w.e ? '' : w.e < today() ? 'exp' : (new Date(w.e) - new Date(today())) / 864e5 <= 90 ? 'soon' : 'ok';   // 만료 90일 안이면 임박
+const wkOn = w => ['ok', 'soon'].includes(wkSt(w));
+const wkBest = ws => { const s = new Set(ws.map(wkSt)); return ['soon', 'ok', 'exp'].find(x => s.has(x)) || ''; };
+const wkFor = (f, i) => [...(i.works || []), ...(state.works || []).filter(w => w.b === f.bld && (!w.fl || w.fl === f.name))];   // 그 실에 걸리는 것 모두(실 + 층 + 건물)
+const wkOnOf = (f, i) => wkFor(f, i).filter(wkOn);
+console.assert(wkEnd('2026-03-02', 3) === '2029-03-01' && wkEnd('2026-03-02', 0) === '' && wkSt({ e: '2000-01-01' }) === 'exp' && wkSt({ e: '2999-01-01' }) === 'ok' && wkSt({ e: today() }) === 'soon' && wkSt({}) === '', '하자보증 만료일·상태 계산 실패');
+// 모든 항목을 [{w, arr 담긴 배열, n 그 안의 순번, fi 층 번호, key 실 키('' = 층·건물 전체), where 위치 글}]로
+function wkAll() {
+  const out = [];
+  state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.works || []).forEach((w, n) => out.push({ w, arr: r.info.works, n, fi, key: r.key, where: `${f.bld} ${f.name} ${r.info.name}` })); });
+  (state.works || []).forEach((w, n) => { const of = k => state.floors.findIndex(f => f.bld === w.b && f.name === k), fi = of(w.fl || '1층');
+    out.push({ w, arr: state.works, n, fi: fi >= 0 ? fi : state.floors.findIndex(f => f.bld === w.b), key: '', where: `${w.b} ${w.fl ? w.fl + ' 전체' : '건물 전체'}` }); });
+  return out;
+}
+const wkId = x => encodeURIComponent(JSON.stringify([x.fi, x.key, x.n]));
+function wkGet(id) { const [fi, key, n] = JSON.parse(decodeURIComponent(id)), r = key && roomsOf(state.floors[fi] || { strips: [] }).find(x => x.key === key);
+  const arr = key ? r && r.info.works : state.works; return arr && arr[n] ? wkAll().find(x => x.arr === arr && x.n === n) : null; }
+const wkSort = (a, b) => (wkSt(a.w) === 'exp') - (wkSt(b.w) === 'exp') || (a.w.e || '9').localeCompare(b.w.e || '9');   // 만료가 가까운 것부터, 끝난 것은 뒤로
+const wkHtml = x => { const w = x.w, s = wkSt(w); return `<div class="wk-item ${s}"><b>${w.kind === '물품' ? '📦' : '🔧'} ${esc(w.t)}</b>${x.key ? '' : ` <span class="wk-sc">${w.fl ? '층 전체' : '건물 전체'}</span>`}<div class="req-meta"><span class="wk-st">${WK_LBL[s]}${w.e ? ' ~' + esc(w.e) : ''}</span><span>${w.type ? esc(w.type) + ' · ' : ''}${w.kind === '물품' ? '납품' : '준공'} ${esc(w.d)}${w.co ? ' · ' + esc(w.co) : ''}${w.tel ? ' ' + esc(w.tel) : ''}</span><button type="button" data-wkedit="${wkId(x)}">고침</button><button type="button" data-wkdel="${wkId(x)}">지움</button></div></div>`; };
+// 보수요청 옆에 띄우는 알림: 보증 기간이 남았으면 학교 돈으로 고치기 전에 업체에 하자보수를 청구할 수 있는지 본다
+const wkNote = (f, i) => { const ws = wkOnOf(f, i); return ws.length ? `<div class="wk-note">🔧 <b>하자보증 중</b> — 고치기 전에 업체에 하자보수를 청구할 수 있는지 확인하세요.<br>${ws.map(w => `${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''}${w.tel ? ' ' + esc(w.tel) : ''} (~${esc(w.e)})`).join('<br>')}</div>` : ''; };
+// 입력 창: id가 없으면 고른 실에 새로 적고, 있으면 그 항목을 고친다
+function wkOpen(id) {
+  const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id ? !x : !r) return;
+  const w = x ? x.w : { kind: '공사', d: today() }, dlg = $('wkDlg'), v = k => $('wk-' + k);
+  $('wkTitle').textContent = x ? '공사·하자보증 고침' : '공사·하자보증 추가';
+  v('sc').innerHTML = x ? `<option>${esc(x.where)}</option>` : `<option value="r">이 실 (${esc(r.info.name)})</option><option value="f">${esc(f.bld)} ${esc(f.name)} 전체</option><option value="b">${esc(f.bld)} 건물 전체</option>`; v('sc').disabled = !!x;
+  v('type').innerHTML = '<option value="">직접 입력</option>' + WK_TYPES.map(([t, y]) => `<option value="${esc(t)}" data-y="${y}">${esc(t)} — ${y}년</option>`).join('');
+  v('kind').value = w.kind || '공사'; v('t').value = w.t || ''; v('type').value = w.type || ''; v('co').value = w.co || ''; v('tel').value = w.tel || ''; v('d').value = w.d || ''; v('y').value = w.y || ''; v('e').value = w.e || '';
+  const kind = () => { v('typeL').hidden = v('kind').value === '물품'; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
+  kind(); v('kind').onchange = kind; v('d').onchange = v('y').oninput = calc;
+  v('type').onchange = () => { const y = v('type').selectedOptions[0].dataset.y; if (y) { v('y').value = y; calc(); } };
+  dlg.returnValue = ''; dlg.onclose = () => {
+    if (dlg.returnValue !== 'ok' || ro()) return;
+    const nw = { kind: v('kind').value, t: v('t').value.trim(), type: v('kind').value === '물품' ? '' : v('type').value, co: v('co').value.trim(), tel: v('tel').value.trim(), d: v('d').value, y: +v('y').value || '', e: v('e').value };
+    if (!nw.t) return; applyRemote(); let where;   // 창이 떠 있는 동안 다른 사람이 바꿨으면 다시 찾는다
+    if (x) { const y = wkGet(id); if (!y || y.w.t !== w.t || y.w.d !== w.d) return alert('창을 연 사이에 다른 사람이 이 목록을 바꿨습니다. 다시 열어 주세요.'); Object.assign(y.w, nw); where = y.where; }
+    else { const sc = v('sc').value, r2 = findSel(); if (sc === 'r') { if (!r2) return; (r2.info.works ||= []).push(nw); where = r2.info.name; }
+      else { (state.works ||= []).push({ ...nw, b: f.bld, fl: sc === 'f' ? f.name : '' }); where = sc === 'f' ? '층 전체' : '건물 전체'; } }
+    const c = cur; if (x && x.fi >= 0) cur = x.fi; log(`공사·하자보증 ${x ? '고침' : '등록'}: ${where} — ${nw.t}${nw.e ? ' (보증 ~' + nw.e + ')' : ''}`); cur = c; save(); render();
+  };
+  dlg.showModal();
+}
+function wkDel(id) {
+  if (ro()) return; applyRemote(); const x = wkGet(id); if (!x || !confirm(`"${x.w.t}" (${x.where}) 기록을 지웁니다. 계속할까요?`)) return;
+  x.arr.splice(x.n, 1); const c = cur; if (x.fi >= 0) cur = x.fi; log(`공사·하자보증 지움: ${x.where} — ${x.w.t}`); cur = c; save(); render();
+}
+function renderWks() {
+  const all = wkAll().sort(wkSort), soon = all.filter(x => wkSt(x.w) === 'soon').length, on = all.filter(x => wkOn(x.w)).length;
+  $('wkJump').innerHTML = `🔧 하자보증${soon ? ` <b>(임박 ${soon})</b>` : ''}`;   // 만료 90일 안인 건수
+  if (!$('wkList').open) return;
+  $('wkCnt').textContent = `보증 중 ${on}건 · 전체 ${all.length}건`;
+  $('wkRows').innerHTML = all.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>만료일</th><th>위치</th><th>구분</th><th>이름</th><th>공종</th><th>업체</th><th>준공·납품일</th><th class="noprint"></th></tr></thead><tbody>${all.map(x => { const w = x.w, s = wkSt(w);
+    return `<tr data-wk="${wkId(x)}" class="${s}" title="눌러서 이 위치로 가기"><td class="st">${WK_LBL[s]}</td><td>${esc(w.e || '')}</td><td>${esc(x.where)}</td><td>${esc(w.kind || '')}</td><td><b>${esc(w.t)}</b></td><td>${esc(w.type || '')}</td><td>${esc(w.co || '')}${w.tel ? '<br>' + esc(w.tel) : ''}</td><td>${esc(w.d || '')}</td><td class="noprint" style="white-space:nowrap"><button data-wkedit="${wkId(x)}">고침</button> <button data-wkdel="${wkId(x)}">지움</button></td></tr>`; }).join('')}</tbody></table></div>`
+    : '<p class="hint">아직 적은 것이 없습니다. 도면에서 실을 누르고 실 정보 창의 "+ 공사·물품 추가"로 적으면 여기에 모입니다(층 전체·건물 전체로도 적을 수 있습니다).</p>';
+}
+$('wkJump').onclick = () => { $('wkList').showModal(); renderWks(); $('wkList').scrollTop = 0; };
+$('wkClose').onclick = () => $('wkList').close();
+$('wkList').onclick = e => {
+  if (e.target === $('wkList')) return $('wkList').close();   // 창 바깥(어두운 곳)을 누르면 닫기
+  const d = e.target.dataset; if (d.wkedit != null) return ro() || wkOpen(d.wkedit); if (d.wkdel != null) return wkDel(d.wkdel);
+  const tr = e.target.closest('tr[data-wk]'), x = tr && wkGet(tr.dataset.wk); if (!x || x.fi < 0) return;
+  $('wkList').close(); cur = x.fi; sel = x.key || null; site = false; allView = false; open = school(state.floors[cur].bld); view = 'work'; render(); autoZoom(); scrollTo(0, 0);   // 그 위치로 가서 하자보증 보기로
+};
 function renderReqs() {
+  renderWks();
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
   const openN = all.filter(x => !x.q.done).length, list = all.filter(x => reqView === 'all' || !x.q.done).sort((a, b) => a.q.done - b.q.done || (b.q.d > a.q.d) - (b.q.d < a.q.d));
   if (openN && !ro() && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
@@ -1078,7 +1192,7 @@ function renderReqs() {
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
-    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
+    `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${pmHtml(q, n)}${q.done ? '' : wkOnOf(f, r.info).map(w => `<span class="pm">🔧 하자보증 중: ${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''} (~${esc(w.e)})</span>`).join('')}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
 }
 function renderTable() {
@@ -1180,7 +1294,7 @@ for (const ev of ['scroll', 'resize']) addEventListener(ev, () => { flMenu.hidde
 addEventListener('keydown', e => { if (e.key === 'Escape') flMenu.hidden = true; });
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
   const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); $('planbox').scrollTop = 0; scrollTo(0, 0); };   // 층 단추를 누르면 화면(도면 상자 안도) 맨 위로
-$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); };
+$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); }; $('vWork').onclick = () => { view = 'work'; render(); };
 $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
@@ -1330,6 +1444,7 @@ $('panel').onclick = e => {
   if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
   if (d.reqmemo != null) { applyRemote(); if (!findSel()) return; return reqMemo(cur, sel, +d.reqmemo); }
   if (d.reqdone != null) { applyRemote(); if (!findSel()) return; return reqAct(cur, sel, +d.reqdone); }
+  if (d.wkadd != null) return wkOpen(); if (d.wkedit != null) return wkOpen(d.wkedit); if (d.wkdel != null) return wkDel(d.wkdel);
   if (d.acadd == null && d.acdel == null && d.itadd == null && d.itdel == null) return;
   applyRemote(); const r = findSel(); if (!r) return;
   if (d.itdel != null) { if (!confirm(`이 실의 "${d.itdel}"을(를) 물품 목록에서 지웁니다. 계속할까요?`)) return; setItemQty(r, d.itdel, 0); save(); return render(); }
@@ -1341,7 +1456,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open) { sel = null; render(); } });
 $('panel').onchange = e => { if (ro()) return;
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;

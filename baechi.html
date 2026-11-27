@@ -216,6 +216,7 @@
   @media print { body.list-print > :not(#listPrint) { display:none !important; } body.list-print #listPrint { display:block; }
     #listPrint h1 { font-size:18px; margin:0 0 4px; } #listPrint > p { margin:0 0 10px; font-size:12px; color:#444; } #listPrint .scroll { max-height:none; overflow:visible; }
     #listPrint table { width:100%; border-collapse:collapse; font-size:11px; } #listPrint :is(th, td) { border:1px solid #999; padding:4px 6px; text-align:left; vertical-align:top; white-space:normal; word-break:break-all; }
+    #listPrint .sw { display:inline-block; width:9px; height:9px; margin-right:4px; border:1px solid #999; -webkit-print-color-adjust:exact; print-color-adjust:exact; } #listPrint thead { display:table-header-group; }
     #listPrint th { background:#eee; -webkit-print-color-adjust:exact; print-color-adjust:exact; white-space:nowrap; } #listPrint .pm { display:block; } #listPrint tr { break-inside:avoid; } }
   #printStack { display:none; } @media print { #printStack { display:block; } }
   #plan.site { cursor:grab; touch-action:none; user-select:none; -webkit-user-select:none; } #plan.site:active { cursor:grabbing; } #plan.site .room { cursor:pointer; } #plan.site .hit { display:none; }
@@ -326,7 +327,7 @@
   </div>
   <aside class="card" id="panel"></aside>
 </main>
-<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
+<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div><button id="tblPrint" class="push noprint" title="지금 보이는 면적표를 인쇄합니다">인쇄</button></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
   <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
@@ -1578,6 +1579,7 @@ function printList(title, cnt, rows) {
   addEventListener('afterprint', () => { st.remove(); box.remove(); document.body.classList.remove('list-print'); }, { once: true });
   print();
 }
+$('tblPrint').onclick = () => printList('남제학원 ' + $('tblTitle').textContent, $('sum').innerText.replace(/\s+/g, ' ').trim(), $('tbl'));   // 실별 면적표(전체 배치에서는 모든 건물)
 $('reqPrint').onclick = () => printList(`남제학원 보수요청 목록 (${reqView === 'all' ? '전체' : '진행 중'})`, $('reqCnt').textContent, $('reqList'));
 $('wkPrint').onclick = () => printList(`남제학원 공사·하자보증 목록 (${{ on: '보증 중', exp: '만료', all: '전체' }[wkView]})`, $('wkCnt').textContent, $('wkRows'));
 addEventListener('click', e => { const m = $('setMenu'); if (m.open && (!m.contains(e.target) || e.target.closest('.set-box button'))) m.open = false; });   // 설정 메뉴: 바깥을 누르거나 항목을 고르면 닫힌다

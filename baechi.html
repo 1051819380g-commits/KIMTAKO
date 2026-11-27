@@ -290,6 +290,9 @@
     #menuBtn { display:block; margin-left:auto; padding:5px 12px; }
     .tabrow { display:flex; gap:6px; width:100%; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch; } .tabrow::-webkit-scrollbar { display:none; }
     .tabrow .seg { flex:none; } .seg button { white-space:nowrap; padding:4px 10px; }
+    /* 휴대폰: 층 단추 줄을 건물 단추 줄 아래로(옆에 두면 건물을 펼칠 때 층 단추가 화면 밖으로 밀려남). 줄마다 넘치면 옆으로 밀어 본다. */
+    .tabrow { flex-direction:column; align-items:flex-start; overflow:visible; }
+    .tabrow .seg { display:flex; max-width:100%; box-sizing:border-box; overflow-x:auto; scrollbar-width:none; } .tabrow .seg::-webkit-scrollbar { display:none; } .tabrow .seg > * { flex:none; }   /* 펼친 건물 묶음이 줄어들어 옆 단추와 겹치지 않게 */
     header:not(.open) .bar > .grp.push, header:not(.open) .bar + .bar { display:none; }
     header.open .bar > .grp.push { width:100%; margin-left:0; }
   }

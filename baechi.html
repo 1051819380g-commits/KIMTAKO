@@ -1636,7 +1636,7 @@ $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset
     open = open === s ? null : s;
     for (const g of document.querySelectorAll('#bldTabs .grpb')) g.classList.toggle('open', g.dataset.g === open);
     for (const c of document.querySelectorAll('#bldTabs .sch')) { c.classList.toggle('on', c.dataset.s === open); c.setAttribute('aria-expanded', c.dataset.s === open); }
-    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) showFlMenu(b); };   // 건물 단추는 층 목록만 펼친다 — 넘어가는 것은 층(또는 전체)을 골랐을 때   // 건물을 바꾸면 화면을 맨 위로
+    return; } if (b === '@site') { site = true; allView = false; sel = null; render(); autoZoom(); return scrollTo(0, 0); } if (b) { if (phone()) return goBld(b, 'all'); showFlMenu(b); } };   // 휴대폰은 층 목록 없이 바로 그 건물 전체 층으로(사용자 요청 2026-11-27)   // 건물 단추는 층 목록만 펼친다 — 넘어가는 것은 층(또는 전체)을 골랐을 때   // 건물을 바꾸면 화면을 맨 위로
 // 건물 단추를 누르면 그 아래로 층 목록이 세로로 펼쳐진다(위층이 위). 층을 고르거나 바깥을 누르면 닫힌다. 가로 층 단추 줄은 그대로 쓴다.
 const flMenu = document.body.appendChild(Object.assign(document.createElement('div'), { id: 'flMenu', className: 'noprint', hidden: true }));
 function showFlMenu(b) {
@@ -1646,8 +1646,9 @@ function showFlMenu(b) {
   flMenu.hidden = true; void flMenu.offsetWidth; flMenu.hidden = false; const r = btn.getBoundingClientRect();
   flMenu.style.left = Math.max(4, Math.min(r.left, innerWidth - flMenu.offsetWidth - 4)) + 'px'; flMenu.style.top = r.bottom + 3 + 'px'; flMenu.style.minWidth = r.width + 'px';   // 단추 바로 아래로(옆 건물 이름을 가리지 않게)
 }
-flMenu.onclick = e => { const v = e.target.dataset.f, b = flMenu.dataset.b; if (v == null) return; flMenu.hidden = true;
-  site = false; allView = v === 'all'; open = school(b); cur = allView ? state.floors.findIndex(f => f.bld === b && f.name === '1층') : +v; sel = null; render(); autoZoom(); scrollTo(0, 0); };
+// 건물 b의 층 v로 넘어간다(v = 'all'이면 전체 층 보기)
+function goBld(b, v) { site = false; allView = v === 'all'; open = school(b); const i1 = state.floors.findIndex(f => f.bld === b && f.name === '1층'); cur = allView ? (i1 >= 0 ? i1 : state.floors.findIndex(f => f.bld === b)) : +v; sel = null; render(); autoZoom(); scrollTo(0, 0); }
+flMenu.onclick = e => { const v = e.target.dataset.f, b = flMenu.dataset.b; if (v == null) return; flMenu.hidden = true; goBld(b, v); };
 addEventListener('pointerdown', e => { if (!flMenu.contains(e.target)) flMenu.hidden = true; }, true);
 for (const ev of ['scroll', 'resize']) addEventListener(ev, () => { flMenu.hidden = true; });
 addEventListener('keydown', e => { if (e.key === 'Escape') flMenu.hidden = true; });

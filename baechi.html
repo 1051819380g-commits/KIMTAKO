@@ -308,8 +308,11 @@
     #syncState { font-size:11px; }
     header .bar + .bar .zoom { flex:1 1 140px; } header .bar + .bar .zoom input { flex:1; width:auto; min-width:0; } #gapLbl { flex:1 1 140px; display:flex; } #gapLbl[hidden] { display:none; }
     .bar #stats { width:100%; margin-left:0; justify-content:flex-start; } .bar #stats.two { align-items:stretch; gap:6px; }
-    .bar #stats .srow, .bar #stats:not(.two) { display:flex; flex-wrap:wrap; justify-content:flex-start; gap:2px 12px; }
-    .bar #stats .srow em { width:100%; } .bar #stats .stat b { white-space:nowrap; }
+    /* 현황은 학교마다 한 줄(사용자 요청 2026-11-27): 글자와 이름표를 줄이고(data-s), 그래도 넘치면 그 줄만 옆으로 밀어 본다 */
+    .bar #stats .srow, .bar #stats:not(.two) { display:flex; flex-wrap:nowrap; justify-content:flex-start; align-items:baseline; gap:0 6px; overflow-x:auto; scrollbar-width:none; }
+    .bar #stats .srow::-webkit-scrollbar, .bar #stats:not(.two)::-webkit-scrollbar { display:none; }
+    .bar #stats .srow > *, .bar #stats:not(.two) > * { flex:none; } .bar #stats .srow em { font-size:12px; }
+    .bar #stats .stat { gap:2px; } .bar #stats .stat span[data-s] { font-size:0; } .bar #stats .stat span[data-s]::before { content:attr(data-s); font-size:10.5px; } .bar #stats .stat b, .bar #stats.two .stat b { font-size:13px; white-space:nowrap; } .bar #stats .stat b small { font-size:10px; }
   }
   @media (max-width: 960px) { #panel { right:16px; top:auto; bottom:16px; max-height:60vh; } ul.log li { grid-template-columns:86px minmax(0,1fr) auto; } ul.log .w { display:none; } }
   @media (prefers-reduced-motion: reduce) { * { transition:none !important; } }
@@ -1421,11 +1424,11 @@ function renderTable() {
     const A = acc[site ? school(f.bld) : 'one'] ||= { area: 0, n: 0, ac: 0, no: 0, it: 0 }; A.area += r.area; A.ac += +i.acN || 0; A.it += its.length;
     if (need) { A.n++; if (!+i.acN) A.no++; }
     rows += `<tr data-f="${fi}" data-k="${r.key}" class="${fi === cur && sel === r.key ? 'sel' : ''}${first && fi ? ' first' : ''}"><td class="fl">${site ? esc(f.bld) + ' ' : ''}${esc(f.name)}</td><td class="nm">${esc(i.name)}</td><td><span class="sw" style="background:${USES[i.use]}"></span>${i.use}</td><td class="n">${fmt(r.area)}</td><td>${r.units ? unitLabel(r.units) : ''}</td><td>${+i.acN ? `<span class="pill ac" title="${esc(acSum(i))}">에어컨(${i.acN}대)</span>` : need ? '<span class="pill none">없음</span>' : ''}</td><td class="mdl">${acModels(i).map(esc).join('<br>')}</td><td class="n">${its.length ? its.length + '건' : ''}</td><td class="memo">${esc(i.memo)}</td></tr>`; first = false; } });
-  const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span title="${esc(name)} 전체 면적">면적</span></div>
-    <div class="stat"><b>${A.n}<small>실</small></b><span title="교실·특별실·관리·지원 실 수">실 현황</span></div>
-    <div class="stat"><b>${A.ac}<small>대</small></b><span>에어컨</span></div>
-    <div class="stat${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span>에어컨 없는 실</span></div>
-    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품">물품</span></div>`;
+  const line = (A, name) => `<div class="stat"><b>${Math.round(A.area).toLocaleString()}<small>㎡</small></b><span title="${esc(name)} 전체 면적" data-s="면적">면적</span></div>
+    <div class="stat"><b>${A.n}<small>실</small></b><span title="교실·특별실·관리·지원 실 수" data-s="실">실 현황</span></div>
+    <div class="stat"><b>${A.ac}<small>대</small></b><span data-s="에어컨">에어컨</span></div>
+    <div class="stat${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span data-s="미설치">에어컨 없는 실</span></div>
+    <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품" data-s="물품">물품</span></div>`;
   $('stats').classList.toggle('two', site);
   $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || { area: 0, n: 0, ac: 0, no: 0, it: 0 }, b);
   $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;

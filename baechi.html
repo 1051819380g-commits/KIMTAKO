@@ -832,8 +832,9 @@ const multi = new Map();
 function render() { document.body.classList.toggle('ro', noReq()); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
   for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
-  const enter = site && !render.site; render.site = site;
+  const enter = site && !render.site, pb = $('planbox'), keep = [pb.scrollLeft, pb.scrollTop]; render.site = site;
   renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+  pb.scrollLeft = keep[0]; pb.scrollTop = keep[1];   // 다시 그리는 동안 도면 크기가 잠깐 바뀌어 상자 안 위치가 맨 위로 튀던 것을 되돌린다(실을 눌러 고를 때 도면이 움직이지 않게)
   if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
 }
 function renderTabs() {

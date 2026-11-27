@@ -329,10 +329,11 @@
 <section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
-  <p class="hint note">면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다.</p>
+  <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
+  <p class="hint note">면적은 도면의 벽 중심선 치수로 계산한 값이라 건축물대장과 조금 다를 수 있습니다.</p>
 </section>
 
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 여기를 눌러 사진을 고르거나 끌어다 놓으세요 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요">📷 여기를 눌러 사진을 고르거나 끌어다 놓으세요 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="p-close" id="phClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="phBox"></div></dialog>
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
@@ -340,14 +341,14 @@
     <label>구분<select id="wk-kind"><option>공사</option><option>물품</option></select></label>
     <label>범위<select id="wk-sc"></select></label>
     <label class="wide">이름<input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품"></label>
-    <label class="wide" id="wk-typeL">공종 (고르면 법정 하자담보책임기간이 들어갑니다)<select id="wk-type"></select></label>
+    <label class="wide" id="wk-typeL">공종 (고르면 법정 기간이 들어갑니다)<select id="wk-type"></select></label>
     <label>업체<input id="wk-co" placeholder="업체 이름"></label>
     <label>업체 전화<input id="wk-tel" placeholder="대표전화"></label>
     <label>준공일(납품일)<input type="date" id="wk-d" required></label>
     <label>보증 기간(년)<input type="number" id="wk-y" min="0" max="20" step="0.5" placeholder="예: 2"></label>
-    <label class="wide">하자보증 만료일 (준공일과 기간으로 자동 계산 — 계약서와 다르면 직접 고치세요)<input type="date" id="wk-e"></label>
+    <label class="wide">하자보증 만료일 (자동 계산, 직접 고칠 수 있음)<input type="date" id="wk-e"></label>
   </div>
-  <p class="hint">공종별 기간은 건설산업기본법 시행령 별표 4, 전기공사업법 시행령 별표 3의2, 정보통신공사업법 시행령 제37조, 소방시설공사업법 시행령 제6조(법제처 현행, 2026-11-27 확인)를 따랐습니다. 공종이 섞인 공사는 세부 공종별로 따로 적고, 나눌 수 없으면 주된 공종으로 적습니다. 물품은 계약서·보증서에 적힌 기간을 넣습니다.</p>
+  <p class="hint">공종이 섞인 공사는 공종별로 따로 적습니다. 물품은 계약서·보증서의 기간을 넣습니다.</p>
   <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
 </form></dialog>
 <dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button class="p-close" id="wkClose" aria-label="닫기" title="닫기 (Esc)">×</button></div>
@@ -1077,18 +1078,19 @@ function renderPlan() {
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' + (siteLv ? ` · 모든 건물 ${siteLv}` : '') : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래) · Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동 · 휴대폰은 두 손가락으로 이동·크기 조절' : editing ? '벽 자리를 누르면 철거/설치됩니다' : (ro() ? '보기 전용 — 함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다' : '실을 누르면 정보 창이 뜹니다 · Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가')}</span>`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡${editing ? '<span class="noprint"> · 벽 자리를 누르면 철거/설치</span>' : !site && ro() ? '<span class="noprint"> · 보기 전용</span>' : ''}`;
+  $('sheetSub').title = site ? '건물의 층을 누르면 그 층으로 넘어갑니다. 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래). Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동. 휴대폰은 두 손가락으로 이동·크기 조절.' : ro() ? '함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다.' : '실을 누르면 정보 창이 뜹니다. Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가할 수 있습니다.';   // 긴 안내는 마우스를 올렸을 때만
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
   $('planbox').classList.toggle('all', allView || site);
-  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선: 실 → 가장 가까운 출입구(1층)·계단실' + (site ? ' · 굵은 선: 출입구 → 가장 가까운 운동장(중·고 구분 없이, 건물을 피해 직각으로 — 어림)' : '') + '</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span><span>벽이 끊긴 곳 = 도면에서 확인한 실 출입문(그 밖의 실은 벽 가운데로 어림)</span>'
-      + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('') + '<span>소방시설은 2024 배치도 기준(고등학교 본관·신관), 자리는 어림</span>'
-    : view === 'work' ? ['ok', 'soon', 'exp'].map(s => `<span><span class="sw" style="background:${WK_FILL[s]}"></span>${WK_LBL[s]}${s === 'soon' ? '(90일 안)' : ''}</span>`).join('') + '<span>🔧 = 이 실에 보증 기간이 남은 공사·물품 있음 · 층·건물 전체 공사는 해당 실이 모두 칠해집니다</span>'
+  $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span>'
+      + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('')
+    : view === 'work' ? ['ok', 'soon', 'exp'].map(s => `<span><span class="sw" style="background:${WK_FILL[s]}"></span>${WK_LBL[s]}${s === 'soon' ? '(90일 안)' : ''}</span>`).join('')
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
-    : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음(교실·특별실·관리·지원)</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
-  $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구(1층)</span>';
-  if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교(바닥판 회색)</span><span><span class="sw msw"></span>중학교(바닥판 갈색)</span>';
+    : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
+  $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구</span>';
+  if (site) $('legend').innerHTML += '<span style="margin-left:auto"><span class="sw hs"></span>고등학교</span><span><span class="sw msw"></span>중학교</span>';
   const svg = $('plan'); svg.setAttribute('viewBox', `${x0} ${y0} ${w} ${h + 2.4}`); fitPlan(); svg.classList.toggle('site', site); svg.innerHTML = h_; if (site) poseSite();
 }
 function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }
@@ -1103,8 +1105,8 @@ function renderPanel() {
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
-  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 여기를 눌러 사진을 고르거나 끌어다 놓으세요 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요">📷 여기를 눌러 사진을 고르거나 끌어다 놓으세요 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).filter(x => !x.q.done).sort((a, b) => b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">완료</button></div></div>`).join('')}${reqs.length > openN ? `<p class="hint" style="margin:6px 0 0">✅ 완료한 요청 ${reqs.length - openN}건은 위쪽 "🚨 보수요청" 목록의 "전체"에서 봅니다.</p>` : ''}</div>` : ''}
+  ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).filter(x => !x.q.done).sort((a, b) => b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">완료</button></div></div>`).join('')}${reqs.length > openN ? `<p class="hint" style="margin:6px 0 0">✅ 완료 ${reqs.length - openN}건 — 보수요청 목록의 "전체"에서 확인</p>` : ''}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1115,10 +1117,10 @@ function renderPanel() {
     <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
   </div>
   <h2 class="it-head"><span>공사·하자보증 ${ws.length ? ws.length + '건' : ''}</span><button type="button" data-wkadd>+ 공사·물품 추가</button></h2>
-  ${ws.length ? ws.sort(wkSort).map(wkHtml).join('') : '<p class="hint">이 실(또는 층·건물 전체)에 한 공사나 새로 들인 물품을 적으면 하자보증 만료일을 챙깁니다.</p>'}
+  ${ws.length ? ws.sort(wkSort).map(wkHtml).join('') : ''}
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
-    : `<p class="hint">${state.items.length ? '이 실 이름과 같은 위치의 물품이 없습니다. 아래 "연결되지 않은 위치"에서 해당 이름을 누르면 이 실에 연결됩니다.' : '위의 "물품대장 넣기"로 K-에듀파인 물품대장 엑셀을 넣으면 여기에 나옵니다.'}</p>`}`;
+    : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 아래 "연결되지 않은 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
   if (ro()) for (const x of p.querySelectorAll('input, select, textarea')) x.disabled = true;
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
@@ -1246,7 +1248,7 @@ function renderWks() {
   for (const b of $('wkView').children) b.className = b.dataset.wv === wkView ? 'on' : '';
   $('wkRows').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>만료일</th><th>위치</th><th>구분</th><th>이름</th><th>공종</th><th>업체</th><th>준공·납품일</th><th class="noprint"></th></tr></thead><tbody>${list.map(x => { const w = x.w, s = wkSt(w);
     return `<tr data-wk="${wkId(x)}" class="${s}" title="눌러서 이 위치로 가기"><td class="st">${WK_LBL[s]}</td><td>${esc(w.e || '')}</td><td>${esc(x.where)}</td><td>${esc(w.kind || '')}</td><td><b>${esc(w.t)}</b></td><td>${esc(w.type || '')}</td><td>${esc(w.co || '')}${w.tel ? '<br>' + esc(w.tel) : ''}</td><td>${esc(w.d || '')}</td><td class="noprint" style="white-space:nowrap"><button data-wkedit="${wkId(x)}">고침</button> <button data-wkdel="${wkId(x)}">지움</button></td></tr>`; }).join('')}</tbody></table></div>`
-    : `<p class="hint">${all.length ? (wkView === 'exp' ? '보증 기간이 끝난 기록이 없습니다.' : '보증 중인 기록이 없습니다. "만료"나 "전체"를 누르면 끝난 기록도 보입니다.') : '아직 적은 것이 없습니다. 위에서 건물·층·실을 고르고 "＋ 하자보증 추가"를 누르거나, 도면에서 실을 눌러 실 정보 창에서 적으면 여기에 모입니다.'}</p>`;
+    : `<p class="hint">${all.length ? (wkView === 'exp' ? '보증 기간이 끝난 기록이 없습니다.' : '보증 중인 기록이 없습니다.') : '아직 적은 것이 없습니다.'}</p>`;
 }
 $('wkJump').onclick = () => { fillWkNew(); $('wkList').showModal(); renderWks(); $('wkList').scrollTop = 0; };
 $('wkClose').onclick = () => $('wkList').close();
@@ -1331,7 +1333,7 @@ function renderReqs() {
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>
     `<tr data-f="${fi}" data-k="${r.key}" class="${q.done ? 'done' : ''}" title="눌러서 이 실로 가기"><td>${q.done ? '✅ 완료' : '🚨 진행 중'}</td><td>${esc(f.bld)} ${esc(f.name)}</td><td class="nm">${esc(r.info.name)}</td><td class="rt">${esc(q.t)}${phBtn(q, n)}${pmHtml(q, n)}${q.done ? '' : wkOnOf(f, r.info).map(w => `<span class="pm">🔧 하자보증 중: ${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''} (~${esc(w.e)})</span>`).join('')}</td><td class="rd">${esc(q.d)}</td>${reqView === 'all' ? `<td class="dd">${q.done ? esc(q.dd || '') : ''}</td>` : ''}<td class="who">${esc(q.who || '')}</td><td class="noprint"><button data-rm="${n}" title="진행 상황을 적어 요청자에게 알리기">메모</button> <button data-rph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button> <button data-rq="${n}">${q.done ? '되돌리기' : '완료'}</button></td></tr>`).join('')}</tbody></table></div>`
-    : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다. "전체"를 누르면 완료된 요청도 보입니다.' : '실 정보 창에서 실 이름 옆 "🚨 보수요청"을 눌러 적으면 여기에 모입니다.'}</p>`;
+    : `<p class="hint">${all.length ? '진행 중인 보수요청이 없습니다.' : '아직 올라온 보수요청이 없습니다.'}</p>`;
 }
 function renderTable() {
   const b = state.floors[cur].bld, idx = itemIndex(), tot = {}, used = new Set(), acc = {}; let rows = '';   // acc = 합계 묶음(전체 배치에서는 학교별 두 줄, 건물 화면에서는 한 줄)
@@ -1353,10 +1355,10 @@ function renderTable() {
   const ung = new Map(); for (const it of state.items) if (!used.has(it)) { const k = norm(it.loc); if (!ung.has(k)) ung.set(k, []); ung.get(k).push(it); }
   const un = [...ung].sort((a, b) => b[1].length - a[1].length);
   $('unm').innerHTML = !state.items.length ? '<span class="hint">물품대장을 아직 넣지 않았습니다.</span>'
-    : `<p class="hint">물품 ${state.items.length}건 중 실 이름과 맞지 않는 위치입니다. 이름을 누르면 어떤 물품인지 보여 줍니다. 실을 먼저 고른 뒤 누르면 그 실에 연결할 수 있습니다.</p><div class="chips">${un.map(([k, v]) => `<span class="chip" data-loc="${esc(v[0].loc)}">${esc(v[0].loc || '(위치 없음)')}<b>${v.length}</b></span>`).join('') || '모두 연결됨'}</div>`;
+    : `<p class="hint">이름을 누르면 물품을 보여 줍니다. 실을 고른 뒤 누르면 그 실에 연결합니다.</p><div class="chips">${un.map(([k, v]) => `<span class="chip" data-loc="${esc(v[0].loc)}">${esc(v[0].loc || '(위치 없음)')}<b>${v.length}</b></span>`).join('') || '모두 연결됨'}</div>`;
 }
 function renderLog() {
-  $('log').innerHTML = state.log.length ? `<ul class="log">${state.log.map((l, i) => `<li><time>${l.d}</time><span class="w">${esc(l.w)}</span><span>${esc(l.t)}</span><button class="noprint" data-del="${i}">지움</button></li>`).join('')}</ul>` : '<span class="hint">벽을 허물거나 세우면, 또는 면적을 직접 고치면 여기에 날짜와 함께 기록됩니다.</span>';
+  $('log').innerHTML = state.log.length ? `<ul class="log">${state.log.map((l, i) => `<li><time>${l.d}</time><span class="w">${esc(l.w)}</span><span>${esc(l.t)}</span><button class="noprint" data-del="${i}">지움</button></li>`).join('')}</ul>` : '<span class="hint">아직 기록이 없습니다.</span>';
 }
 
 // ── 함께 쓰기(Firebase Realtime Database, REST + EventSource) ──

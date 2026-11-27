@@ -1441,7 +1441,13 @@ function renderTable() {
     <div class="stat acst${A.no ? ' warn' : ''}"><b>${A.no}<small>실</small></b><span data-s="미설치">에어컨 없는 실</span></div>
     <div class="stat"><b>${A.it.toLocaleString()}<small>건</small></b><span title="실에 연결된 물품" data-s="물품">물품</span></div>`;
   // 도면 제목 옆 알약(예전 에어컨 대수 자리): 에어컨 보기는 형식별 대수(renderPlan), 다른 보기는 그 보기의 현황 — 사용자 요청 2026-11-27
-  if (view !== 'ac') { const T = newAcc(); for (const A of Object.values(acc)) { for (const k in A.use) T.use[k] = (T.use[k] || 0) + A.use[k]; for (const k in A.fire) T.fire[k] = (T.fire[k] || 0) + A.fire[k]; T.wk += A.wk; T.wkSoon += A.wkSoon; }
+  if (view !== 'ac') {   // 지금 도면에 그린 층만 센다: 전체 배치(층을 골랐으면 그 층만) / 건물 전체 층 / 한 층 — 사용자 요청 2026-11-27
+    const T = newAcc(), shown = state.floors.map((f, fi) => [f, fi]).filter(([f, fi]) => site ? !siteLv || f.name === siteLv : allView ? f.bld === b : fi === cur);
+    const wkAdd = w => { const t = wkSt(w); if (t === 'ok' || t === 'soon') T.wk++; if (t === 'soon') T.wkSoon++; };
+    for (const [f] of shown) { const F = FIRE[f.bld] || {};
+      for (const [k] of [...(f.name.startsWith('지하') ? [] : F['*'] || []), ...(F[f.name] || [])]) T.fire[k] = (T.fire[k] || 0) + 1;
+      for (const r of roomsOf(f)) { T.use[r.info.use] = (T.use[r.info.use] || 0) + 1; (r.info.works || []).forEach(wkAdd); } }
+    for (const w of state.works || []) if (shown.some(([f]) => f.bld === w.b && (!w.fl || w.fl === f.name))) wkAdd(w);   // 층·건물 전체 공사·물품은 그 건물(층)이 보이면 한 번
     $('acTot').innerHTML = view === 'use' ? Object.keys(USES).filter(u => T.use[u]).map(u => `<b class="pu"><i class="sw" style="background:${USES[u]}"></i>${u} ${T.use[u]}실</b>`).join('')
       : view === 'fire' ? ([['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].filter(([k]) => T.fire[k]).map(([k, t]) => `<b class="pf">${t} ${T.fire[k]}곳</b>`).join('') || '<b class="pf">소방시설 0곳</b>')
       : view === 'work' ? `<b class="pw">보증 중 ${T.wk}건</b><b class="pw${T.wkSoon ? ' soon' : ''}">만료 임박 ${T.wkSoon}건</b>` : ''; }

@@ -31,7 +31,11 @@
   #setMenu { position:relative; } #setMenu summary { list-style:none; cursor:pointer; user-select:none; border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:5px 11px; font-weight:500; white-space:nowrap; }
   #setMenu summary::-webkit-details-marker { display:none; } #setMenu summary:hover, #setMenu[open] summary { background:var(--accent-soft); border-color:var(--line-strong); }
   .set-box { position:absolute; right:0; top:calc(100% + 4px); z-index:40; display:grid; gap:2px; min-width:180px; padding:5px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(22,33,46,.18); }
-  .set-box button { border:0; text-align:left; padding:7px 10px; white-space:nowrap; }
+  .set-box button { border:0; text-align:left; padding:7px 10px; white-space:nowrap; } .set-box hr { width:100%; margin:3px 0; border:0; border-top:1px solid var(--line); }
+  /* 도면 아래에 있던 구역(면적표·연결 안 된 물품 위치·변경 이력)은 설정 메뉴에서 여는 창으로(사용자 요청 2026-11-27) */
+  .secdlg { width:min(1300px, calc(100vw - 48px)); max-height:calc(100vh - 80px); box-sizing:border-box; padding:18px 20px 20px; overflow:auto; }
+  .secdlg .sec-head { position:relative; padding-right:36px; align-items:center; } .secdlg .p-close { top:-4px; right:-6px; } .secdlg h2 { margin:0; } .secdlg .note { margin:10px 0 0; }
+  @media (pointer:coarse) and (max-width: 960px) { .secdlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; } }
   @media (max-width: 760px) { .set-box { right:auto; left:0; } }
 
   button { border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:5px 11px; cursor:pointer; font-weight:500; transition:background .12s, border-color .12s; }
@@ -321,6 +325,10 @@
     <div class="grp push noprint">
       <button id="printPlan">도면 인쇄</button>
       <details id="setMenu"><summary title="물품대장 넣기, 엑셀로 내보내기, 저장파일 내보내기·불러오기">⚙ 설정 ▾</summary><div class="set-box">
+        <button id="openTbl">실별 면적표</button>
+        <button id="openUnm">연결 안 된 물품 위치</button>
+        <button id="openLog">변경 이력</button>
+        <hr>
         <button id="itemBtn">물품대장 넣기</button>
         <button id="csvBtn">엑셀(CSV)로 내보내기</button>
         <button id="saveBtn">저장파일 내보내기</button>
@@ -350,12 +358,13 @@
   </div>
   <aside class="card" id="panel"></aside>
 </main>
-<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div><span class="grp push noprint"><button id="tblCsv" title="지금 보이는 면적표를 엑셀에서 열리는 파일(CSV)로 내려받습니다">엑셀로 내보내기</button><button id="tblPrint" title="지금 보이는 면적표를 인쇄합니다">인쇄</button></span></div><div id="tbl" class="scroll"></div></section>
-<section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
-<section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
-  <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
+<dialog class="secdlg" id="dlgTbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div><span class="grp push noprint"><button id="tblCsv" title="지금 보이는 면적표를 엑셀에서 열리는 파일(CSV)로 내려받습니다">엑셀로 내보내기</button><button id="tblPrint" title="지금 보이는 면적표를 인쇄합니다">인쇄</button></span><button class="p-close" data-dclose aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="tbl" class="scroll"></div>
   <p class="hint note">면적은 도면의 벽 중심선 치수로 계산한 값이라 건축물대장과 조금 다를 수 있습니다.</p>
-</section>
+</dialog>
+<dialog class="secdlg" id="dlgUnm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button><button class="p-close" data-dclose aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="unm"></div></dialog>
+<dialog class="secdlg" id="dlgLog"><div class="sec-head"><h2>변경 이력</h2><button class="p-close" data-dclose aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="log"></div>
+  <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
+</dialog>
 
 <dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="pwDlg"><form method="dialog">
@@ -1165,7 +1174,7 @@ function renderPanel() {
   ${ws.length ? ws.sort(wkSort).map(wkHtml).join('') : ''}
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
-    : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 아래 "연결되지 않은 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
+    : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 설정 → "연결 안 된 물품 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
   if (ro()) for (const x of p.querySelectorAll('.f :is(input, select, textarea)' + (role === 'teacher' ? ':not(#i-memo)' : ''))) x.disabled = true;
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
@@ -1740,7 +1749,9 @@ $('plan').onclick = e => {
 };
 $('wkMulti').onclick = () => wkOpen(null, [...multi.values()]);
 addEventListener('keydown', e => { if (e.key === 'Escape' && multi.size && !document.querySelector('dialog[open]')) { multi.clear(); render(); } });
-$('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
+for (const [b, d] of [['openTbl', 'dlgTbl'], ['openUnm', 'dlgUnm'], ['openLog', 'dlgLog']]) $(b).onclick = () => { $(d).showModal(); $(d).scrollTop = 0; };
+for (const d of document.querySelectorAll('.secdlg')) d.addEventListener('click', e => { if (e.target === d || e.target.dataset.dclose != null) d.close(); });   // ×나 창 바깥을 누르면 닫기
+$('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { $('dlgTbl').close(); cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
 // 구역 접기: 접은 상태는 이 기기(브라우저)에 기억한다.
 for (const sec of document.querySelectorAll('section[data-fold]')) {
   const k = KEY + '-fold-' + sec.dataset.fold, head = sec.querySelector('.sec-head'), btn = document.createElement('button');
@@ -1823,7 +1834,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open && !$('pwDlg').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open && !$('pwDlg').open && !document.querySelector('.secdlg[open]')) { sel = null; render(); } });
 $('panel').onchange = e => { if (noReq() || (ro() && e.target.dataset.k !== 'memo' && e.target.dataset.itq == null)) return;   // 교원은 실 메모와 물품 수량만
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;

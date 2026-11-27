@@ -94,6 +94,8 @@
   .f textarea { resize:vertical; }
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
   body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  /* 교원(보수요청만): 고치는 단추·행정실용 화면을 숨긴다. 실 정보 창에는 이름·면적·보수요청만 */
+  body.tch :is(#stats, main ~ section, #setMenu, #wkJump, #vWork, #wkMulti, #editLbl, #locOk, [data-reqdone], [data-reqmemo], [data-rq], [data-rm], .mx, #panel .f, #panel .it-head, #panel .its, #panel .wk-item, #panel .wk-note, #panel > .hint) { display:none !important; }
   body.ro #panel :is(input, select, textarea):disabled { opacity:1; color:var(--ink); background:var(--sheet); -webkit-text-fill-color:var(--ink); }
   body.ro #panel :disabled::placeholder { -webkit-text-fill-color:transparent; color:transparent; }
   /* 보수요청 */
@@ -305,6 +307,8 @@
         <button id="csvBtn">엑셀(CSV)로 내보내기</button>
         <button id="saveBtn">저장파일 내보내기</button>
         <button id="loadBtn">저장파일 불러오기</button>
+        <button id="bakBtn" title="매일 아침 백업해 둔 상태로 되돌립니다">백업에서 되돌리기</button>
+        <button id="tpwBtn" title="교원이 보수요청을 올릴 때 쓰는 암호">교원 암호 정하기</button>
       </div></details>
       <input type="file" id="loadFile" accept=".json" hidden>
       <input type="file" id="phFile" accept="image/*" multiple hidden>
@@ -558,14 +562,16 @@ function annexFloors() {
   return [one(B6, '급식시설', 32.28, 15.56, '지원', 467.06, src + ' — 신관 지하 급식소(식당·조리장)와 같은 곳인지 확인 필요'),
     one(B5, '기계실', 21.24, -7.41, '지원', 119.7, src), one(B8, '씨름연습장', 12.52, 12.24, '특별실', 168, src)];
 }
-// 건물 출입구(1층에만 그린다): [좌표 틀(tf), x, y, 안쪽 방향 x, y, (전체 배치에서 대피할 운동장 — 없으면 가장 가까운 곳)]. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
+// 건물 출입구: [좌표 틀(tf), x, y, 안쪽 방향 x, y, (전체 배치에서 대피할 운동장 — 없으면 가장 가까운 곳), (층 이름 — 없으면 1층)]. 1층이 아닌 층의 출입구는 그 층 도면에만 그리고 전체 배치의 바깥 동선에는 넣지 않는다. 도면·배치도 엑셀에 표시된 건물 출입구를 옮긴 것이고 위치는 어림이다(실별 문은 넣지 않는다).
 const DOORS = {
   [HS1]: [['', 0, 0, 0, -1], ['', 0, -17.84, 0, 1], ['L', -34, 0, 0, -1], ['L', -34, -10.7, 0, 1], ['R', 34, 0, 0, -1]],   // 현관(가운데 앞), 가운데 뒤, 왼쪽 계단실 앞·뒤(그림에서 아래·위), 오른쪽 계단실 아래쪽 — 계단실 문은 사용자 확인(2026-11-25)
   [HS2]: [['B', 63.85, -9.9, 0, 1], ['B', 63.85, 0, 0, -1], ['B', 5.4, -9.9, 0, 1], ['B', 119.2, -9.9, 0, 1]],             // 가운데 현관, 현관 뒤쪽(가운데 계단실 반대편 — 사용자 확인), 양 끝 계단 옆
   [GYM]: [['', 15.1, 8.5, 1, 0]], [LIB]: [['', 7.4, 23.1, -1, 0]],                                                       // 강당 HALL, 도서관동 로비
   [MS1]: [['M', 42, 2.7, 0, -1], ['M', 4.3, 1.35, 1, 0], ['M', 42.55, -12.6, 0, 1], ['M', 83.05, -7.2, 0, 1, '운동장(중학교)']],             // 가운데 현관, 왼쪽 복도 끝, 계단실#2 뒤, 계단실#3 뒤
-  [MS2]: [['', 15.75, 0, 0, -1], ['', 28.8, -11.7, 1, 0, '운동장(고등학교)']],                                                             // 홀, 창고·연결복도의 교장실 쪽(왼쪽) 벽 — 사용자 확인(2026-11-26)
+  [MS2]: [['', 15.75, 0, 0, -1], ['', 28.8, -11.7, 1, 0, '운동장(고등학교)'], ['', 40.5, -8.85, -1, 0, '', '2층']],   // 2층 복도 동쪽 끝 출입문 — 사용자 확인(2026-11-27)
+  //                                                             // 홀, 창고·연결복도의 교장실 쪽(왼쪽) 벽 — 사용자 확인(2026-11-26)
 };
+const doorsOf = f => (DOORS[f.bld] || []).filter(d => (d[6] || '1층') === f.name);   // 그 층에 있는 건물 출입구
 const SITE = { [HS1]: [.9659, .2588, -.2588, .9659, -125.09, -159.01], [HS2]: [0, -1, 1, 0, -175.81, -55.86], [GYM]: [1, 0, 0, 1, -280.88, -77.14], [LIB]: [1, 0, 0, 1, -280.88, -77.14], [MS1]: [1, 0, 0, 1, -280.23, -160.01], [MS2]: [0, 1, -1, 0, -210.69, -218.84],
   [B6]: [1, 0, 0, 1, -167.75, -188.32],   // 배치도 값(-166.45)에서 1.3m 옆으로 옮김: 도구의 신관 가운데 뒤쪽 실(화장실 자리)이 배치도 테두리보다 넓게 그려져 6호동과 1m쯤 겹쳤다
   [B5]: [.861, .508, -.508, .861, -108.91, -165.32], [B8]: [1, 0, 0, 1, -296.99, -152.62] };   // 부속 건물: 6호동은 신관 아래, 5호동은 신관 왼쪽 날개 바깥(30° 기울어 있음), 8호동은 테니스장 옆
@@ -784,7 +790,7 @@ function addItem(r, name, n) {
 // ── 그리기 ──
 // 여러 실 고르기(Ctrl+누르기): '층번호 실키' → [층 번호, 실 키]. 지금 화면에 보이는 실만 남긴다(다른 건물·층으로 가면 풀린다).
 const multi = new Map();
-function render() { document.body.classList.toggle('ro', ro()); if (ro() && editing) { editing = false; $('edit').checked = false; }
+function render() { document.body.classList.toggle('ro', noReq()); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
   for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site; render.site = site;
@@ -906,13 +912,13 @@ function evacRoutes(f, rooms, selKey) {
     const cen = parts.map(ps => add(centroid(ps)));                       // 0..N-1 = 실 가운데
     for (const c of doors) { const n = add(c.p, c.u); inRoom[c.i].push(n); inRoom[c.j].push(n); }
     const tgt = new Set();
-    if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {   // 1층: 건물 출입구가 목적지. 문이 붙은 실(공용 먼저)을 찾아 잇는다
+    for (const [tf, x, y, nx, ny] of doorsOf(f)) {   // 그 층의 건물 출입구가 목적지(대개 1층). 문이 붙은 실(공용 먼저)을 찾아 잇는다
       const c = TF[tf]([x, y]), near = [];
       rooms.forEach((r, i) => { if (!gone[i]) for (const A of parts[i]) for (const [p0, p1] of edges(A)) { const d = segD(c, p0, p1); if (d < .4) near.push([pub[i] ? 0 : 1, d, i]); } });
       if (!near.length) continue; near.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
       const q = TF[tf]([x + nx, y + ny]), n = add(c, [-(q[1] - c[1]), q[0] - c[0]]); inRoom[near[0][2]].push(n); tgt.add(n);
     }
-    if (!tgt.size) stair.forEach((s, i) => { if (s) tgt.add(cen[i]); });
+    if (!tgt.size || f.name !== '1층') stair.forEach((s, i) => { if (s) tgt.add(cen[i]); });   // 1층이 아니면 계단실도 목적지(출입문이 있는 층은 문과 계단 가운데 가까운 쪽으로)
     if (!tgt.size) return null;
     for (let i = 0; i < N; i++) { const L = inRoom[i];
       for (let a = 0; a < L.length; a++) { link(cen[i], L[a], 1, i); for (let b = a + 1; b < L.length; b++) link(L[a], L[b], pub[i] ? 1 : 4, i); } }
@@ -976,7 +982,7 @@ function drawFloor(fi) {
     const nm = r.info.name, half = Math.ceil(nm.length / 2), extra = [];
     if (fire) {}   // 소방·안전: 면적·에어컨을 빼고 실 이름만(대피 거리 숫자는 사용자 요청으로 뺌 — 화살표만)
     else if (r.info.use !== '공용' || r.w > 6) extra.push(fmt(r.area) + '㎡');
-    const nq = ro() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
+    const nq = noReq() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
     const nw = ro() || view !== 'work' ? 0 : (r.info.works || []).filter(w => wkOn(w)).length;   // 하자보증 기간이 남은 공사·물품이 있으면 🔧(하자보증 보기에서만 — 사용자 요청)
     if (!fire && (+r.info.acN > 0 || nq || nw)) extra.push([+r.info.acN > 0 ? '❄' + r.info.acN : '', nq ? '🚨' : '', nw ? '🔧' : ''].filter(Boolean).join(' '));
     const tryFit = (names, ex) => ({ lines: [...names, ...ex], nameN: names.length,
@@ -998,7 +1004,7 @@ function drawFloor(fi) {
   });
   if (editing) for (const w of fw) { const has = !open.has(w.id);
     h_ += `<line class="hit ${has ? 'has' : 'no'}" data-f="${fi}" data-fw="${w.id}" x1="${w.p[0].toFixed(2)}" y1="${w.p[1].toFixed(2)}" x2="${w.q[0].toFixed(2)}" y2="${w.q[1].toFixed(2)}"><title>${has ? '눌러서 벽 철거' : '눌러서 벽 설치'}</title></line>`; }
-  if (f.name === '1층') for (const [tf, x, y, nx, ny] of DOORS[f.bld] || []) {      // 출입구: 건축 도면의 쌍여닫이문 기호(벽을 끊고, 문짝 두 개와 열리는 호)
+  for (const [tf, x, y, nx, ny] of doorsOf(f)) {      // 출입구: 건축 도면의 쌍여닫이문 기호(벽을 끊고, 문짝 두 개와 열리는 호)
     const c = TF[tf]([x, y]), q = TF[tf]([x + nx, y + ny]), ux = q[0] - c[0], uy = q[1] - c[1], tx = -uy, ty = ux, W = 1.2, P = (px, py) => px.toFixed(2) + ' ' + py.toFixed(2);
     const h1 = [c[0] - tx * W, c[1] - ty * W], h2 = [c[0] + tx * W, c[1] + ty * W];      // 양쪽 경첩. 문짝은 경첩에서 안쪽으로 W만큼, 호는 문짝 끝에서 문 가운데까지
     h_ += `<g class="door"><title>출입구</title><path class="gap" d="M${P(...h1)}L${P(...h2)}"/><path class="arc" d="M${P(h1[0] + ux * W, h1[1] + uy * W)}A${W} ${W} 0 0 1 ${P(...c)}A${W} ${W} 0 0 1 ${P(h2[0] + ux * W, h2[1] + uy * W)}"/><path class="leaf" d="M${P(...h1)}l${P(ux * W, uy * W)}M${P(...h2)}l${P(ux * W, uy * W)}"/></g>`;
@@ -1031,7 +1037,7 @@ function siteEvac() {
   const best = (i, from) => { let d = -1, v = 1e9; for (let k = 0; k < 4; k++) { const n = dist[i * 4 + k] + (from != null && k !== from ? PEN : 0); if (n < v) { v = n; d = k; } } return d; };
   const out = [];
   for (const b in DOORS) { if (!SITE[b] || !state.floors.some(x => x.bld === b && x.name === '1층')) continue;
-    for (const [tf, x, y, nx, ny, to] of DOORS[b]) { if (to) spread([GROUND.find(g => g[0] === to)[1].map(([gx, gy]) => [-gx, -gy])]);      // 운동장을 정해 둔 출입구
+    for (const [tf, x, y, nx, ny, to, lv] of DOORS[b]) { if (lv && lv !== '1층') continue; if (to) spread([GROUND.find(g => g[0] === to)[1].map(([gx, gy]) => [-gx, -gy])]);      // 운동장을 정해 둔 출입구
       const c = ap(SITE[b], TF[tf]([x, y])), o = ap(SITE[b], TF[tf]([x - nx, y - ny])), u = [o[0] - c[0], o[1] - c[1]];
       let i = -1; for (let k = 1.5; k <= 6 && i < 0; k += .5) { const j = cell([c[0] + u[0] * k, c[1] + u[1] * k]); if (j >= 0 && free[j] && best(j) >= 0) i = j; }      // 문 앞으로 곧장 나가 처음 만나는 빈 칸
       if (i < 0) { let bd = 8; for (let j = 0; j < W * H; j++) if (free[j] && best(j) >= 0) { const p = at(j), dd = Math.hypot(p[0] - o[0], p[1] - o[1]); if (dd < bd) { bd = dd; i = j; } } }      // 문 앞이 막혀 있으면(옆 건물과 붙은 곳) 8m 안의 가장 가까운 빈 칸
@@ -1093,7 +1099,7 @@ function renderPlan() {
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' + (siteLv ? ` · 모든 건물 ${siteLv}` : '') : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡${editing ? '<span class="noprint"> · 벽 자리를 누르면 철거/설치</span>' : !site && ro() ? '<span class="noprint"> · 보기 전용</span>' : ''}`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡${editing ? '<span class="noprint"> · 벽 자리를 누르면 철거/설치</span>' : !site && noReq() ? '<span class="noprint"> · 기본 도면</span>' : ''}`;
   $('sheetSub').title = site ? '건물의 층을 누르면 그 층으로 넘어갑니다. 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래). Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동. 휴대폰은 두 손가락으로 이동·크기 조절.' : ro() ? '함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다.' : '실을 누르면 정보 창이 뜹니다. Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가할 수 있습니다.';   // 긴 안내는 마우스를 올렸을 때만
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
@@ -1111,7 +1117,7 @@ function renderPlan() {
 function findSel() { const f = state.floors[cur]; return sel && roomsOf(f).find(r => r.key === sel); }
 function renderPanel() {
   const r = findSel(), p = $('panel');
-  if (ro()) { p.hidden = true; sheetMark(null); return; }   // 보기 전용이면 실 정보 창을 띄우지 않는다(도면에서 고른 실만 표시)
+  if (noReq()) { p.hidden = true; sheetMark(null); return; }   // 보기 전용이면 실 정보 창을 띄우지 않는다(도면에서 고른 실만 표시)
   p.hidden = !r; sheetMark(r); if (!r) return;
   const i = r.info, its = itemsFor(i, itemIndex(), state.floors[cur]), grp = new Map();
   const reqs = i.reqs || [], openN = reqs.filter(q => !q.done).length, rk = cur + ':' + r.key, F = state.floors[cur];
@@ -1136,7 +1142,7 @@ function renderPanel() {
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 아래 "연결되지 않은 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
-  if (ro()) for (const x of p.querySelectorAll('input, select, textarea')) x.disabled = true;
+  if (ro()) for (const x of p.querySelectorAll('.f :is(input, select, textarea)')) x.disabled = true;
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
@@ -1295,7 +1301,7 @@ async function phUpload(files) {
 }
 // 요청(fi층 key실의 n번째)에 사진을 붙인다
 async function phAttach(fi, key, n, files) {
-  let x = phReq(fi, key, n); if (!x || !files.length || ro()) return; const t0 = x.q.t, room = PH_MAX - (x.q.ph || []).length;
+  let x = phReq(fi, key, n); if (!x || !files.length || noReq()) return; const t0 = x.q.t, room = PH_MAX - (x.q.ph || []).length;
   if (room <= 0) return alert(`사진은 요청마다 ${PH_MAX}장까지입니다.`);
   if (files.length > room) alert(`사진은 요청마다 ${PH_MAX}장까지라 앞의 ${room}장만 올립니다.`);
   const ids = await phUpload(files.slice(0, room)); if (!ids.length) return;
@@ -1307,7 +1313,7 @@ function phzLabel(z) { const fs = [...z.querySelector('input').files], t = z.que
 addEventListener('click', e => { const z = e.target.closest && e.target.closest('.phz'); if (z && e.target.tagName !== 'INPUT') z.querySelector('input').click(); });   // 칸 어디를 눌러도 사진 고르는 창이 뜬다
 addEventListener('change', e => { const z = e.target.type === 'file' && e.target.closest('.phz'); if (z) phzLabel(z); });
 // 끌어다 놓을 수 있는 자리: 사진 고르는 칸, 실 정보 창의 요청 칸, 목록의 요청 줄. 그 밖의 자리에 놓으면 아무 일도 없다(브라우저가 사진 파일을 열어 화면이 넘어가지 않게 막는다).
-const phZone = t => !ro() && t.closest ? t.closest('.phz, #panel .req-item[data-rn], #reqList tr[data-k]') : null;
+const phZone = t => !noReq() && t.closest ? t.closest('.phz, #panel .req-item[data-rn], #reqList tr[data-k]') : null;
 const phOver = z => { for (const x of document.querySelectorAll('.ph-over')) if (x !== z) x.classList.remove('ph-over'); if (z) z.classList.add('ph-over'); };
 const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
 addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); const z = phZone(e.target); e.dataTransfer.dropEffect = z ? 'copy' : 'none'; phOver(z); });
@@ -1342,7 +1348,7 @@ function renderReqs() {
   renderWks();
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
   const openN = all.filter(x => !x.q.done).length, list = all.filter(x => reqView === 'all' || !x.q.done).sort((a, b) => a.q.done - b.q.done || (b.q.d > a.q.d) - (b.q.d < a.q.d));
-  if (openN && !ro() && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
+  if (openN && !noReq() && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
   $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>(${openN})</b>` : ''}`;   // 진행 중인 건수를 (n)으로
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
@@ -1382,68 +1388,147 @@ function renderLog() {
 // 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
 const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
-// 저장 자리(보안, 2026-11-27): 자료는 sec/<암호>에 둔다 — 암호를 모르면 주소를 알 수 없어 읽지 못한다(예전의 baechi 자리는 누구나 읽을 수 있었다).
-// 암호가 없으면 파일에 들어 있는 기본 도면만 보인다(물품·보수요청·하자보증·사진·고친 내용은 안 보임).
-// es = 지금 듣고 있는 연결, src = 읽고 있는 자리('sec' 암호 자리 / 'old' 예전 자리 — 아직 안 옮겼을 때), locked = 암호는 넣었지만 자료를 아직 못 받음(그동안은 고치지 못한다)
-let es = null, src = '', locked = false;
-// 보기 전용: 함께 쓰기를 쓰는데 편집 암호가 없으면 배치도·정보를 보기만 하고 고치는 단추·입력칸은 숨기거나 막는다.
-const ro = () => !!DB && (!pw || locked);
-if (/^#[A-Za-z0-9_-]+$/.test(location.hash)) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
+// 암호별 권한(2026-11-27, 사용자 결정): 행정실 암호 = 전부, 교원 암호 = 도면 보기 + 보수요청 올리기(사진 포함), 암호 없음 = 파일에 든 기본 도면만.
+// 저장 자리(주소에 암호가 들어 있어 암호를 모르면 읽지 못하고, 쓰기는 Firebase 규칙이 gate/<암호>로 막는다):
+//   sec/<행정실 암호>   배치도·물품·하자보증·변경 이력 한 덩어리 {s, t} — 행정실만 읽고 쓴다
+//   pub/<교원 암호>     교원에게 보여 줄 사본 {s, t}(물품·하자보증·이력을 뺀 것) — 행정실이 저장할 때마다 같이 쓴다
+//   req/<교원 암호>/<번호>  보수요청 한 건씩 {…요청, b 건물, fl 층, k 실 키, rn 실 이름} — 교원은 올리기·고치기만(지우지 못함), 행정실은 전부
+//   photo/<번호>        보수요청 사진 — 행정실·교원
+//   bak/<행정실 암호>/<날짜>  하루 한 번 백업 {s, t} — 행정실
+// 화면 안에서는 보수요청을 예전처럼 실 정보(info.reqs)에 달아 쓰고, 올릴 때·받을 때만 한 건씩으로 나눈다. 교원 암호는 행정실 자료(state.tpw)에 적어 둔다 — 없으면 보수요청도 한 덩어리 안에 둔다(예전 방식).
+// es = 본 자료 연결, esReq = 보수요청 연결, src = 본 자료를 읽은 자리('sec' / 'pub' / 'old' 예전 공개 자리 — 아직 안 옮겼을 때), role = 'admin' 행정실 / 'teacher' 교원 / '' 아직 모름·암호 없음
+let es = null, esReq = null, src = '', role = '', mainSent = '', reqStore = {}, reqSent = {}, reqReady = false, needAttach = false, pushing = false, bakDay = '';
+// ro = 고칠 수 없음(행정실이 아님), noReq = 보수요청도 못 올림(암호가 없거나 자료를 아직 못 받음)
+const ro = () => !!DB && role !== 'admin', noReq = () => !!DB && !role;
+const tkey = () => role === 'teacher' ? pw : role === 'admin' ? state.tpw || '' : '';
+const KEYOK = /^[A-Za-z0-9_-]+$/, syncOn = () => role === 'admin' ? '함께 쓰기: 켜짐 (행정실)' : '함께 쓰기: 켜짐 (교원 — 보수요청)';
+if (KEYOK.test(location.hash.slice(1))) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
 const syncMsg = t => { $('syncBtn').textContent = t; };
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 function askPw() {
-  const v = (prompt('암호를 넣으면 저장된 배치도·물품·보수요청을 불러오고 고칠 수 있습니다.') || '').trim();
-  if (v && !/^[A-Za-z0-9_-]+$/.test(v)) { alert('편집 암호는 영문·숫자만 씁니다.'); return false; }
+  const v = (prompt('암호를 넣으세요.\n행정실 암호: 모두 보고 고칩니다. 교원 암호: 도면을 보고 보수요청을 올립니다.') || '').trim();
+  if (v && !KEYOK.test(v)) { alert('암호는 영문·숫자만 씁니다.'); return false; }
   if (v) { pw = v; lsv(KEY + '-pw', pw); pwChanged(); } return !!v;
 }
-function queuePush() {
-  if (!pw && !asked) { asked = true; askPw(); }
-  if (!pw) return syncMsg('함께 쓰기: 이 기기에만 저장됨 — 눌러서 편집 암호 넣기');
-  clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…');
+function queuePush() { if (!pw || !role) return; clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…'); }
+// 올릴 글: 본 자료(교원 암호를 정했으면 보수요청을 뺀다), 교원용 사본(물품·하자보증·이력·교원 암호를 뺀다)
+const mainJson = () => state.tpw ? JSON.stringify(state, (k, v) => k === 'reqs' ? undefined : v) : JSON.stringify(state);
+const pubJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }, (k, v) => k === 'reqs' || k === 'works' ? undefined : v);
+// 화면의 보수요청 → {번호: 한 건}(번호가 없으면 붙인다)
+function collectReqs() { const out = {};
+  for (const f of state.floors) for (const r of roomsOf(f)) for (const q of r.info.reqs || []) { q.id ||= Date.now().toString(36) + Math.random().toString(36).slice(2, 6); out[q.id] = { ...q, b: f.bld, fl: f.name, k: r.key, rn: r.info.name }; }
+  return out; }
+// 받은 보수요청(reqStore)을 실에 다시 단다. 아직 올리지 못한 것(번호가 없거나 받은 적 없는 번호)은 남겨서 다음에 올린다.
+function attachReqs() {
+  const idx = {}, keep = [];
+  for (const f of state.floors) { const rs = roomsOf(f); idx[f.bld + '|' + f.name] = rs;
+    for (const r of rs) { for (const q of r.info.reqs || []) if (!q.id || (!(q.id in reqStore) && !(q.id in reqSent))) keep.push([r.info, q]); delete r.info.reqs; } }
+  for (const id of Object.keys(reqStore).sort()) { const n = reqStore[id], rs = n && idx[n.b + '|' + n.fl]; if (!rs || !rs.length || typeof n.t !== 'string') continue;
+    const r = rs.find(x => x.key === n.k) || rs.find(x => x.info.name === n.rn) || rs[0], { b, fl, k, rn, ...q } = n; q.id = id; (r.info.reqs ||= []).push(q); }
+  reqSent = Object.fromEntries(Object.entries(collectReqs()).map(([id, n]) => [id, JSON.stringify(n)]));
+  for (const [info, q] of keep) (info.reqs ||= []).push(q);
+  if (keep.length) queuePush();
 }
 async function push() {
-  const t = Date.now(), s = JSON.stringify(state), send = body => fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...body, ['gate/' + pw]: t }) });
+  pushT = 0; if (!pw || !role) return; pushing = true;
+  const t = Date.now(), tk = tkey(), s = mainJson(), main = {}, extra = {}, sent = {};
+  if (tk) for (const [id, n] of Object.entries(collectReqs())) { const j = JSON.stringify(n); if (reqSent[id] !== j) { extra['req/' + tk + '/' + id] = n; sent[id] = [n, j]; } }
+  if (role === 'admin' && (s !== mainSent || src === 'old')) { main['sec/' + pw] = { s, t }; main.baechi = null; if (tk) extra['pub/' + tk] = { s: pubJson(), t }; }   // 암호 자리에 올리고 예전 공개 자리는 비운다
+  const send = b => fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...b, ['gate/' + pw]: t }) });
   try {
-    let r = await send({ ['sec/' + pw]: { s, t }, baechi: null }), old = false;   // 암호 자리에 올리고 예전 자리는 비운다
-    if (r.status === 401 && src === 'old') { r = await send({ baechi: { s, t } }); old = true; }   // Firebase 규칙을 아직 안 바꿨으면 예전 자리에 올린다
+    if (!Object.keys(main).length && !Object.keys(extra).length) return syncMsg(syncOn());
+    let r = await send({ ...main, ...extra }), note = '', reqOk = true;
+    if (r.status === 401 && role === 'admin' && src === 'old') { r = await send({ baechi: { s: JSON.stringify(state), t } }); reqOk = false; note = '(예전 자리 — Firebase 규칙을 바꾸면 암호 자리로 옮겨집니다)'; }   // 규칙을 아직 안 바꿨으면 예전 자리에
+    else if (r.status === 401 && role === 'admin' && Object.keys(extra).length && Object.keys(main).length) { r = await send(main); reqOk = false; note = '(보수요청·교원용 자료는 못 올림 — 설정의 교원 암호가 Firebase 규칙과 같은지 확인)'; }
     if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return syncMsg('암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
     if (!r.ok) throw new Error(r.status);
-    syncMsg(old ? '함께 쓰기: 저장됨(예전 자리 — Firebase 규칙을 바꾸면 암호 자리로 옮겨집니다)' : '함께 쓰기: 저장됨');
-    if (!old && src === 'old') listen('sec');   // 방금 암호 자리로 옮겼으면 이제 그 자리를 듣는다
+    if (reqOk) for (const [id, [n, j]] of Object.entries(sent)) { reqSent[id] = j; reqStore[id] = n; }
+    if (Object.keys(main).length) mainSent = s;
+    syncMsg('함께 쓰기: 저장됨' + note);
+    if (src === 'old' && !note.startsWith('(예전')) tryMain('sec');   // 방금 암호 자리로 옮겼으면 이제 그 자리를 듣는다
   } catch (e) { syncMsg('함께 쓰기: 올리지 못함 — 눌러서 다시 시도'); }
+  finally { pushing = false; if ((needAttach || remote) && !typing()) applyRemote(); }
 }
-// 자료 듣기: 암호 자리를 먼저 듣고, 비어 있거나 막혀 있으면 예전 자리에서 받는다(옮기기 전). 둘 다 없으면 암호가 틀린 것으로 본다.
-function listen(kind) {
-  if (es) es.close(); src = kind; let got = false; const me = es = new EventSource(DB + (kind === 'sec' ? '/sec/' + pw : '/baechi') + '.json');
-  const none = () => { if (got || es !== me) return; if (kind === 'sec') return listen('old'); syncMsg('이 암호로 저장된 자료가 없습니다 — 눌러서 암호 다시 넣기'); };
+// 본 자료 듣기: 행정실 자리(sec) → 교원 자리(pub) → 예전 공개 자리(old, 옮기기 전) 순서로 찾는다. 어디서 받았는지로 권한이 정해진다. 어디에도 없으면 암호가 틀린 것.
+function tryMain(kind) {
+  if (es) es.close(); let got = false; const me = es = new EventSource(DB + (kind === 'sec' ? '/sec/' + pw : kind === 'pub' ? '/pub/' + pw : '/baechi') + '.json');
+  const none = () => { if (got || es !== me) return; me.close(); const nx = { sec: 'pub', pub: 'old' }[kind]; if (nx) return tryMain(nx); es = null; syncMsg('이 암호로 저장된 자료가 없습니다 — 눌러서 암호 다시 넣기'); };
   const on = e => { if (es !== me) return; const d = JSON.parse(e.data); if (d.path !== '/') return; if (!d.data || !d.data.s) return none();
-    got = true; remote = d.data.s; const was = locked; locked = false; if (!typing()) applyRemote(); if (was) render(); syncMsg('함께 쓰기: 켜짐'); };
-  es.addEventListener('put', on); es.addEventListener('patch', on);
-  es.onerror = () => { if (es !== me) return; if (!got) { me.close(); return none(); } syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…'); };
+    const first = !got; got = true; src = kind; role = kind === 'pub' ? 'teacher' : 'admin'; remote = mainSent = d.data.s;
+    if (first || !typing()) applyRemote(); if (first) { listenReq(); render(); } syncMsg(syncOn()); };
+  me.addEventListener('put', on); me.addEventListener('patch', on);
+  me.onerror = () => { if (es !== me) return; if (!got) return none(); syncMsg('함께 쓰기: 연결 끊김, 다시 잇는 중…'); };
 }
-// 암호가 바뀌었을 때(넣음·틀려서 지워짐): 넣었으면 자료를 받고, 없으면 기본 도면으로 돌아가고 이 기기에 남은 자료도 지운다
+// 보수요청 듣기(교원 암호 자리). 한 건씩 바뀐 것도 받는다.
+function listenReq() {
+  if (esReq) esReq.close(); esReq = null; reqReady = false; reqStore = {}; reqSent = {}; const tk = tkey(); if (!tk) return maybeBackup();
+  const me = esReq = new EventSource(DB + '/req/' + tk + '.json');
+  const got = () => { const first = !reqReady; reqReady = needAttach = true; if (!typing() && !pushT && !pushing) applyRemote(); if (first) maybeBackup(); };
+  const on = e => { if (esReq !== me) return; const d = JSON.parse(e.data), p = d.path.split('/').filter(Boolean), put = e.type === 'put';
+    if (!p.length) reqStore = put ? d.data || {} : { ...reqStore, ...d.data };
+    else if (p.length === 1) { if (d.data == null) delete reqStore[p[0]]; else reqStore[p[0]] = put ? d.data : { ...reqStore[p[0]], ...d.data }; }
+    else return fetch(DB + '/req/' + tk + '.json').then(r => r.json()).then(v => { if (esReq === me) { reqStore = v || {}; got(); } }).catch(() => {});   // 더 깊은 자리만 바뀐 것은 통째로 다시 받는다
+    got(); };
+  me.addEventListener('put', on); me.addEventListener('patch', on);
+  me.onerror = () => { if (esReq !== me || reqReady) return; me.close(); esReq = null; if (role === 'admin') syncMsg('보수요청을 읽지 못했습니다 — 설정의 교원 암호가 Firebase 규칙과 같은지 확인'); };
+}
+// 백업: 행정실 암호로 연 화면이 오전 8시 이후 그날 처음 자료를 받았을 때, 받은 그대로를 bak/<암호>/<날짜>에 한 번 넣는다(서버가 없어 정각에 돌릴 수는 없다 — 그날 행정실에서 아무도 안 열면 그날 백업은 없다).
+// 날짜 백업은 30일치, 되돌리기 직전 백업(pre-…)은 5개만 남긴다.
+async function maybeBackup() {
+  const day = today(); if (role !== 'admin' || src !== 'sec' || new Date().getHours() < 8 || bakDay === day) return; bakDay = day;
+  try { const keys = await (await fetch(DB + '/bak/' + pw + '.json?shallow=true')).json() || {}; if (keys.error || keys[day]) return;
+    const t = Date.now(), body = { ['bak/' + pw + '/' + day]: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }, old = re => Object.keys(keys).filter(k => re.test(k)).sort();
+    for (const k of [...old(/^\d{4}-\d\d-\d\d$/).slice(0, -29), ...old(/^pre-/).slice(0, -5)]) body['bak/' + pw + '/' + k] = null;
+    await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify(body) });
+  } catch (e) {}
+}
+// 암호가 바뀌었을 때(넣음·틀려서 지워짐): 먼저 기본 도면으로 돌리고, 암호가 있으면 자료를 받는다
 function pwChanged() {
-  if (!DB) return render(); if (es) { es.close(); es = null; } remote = null;
-  if (pw) { locked = true; syncMsg('함께 쓰기: 잇는 중…'); listen('sec'); }
-  else { locked = false; state = defaults(); cur = Math.min(cur, state.floors.length - 1); sel = null; lsv(KEY, ''); syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기'); }
+  if (!DB) return render(); for (const x of [es, esReq]) if (x) x.close(); es = esReq = null; remote = null; role = src = mainSent = ''; reqStore = {}; reqSent = {}; reqReady = needAttach = false;
+  state = defaults(); cur = Math.min(cur, state.floors.length - 1); sel = null; lsv(KEY, '');
+  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
   render();
 }
 function applyRemote() {
-  if (!remote) return; const s = remote; remote = null;
-  if (s !== JSON.stringify(state)) {
-    if (!lsv(KEY + '-synced') && lsv(KEY)) lsv(KEY + '-before-sync', lsv(KEY)); // 처음 이어질 때 이 기기에 있던 자료는 따로 남겨 둔다
-    state = migrate(JSON.parse(s)); cur = Math.min(cur, state.floors.length - 1); if (!findSel()) sel = null;
-    lsv(KEY, s); render();
-  }
-  lsv(KEY + '-synced', '1');
+  let ch = false;
+  if (remote) { const s = remote; remote = null;
+    if (s !== mainJson()) {
+      if (!lsv(KEY + '-synced') && lsv(KEY)) lsv(KEY + '-before-sync', lsv(KEY)); // 처음 이어질 때 이 기기에 있던 자료는 따로 남겨 둔다
+      state = migrate(JSON.parse(s)); cur = Math.min(cur, state.floors.length - 1); lsv(KEY, s); ch = true; if (reqReady) needAttach = true;
+    }
+    lsv(KEY + '-synced', '1'); }
+  if (needAttach && reqReady && tkey()) { needAttach = false; attachReqs(); ch = true; }
+  if (ch) { if (!findSel()) sel = null; render(); }
 }
 if (DB) {
-  $('syncBtn').hidden = false; syncMsg('함께 쓰기: 잇는 중…');
-  $('syncBtn').onclick = () => { if (!pw) return askPw(); if (locked) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return askPw(); }   // 자료를 못 받은 암호는 지우고 다시 묻는다
+  $('syncBtn').hidden = false;
+  $('syncBtn').onclick = () => { if (!pw) return askPw(); if (!role) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return askPw(); }   // 자료를 못 받은 암호는 지우고 다시 묻는다
     syncMsg('함께 쓰기: 올리는 중…'); push(); };
-  if (pw) { locked = true; listen('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
+  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
   $('panel').addEventListener('focusout', () => setTimeout(() => { if (!typing()) applyRemote(); }));
 }
+// 설정: 교원 암호 정하기(Firebase 규칙에 넣은 교원 암호와 같아야 한다)
+$('tpwBtn').onclick = () => { if (ro()) return;
+  const v = (prompt('교원 암호를 넣으세요. Firebase 규칙에 넣은 교원 암호와 같아야 합니다.\n정하면 보수요청과 교원용 도면이 그 암호 자리에 저장됩니다.', state.tpw || '') || '').trim(); if (!v || v === state.tpw) return;
+  if (!KEYOK.test(v)) return alert('암호는 영문·숫자만 씁니다.'); if (v === pw) return alert('교원 암호는 행정실 암호와 달라야 합니다.');
+  applyRemote(); state.tpw = v; mainSent = ''; listenReq(); save(); render(); };
+// 설정: 백업에서 되돌리기. 되돌리기 직전 상태도 pre-… 이름으로 남긴다.
+$('bakBtn').onclick = async () => { if (ro()) return;
+  try {
+    const keys = await (await fetch(DB + '/bak/' + pw + '.json?shallow=true')).json(), list = Object.keys(keys && !keys.error ? keys : {}).sort().reverse();
+    if (!list.length) return alert('아직 백업이 없습니다.\n백업은 매일 오전 8시 이후 행정실 암호로 처음 열 때 하루 한 번 만들어집니다.');
+    const d = (prompt('되돌릴 백업 이름을 적으세요(날짜 = 그날 아침 상태, pre-… = 되돌리기 직전 상태).\n\n' + list.join('\n'), list[0]) || '').trim(); if (!d) return;
+    if (!list.includes(d)) return alert('그런 이름의 백업이 없습니다.');
+    if (!confirm(d + ' 백업으로 되돌립니다.\n그 뒤에 고친 배치도·물품·하자보증은 사라집니다(지금 상태는 되돌리기 직전 백업으로 남깁니다). 보수요청은 되돌리지 않고 지금 그대로 둡니다.\n계속할까요?')) return;
+    const b = await (await fetch(DB + '/bak/' + pw + '/' + d + '.json')).json(); if (!b || !b.s) return alert('백업을 읽지 못했습니다.');
+    const n = new Date(), p2 = x => String(x).padStart(2, '0'), t = Date.now(), pre = 'pre-' + today() + '-' + p2(n.getHours()) + p2(n.getMinutes()) + p2(n.getSeconds());
+    const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['bak/' + pw + '/' + pre]: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }) });
+    if (!r.ok) return alert('지금 상태를 백업하지 못해 되돌리기를 멈췄습니다.');
+    const tp = state.tpw; state = migrate(JSON.parse(b.s)); if (tp) state.tpw = tp; cur = Math.min(cur, state.floors.length - 1); sel = null; mainSent = '';
+    if (tkey() && reqReady) { for (const f2 of state.floors) for (const r2 of roomsOf(f2)) delete r2.info.reqs; attachReqs(); }   // 보수요청은 되돌리지 않는다(따로 저장된 것을 그대로 단다)
+    log('백업(' + d + ')으로 되돌림'); save(); render(); alert(d + ' 백업으로 되돌렸습니다. 직전 상태는 ' + pre + ' 이름으로 남겼습니다.');
+  } catch (e) { alert('백업을 불러오지 못했습니다: ' + e.message); }
+};
 
 // ── 조작 ──
 $('bldTabs').onclick = e => { const b = e.target.dataset.b, s = e.target.dataset.s;
@@ -1599,7 +1684,7 @@ function fillReqNew(lv = 0) {
 }
 $('rn-b').onchange = () => fillReqNew(1); $('rn-f').onchange = () => fillReqNew(2);
 $('rn-save').onclick = () => {
-  if (ro()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
+  if (noReq()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
   lsv(KEY + '-who', who); applyRemote(); const r = roomsOf(state.floors[fi]).find(x => x.key === key); if (!r) return fillReqNew(2);
   (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); const c = cur; cur = fi; log(`보수요청: ${r.info.name} — ${t}`); cur = c;
   const pf = [...$('rn-ph').files]; $('rn-ph').value = ''; phzLabel($('rn-ph').parentNode);
@@ -1624,7 +1709,7 @@ $('reqList').onclick = e => {
   const tr = e.target.closest('tr[data-k]'); if (!tr) return;
   if (e.target.dataset.reqmdel != null) { if (ro()) return; applyRemote(); const [n, k] = e.target.dataset.reqmdel.split(':'); return reqMemo(+tr.dataset.f, tr.dataset.k, +n, +k); }   // 메모 줄의 × = 그 메모 지움
   if (e.target.dataset.reqphv != null) return phShow(+tr.dataset.f, tr.dataset.k, +e.target.dataset.reqphv);
-  if (e.target.dataset.rph != null) return ro() || phPick(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rph);
+  if (e.target.dataset.rph != null) return noReq() || phPick(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rph);
   if (e.target.dataset.rm != null) { if (ro()) return; applyRemote(); return reqMemo(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rm); }
   if (e.target.dataset.rq != null) { if (ro()) return; applyRemote(); return reqAct(+tr.dataset.f, tr.dataset.k, +e.target.dataset.rq); }
   $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다
@@ -1632,15 +1717,16 @@ $('reqList').onclick = e => {
 };
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
-  if (ro()) return;
+  if (noReq()) return;   // 여기부터 보수요청 올리기·사진까지는 교원도 된다
   if (d.reqadd != null || d.reqcancel != null) { reqForm = d.reqadd != null ? cur + ':' + sel : ''; renderPanel(); if (reqForm) $('r-text').focus(); return; }
   if (d.reqsave != null) {
     const t = $('r-text').value.trim(), who = $('r-who').value.trim(); if (!t) return $('r-text').focus();
     lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
     const pf = [...$('r-ph').files]; (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); render(); return phAttach(cur, sel, r.info.reqs.length - 1, pf);
   }
-  if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
   if (d.reqphv != null) return phShow(cur, sel, +d.reqphv); if (d.reqph != null) return phPick(cur, sel, +d.reqph);
+  if (ro()) return;   // 아래는 행정실만(진행 메모·완료·하자보증·냉난방기·물품)
+  if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
   if (d.reqmemo != null) { applyRemote(); if (!findSel()) return; return reqMemo(cur, sel, +d.reqmemo); }
   if (d.reqdone != null) { applyRemote(); if (!findSel()) return; return reqAct(cur, sel, +d.reqdone); }
   if (d.wkadd != null) return wkOpen(); if (d.wkedit != null) return wkOpen(d.wkedit); if (d.wkdel != null) return wkDel(d.wkdel);

@@ -103,6 +103,10 @@
   .req-btn { margin-left:8px; padding:2px 9px; font-size:12px; font-weight:600; vertical-align:3px; color:#b42318; background:#fff4f2; border-color:#f3b8ae; }
   .req-btn:hover { background:#ffe7e2; border-color:#e8907f; }
   .reqs { margin:-4px 0 14px; }
+  /* 암호 입력 창 */
+  #pwDlg { width:min(380px, calc(100vw - 32px)); min-width:0; box-sizing:border-box; } #pwDlg h2 { margin:0 0 4px; } #pwDlg #pwNow { margin:0; }
+  #pwIn { width:100%; box-sizing:border-box; margin:12px 0 8px; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:var(--surface); font-size:16px; } #pwIn:hover, #pwIn:focus { border-color:var(--line-strong); }
+  #pwDlg ul { margin:10px 0 0; padding-left:18px; } #pwDlg .acts #pwClear { margin-right:auto; }
   /* 보수요청 사진 */
   .req-form :is(select, textarea, input) { padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); } .req-form :is(select, textarea, input):hover { border-color:var(--line-strong); } .req-form textarea { resize:vertical; }   /* 보수요청 입력 칸도 실 정보 입력 칸과 같은 모양 */
   .phz { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; padding:7px 9px; border:1px dashed var(--line-strong); border-radius:6px; background:var(--surface); font-size:12px; color:var(--sub); }
@@ -342,6 +346,14 @@
 </section>
 
 <dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="pwDlg"><form method="dialog">
+  <h2>🔑 암호 입력</h2>
+  <p class="hint" id="pwNow"></p>
+  <input type="password" id="pwIn" autocomplete="off" placeholder="암호" aria-label="암호">
+  <label class="chk"><input type="checkbox" id="pwShow"> 암호 보기</label>
+  <ul class="hint"><li><b>행정실 암호</b> — 모두 보고 고칩니다</li><li><b>교원 암호</b> — 도면을 보고 보수요청·실 메모·물품을 고칩니다</li></ul>
+  <div class="acts"><button type="button" id="pwClear" title="암호를 지우고 배치도만 봅니다(함께 쓰는 PC에서 쓴 뒤 누르세요)">암호 지우기</button><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">확인</button></div>
+</form></dialog>
 <dialog id="phDlg"><div class="sec-head"><h2 id="phTitle"></h2><button class="p-close" id="phClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="phBox"></div></dialog>
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
@@ -1411,12 +1423,17 @@ const syncMsg = t => { $('syncBtn').textContent = '🔑 암호 입력' + (role =
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 // 암호 입력: 누를 때마다 묻고, 마지막에 넣은 암호의 권한으로 쓴다. 비워서 확인하면 암호를 지우고 기본 도면으로 돌아간다.
 function askPw() {
-  const v = prompt('암호를 넣으세요.\n행정실 암호: 모두 보고 고칩니다.\n교원 암호: 도면을 보고 보수요청·실 메모·물품을 고칩니다.\n(비워 두고 확인하면 암호를 지우고 기본 도면만 봅니다)', ''); if (v === null) return false;
-  const t = v.trim();
-  if (!t) { if (pw && confirm('암호를 지우고 기본 도면만 볼까요?')) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); } return false; }
-  if (!KEYOK.test(t)) { alert('암호는 영문·숫자만 씁니다.'); return false; }
-  pw = t; lsv(KEY + '-pw', pw); pwChanged(); return true;
+  const i = $('pwIn'); i.value = ''; i.type = 'password'; $('pwShow').checked = false; $('pwClear').hidden = !pw;
+  $('pwNow').textContent = role === 'admin' ? '지금: 행정실 권한' : role === 'teacher' ? '지금: 교원 권한' : pw ? '지금 암호로는 자료를 받지 못했습니다' : '지금: 암호 없음 (배치도만 보기)';
+  $('pwDlg').returnValue = ''; $('pwDlg').showModal(); i.focus();
 }
+$('pwShow').onchange = () => { $('pwIn').type = $('pwShow').checked ? 'text' : 'password'; };
+$('pwClear').onclick = () => $('pwDlg').close('clear');
+$('pwDlg').onclick = e => { if (e.target === $('pwDlg')) $('pwDlg').close('cancel'); };   // 창 바깥(어두운 곳)을 누르면 닫기
+$('pwDlg').onclose = () => { const how = $('pwDlg').returnValue, t = $('pwIn').value.trim(); $('pwIn').value = '';
+  if (how === 'clear') { pw = ''; lsv(KEY + '-pw', ''); return pwChanged(); }
+  if (how !== 'ok' || !t) return; if (!KEYOK.test(t)) return alert('암호는 영문·숫자만 씁니다.');
+  pw = t; lsv(KEY + '-pw', pw); pwChanged(); };
 function queuePush() { if (!pw || !role) return; clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…'); }
 // 올릴 글: 본 자료(교원 암호를 정했으면 보수요청을 뺀다), 교원용 사본(물품·하자보증·이력·교원 암호를 뺀다)
 // 물품대장과 실 메모는 교원도 고칠 수 있게 tw/<교원 암호>에 따로 둔다(2026-11-27 사용자 요청). 그 자리가 생긴 뒤(twSent)에는 본 자료에서 물품을 빼고, 메모는 tw의 것이 이긴다.
@@ -1776,7 +1793,7 @@ $('panel').onclick = e => {
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
-addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open) { sel = null; render(); } });
+addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open && !$('pwDlg').open) { sel = null; render(); } });
 $('panel').onchange = e => { if (noReq() || (ro() && e.target.dataset.k !== 'memo' && e.target.dataset.itq == null)) return;   // 교원은 실 메모와 물품 수량만
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;

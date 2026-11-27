@@ -1139,7 +1139,7 @@ function renderPlan() {
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' + (siteLv ? ` · 모든 건물 ${siteLv}` : '') : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
   $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡${editing ? '<span class="noprint"> · 벽 자리를 누르면 철거/설치</span>' : !site && noReq() ? '' : ''}`;
-  $('sheetSub').title = site ? '건물의 층을 누르면 그 층으로 넘어갑니다. 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래). Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동. 휴대폰은 두 손가락으로 이동·크기 조절.' : ro() ? '함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다.' : '실을 누르면 정보 창이 뜹니다. Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가할 수 있습니다.';   // 긴 안내는 마우스를 올렸을 때만
+  $('sheetSub').title = site ? '실을 누르면 선택되고, 두 번 누르면 그 건물의 그 층으로 넘어갑니다. 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래). Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동. 휴대폰은 두 손가락으로 이동·크기 조절.' : ro() ? '함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다.' : '실을 누르면 정보 창이 뜹니다. Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가할 수 있습니다.';   // 긴 안내는 마우스를 올렸을 때만
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
@@ -1744,11 +1744,14 @@ addEventListener('pointermove', e => {
   if (!raf) raf = requestAnimationFrame(() => { raf = 0; poseSite(); });
 });
 addEventListener('pointerup', () => { if (drag && drag.moved) { dragged = true; setTimeout(() => { dragged = false; }); } drag = null; $('plan').classList.remove('moving'); });
+// 전체 배치에서 건물로 들어가기: 건물 전체 층 보기로 넘어가되, 누른 층이 한 화면에 차는 크기로 맨 위에 보이게 한다. 고른 실은 그대로 둔다.
+function siteEnter(fi) { const b = state.floors[fi].bld; site = false; allView = true; open = school(b); cur = fi; if (!findSel()) sel = null; render(); autoZoom(cur); scrollTo(0, 0); }
+$('plan').ondblclick = e => { const fi = e.target.dataset.f; if (site && fi != null) siteEnter(+fi); };
 $('plan').onclick = e => {
-  if (site) {          // 전체 배치는 실 선택·벽 편집 없이, 건물의 층을 누르면 그 건물의 전체 층으로 넘어간다
-    const fi = e.target.dataset.f; if (dragged || fi == null) return;
-    const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
-    cur = +fi; render(); autoZoom(cur); return scrollTo(0, 0);   // 건물 전체 층 보기로 넘어가되, 누른 층이 한 화면에 차는 크기로 맨 위에 보이게 한다
+  if (site) {          // 전체 배치: 실을 누르면 그 실이 선택된다(전체 배치에 그대로 머문다 — 사용자 요청 2026-11-27). 그 건물로 들어가려면 두 번 누른다.
+    const fi = e.target.dataset.f, k = e.target.dataset.k; if (dragged || fi == null) return;
+    if (k) { cur = +fi; sel = k; multi.clear(); return render(); }
+    return siteEnter(+fi);
   }
   const t = e.target, pc = cur;
   if (t.dataset.f) cur = +t.dataset.f;

@@ -86,7 +86,11 @@
     background-image:linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
     background-size:28px 28px; background-position:-1px -1px; }
   #plan { display:block; margin:auto; }
-  #legend { display:flex; flex-wrap:wrap; gap:4px 14px; padding:8px 14px 10px; font-size:12px; color:var(--sub); }
+  /* 범례는 도면 상자 안 왼쪽 위에 얹는다(사용자 요청 2026-11-27). 눌러지지 않게 해서 그 밑의 실을 그대로 누를 수 있다. */
+  #planwrap { position:relative; }
+  #legend { position:absolute; left:18px; top:16px; z-index:2; max-width:calc(100% - 56px); box-sizing:border-box; display:flex; flex-wrap:wrap; gap:3px 12px; padding:5px 10px; font-size:12px; color:var(--sub);
+    background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:6px; pointer-events:none; }
+  #legend:empty { display:none; } #legend > span[style*="margin-left:auto"] { margin-left:0 !important; }
   .sw { display:inline-block; width:11px; height:11px; border:1px solid var(--line-strong); border-radius:2px; vertical-align:-1px; margin-right:5px; }
 
   /* 실 정보는 도면 위에 뜨는 창 */
@@ -353,8 +357,8 @@
 <main>
   <div class="card" id="sheet">
     <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span><button id="wkMulti" class="noprint" hidden title="고른 실들에 같은 공사·물품 하자보증을 한꺼번에 적습니다. 고르기를 풀려면 Esc 또는 빈 곳·다른 실을 그냥 누르기"></button><span id="acTot"></span></div>
-    <div id="planbox"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
-    <div id="legend"></div>
+    <div id="planwrap"><div id="planbox"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="legend"></div></div>
   </div>
   <aside class="card" id="panel"></aside>
 </main>
@@ -1648,7 +1652,7 @@ $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
   const s = $('plan').style, z = +$('zoom').value; s.width = z + '%';
-  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - $('legend').offsetHeight - 36) * (phone() ? 1 : site ? 1.3 : 1.2);   // 건물·층 화면도 상자를 한 화면의 1.2배 높이로(사용자 요청 2026-11-27)     // 전체 배치는 상자를 한 화면의 1.3배 높이로(사용자 요청). 휴대폰은 가운데 맞춘 도면이 화면 안에 보이도록 한 화면 높이
+  const top = $('planbox').getBoundingClientRect().top + scrollY, room = Math.max(260, innerHeight - top - 36) * (phone() ? 1 : site ? 1.3 : 1.2);   // 건물·층 화면도 상자를 한 화면의 1.2배 높이로(사용자 요청 2026-11-27)     // 전체 배치는 상자를 한 화면의 1.3배 높이로(사용자 요청). 휴대폰은 가운데 맞춘 도면이 화면 안에 보이도록 한 화면 높이
   $('planbox').style.maxHeight = room + 18 + 'px';      // 상자는 한 화면 높이: 넘치는 도면은 상자 안에서 움직여 본다(오른쪽 단추로 끌기·스크롤)
   $('planbox').style.height = site ? room + 18 + 'px' : '';   // 전체 배치는 상자 크기를 고정하고 스크롤 막대 없이(넘치면 오른쪽 단추로 끌어서 본다)
   $('planbox').classList.toggle('fixed', site);

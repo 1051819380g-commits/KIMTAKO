@@ -59,6 +59,7 @@
   .sheet-head { display:flex; align-items:baseline; gap:10px; padding:10px 14px 0; }
   .sheet-head b { font-size:18px; font-weight:700; letter-spacing:-.01em; }
   .sheet-head span { color:var(--sub); font-size:12px; }
+  .sheet-head #wkMulti { margin-left:auto; align-self:center; padding:3px 10px; font-size:12px; font-weight:600; color:#1e7a43; background:#eaf7ee; border-color:#b7e0c4; } #wkMulti:not([hidden]) ~ #acTot { margin-left:0; }
   .sheet-head #acTot { margin-left:auto; display:flex; flex-wrap:wrap; gap:4px 6px; justify-content:flex-end; }
   #acTot b { font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-soft); border-radius:10px; padding:1px 9px; white-space:nowrap; }
   #planbox { overflow:auto; max-height:66vh; padding:8px 10px; margin:8px 10px 0; border:1px solid var(--line); border-radius:4px;
@@ -295,7 +296,7 @@
 <div class="stats" id="stats"></div>
 <main>
   <div class="card" id="sheet">
-    <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span><span id="acTot"></span></div>
+    <div class="sheet-head"><b id="sheetTitle"></b><span id="sheetSub"></span><button id="wkMulti" class="noprint" hidden title="고른 실들에 같은 공사·물품 하자보증을 한꺼번에 적습니다. 고르기를 풀려면 Esc 또는 빈 곳·다른 실을 그냥 누르기"></button><span id="acTot"></span></div>
     <div id="planbox"><svg id="plan" xmlns="http://www.w3.org/2000/svg"></svg></div>
     <div id="legend"></div>
   </div>
@@ -718,7 +719,11 @@ function addItem(r, name, n) {
 }
 
 // ── 그리기 ──
+// 여러 실 고르기(Ctrl+누르기): '층번호 실키' → [층 번호, 실 키]. 지금 화면에 보이는 실만 남긴다(다른 건물·층으로 가면 풀린다).
+const multi = new Map();
 function render() { document.body.classList.toggle('ro', ro()); if (ro() && editing) { editing = false; $('edit').checked = false; }
+  for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
+  $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site; render.site = site;
   renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
   if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
@@ -897,7 +902,7 @@ function drawFloor(fi) {
   const fire = view === 'fire', ev = fire ? evacRoutes(f, rooms, fi === cur && !site ? sel : null) : null;
   const sil = rooms.flatMap(r => r.parts || [r.pts]).map(pts => `<polygon points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"/>`).join('');
   for (const r of rooms) {
-    const on = fi === cur && sel === r.key;
+    const on = fi === cur && sel === r.key || multi.has(fi + ' ' + r.key);
     for (const pts of r.parts || [r.pts]) h_ += `<polygon class="room${on ? ' sel' : ''}" data-f="${fi}" data-k="${r.key}" fill="${fill(r.info, f)}" points="${pts.map(p => p.map(n => n.toFixed(2)).join(',')).join(' ')}"><title>${esc(r.info.name)} ${fmt(r.area)}㎡</title></polygon>`;
     if (r.parts) for (const w of fw) if (open.has(w.id) && r.ids.includes(w.id.split('|')[0])) {
       const d = Math.hypot(w.q[0] - w.p[0], w.q[1] - w.p[1]), e = (on ? .3 : .12) / d, at = t => [w.p[0] + (w.q[0] - w.p[0]) * t, w.p[1] + (w.q[1] - w.p[1]) * t].map(n => n.toFixed(2)), a = at(e), b = at(1 - e);
@@ -1025,7 +1030,7 @@ function renderPlan() {
   const sy = h + 1.2, sx = x0 + m;
   if (!site) h_ += `<path class="scale" d="M${sx} ${sy}h10M${sx} ${sy - .4}v.8M${sx + 5} ${sy - .4}v.8M${sx + 10} ${sy - .4}v.8"/><text class="dim" x="${sx + 10.6}" y="${sy + .35}" font-size="1">10m</text>`;
   $('sheetTitle').textContent = site ? '전체 배치 (입체)' + (siteLv ? ` · 모든 건물 ${siteLv}` : '') : allView ? `${f.bld} 전체 층` : `${f.bld} ${f.name}`;
-  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래) · Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동 · 휴대폰은 두 손가락으로 이동·크기 조절' : editing ? '벽 자리를 누르면 철거/설치됩니다' : (ro() ? '보기 전용 — 함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다' : '실을 누르면 정보 창이 뜹니다')}</span>`;
+  $('sheetSub').innerHTML = `실 ${ds.reduce((a, d) => a + d.n, 0)}개 · ${fmt(ds.reduce((a, d) => a + d.area, 0))}㎡<span class="noprint"> · ${site ? '건물의 층을 누르면 그 건물의 그 층으로 넘어갑니다 · 끌면 돌아가고(좌우) 내려다보는 각도가 바뀝니다(위아래) · Ctrl+휠로 크기, 오른쪽 단추로 끌면 이동 · 휴대폰은 두 손가락으로 이동·크기 조절' : editing ? '벽 자리를 누르면 철거/설치됩니다' : (ro() ? '보기 전용 — 함께 쓰기에 편집 암호를 넣으면 실을 눌러 정보 창을 볼 수 있습니다' : '실을 누르면 정보 창이 뜹니다 · Ctrl+누르기로 여러 실을 골라 하자보증을 한꺼번에 추가')}</span>`;
   // 보이는 층의 냉난방기를 종류별로 센다
   const cnt = {}; for (const d of ds) for (const r of roomsOf(state.floors[d.i])) for (const a of r.info.acs) cnt[a.t] = (cnt[a.t] || 0) + 1;
   $('acTot').innerHTML = [['천장형', '천장형'], ['스탠드', '스탠드형'], ['벽걸이', '벽걸이형'], ['기타', '기타'], ['', '종류 미입력']].filter(([t], n) => n < 2 || cnt[t]).map(([t, l]) => `<b>${l} ${cnt[t] || 0}대</b>`).join('');
@@ -1141,11 +1146,13 @@ const wkHtml = x => { const w = x.w, s = wkSt(w); return `<div class="wk-item ${
 // 보수요청 옆에 띄우는 알림: 보증 기간이 남았으면 학교 돈으로 고치기 전에 업체에 하자보수를 청구할 수 있는지 본다
 const wkNote = (f, i) => { const ws = wkOnOf(f, i); return ws.length ? `<div class="wk-note">🔧 <b>하자보증 중</b> — 고치기 전에 업체에 하자보수를 청구할 수 있는지 확인하세요.<br>${ws.map(w => `${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''}${w.tel ? ' ' + esc(w.tel) : ''} (~${esc(w.e)})`).join('<br>')}</div>` : ''; };
 // 입력 창: id가 없으면 고른 실에 새로 적고, 있으면 그 항목을 고친다
-function wkOpen(id) {
-  const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id ? !x : !r) return;
+// many = [[층 번호, 실 키], …]를 주면 그 실들에 같은 내용을 하나씩 적는다(실마다 따로 고치고 지울 수 있다)
+function wkOpen(id, many) {
+  const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id ? !x : !r && !many) return;
+  const rooms = () => (many || []).map(([fi, k]) => roomsOf(state.floors[fi]).find(q => q.key === k)).filter(Boolean);
   const w = x ? x.w : { kind: '공사', d: today() }, dlg = $('wkDlg'), v = k => $('wk-' + k);
   $('wkTitle').textContent = x ? '공사·하자보증 고침' : '공사·하자보증 추가';
-  v('sc').innerHTML = x ? `<option>${esc(x.where)}</option>` : `<option value="r">이 실 (${esc(r.info.name)})</option><option value="f">${esc(f.bld)} ${esc(f.name)} 전체</option><option value="b">${esc(f.bld)} 건물 전체</option>`; v('sc').disabled = !!x;
+  v('sc').innerHTML = x ? `<option>${esc(x.where)}</option>` : many ? `<option>고른 실 ${rooms().length}개 (${esc(rooms().map(q => q.info.name).join(', '))})</option>` : `<option value="r">이 실 (${esc(r.info.name)})</option><option value="f">${esc(f.bld)} ${esc(f.name)} 전체</option><option value="b">${esc(f.bld)} 건물 전체</option>`; v('sc').disabled = !!x || !!many;
   v('type').innerHTML = '<option value="">직접 입력</option>' + WK_TYPES.map(([t, y]) => `<option value="${esc(t)}" data-y="${y}">${esc(t)} — ${y}년</option>`).join('');
   v('kind').value = w.kind || '공사'; v('t').value = w.t || ''; v('type').value = w.type || ''; v('co').value = w.co || ''; v('tel').value = w.tel || ''; v('d').value = w.d || ''; v('y').value = w.y || ''; v('e').value = w.e || '';
   const kind = () => { v('typeL').hidden = v('kind').value === '물품'; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
@@ -1156,6 +1163,7 @@ function wkOpen(id) {
     const nw = { kind: v('kind').value, t: v('t').value.trim(), type: v('kind').value === '물품' ? '' : v('type').value, co: v('co').value.trim(), tel: v('tel').value.trim(), d: v('d').value, y: +v('y').value || '', e: v('e').value };
     if (!nw.t) return; applyRemote(); let where;   // 창이 떠 있는 동안 다른 사람이 바꿨으면 다시 찾는다
     if (x) { const y = wkGet(id); if (!y || y.w.t !== w.t || y.w.d !== w.d) return alert('창을 연 사이에 다른 사람이 이 목록을 바꿨습니다. 다시 열어 주세요.'); Object.assign(y.w, nw); where = y.where; }
+    else if (many) { const rs = rooms(); if (!rs.length) return; for (const q of rs) (q.info.works ||= []).push({ ...nw }); where = rs.map(q => q.info.name).join(', '); multi.clear(); }
     else { const sc = v('sc').value, r2 = findSel(); if (sc === 'r') { if (!r2) return; (r2.info.works ||= []).push(nw); where = r2.info.name; }
       else { (state.works ||= []).push({ ...nw, b: f.bld, fl: sc === 'f' ? f.name : '' }); where = sc === 'f' ? '층 전체' : '건물 전체'; } }
     const c = cur; if (x && x.fi >= 0) cur = x.fi; log(`공사·하자보증 ${x ? '고침' : '등록'}: ${where} — ${nw.t}${nw.e ? ' (보증 ~' + nw.e + ')' : ''}`); cur = c; save(); render();
@@ -1386,12 +1394,18 @@ $('plan').onclick = e => {
     const b = state.floors[+fi].bld; site = false; allView = true; open = school(b); sel = null;
     cur = +fi; render(); autoZoom(cur); return scrollTo(0, 0);   // 건물 전체 층 보기로 넘어가되, 누른 층이 한 화면에 차는 크기로 맨 위에 보이게 한다
   }
-  const t = e.target;
+  const t = e.target, pc = cur;
   if (t.dataset.f) cur = +t.dataset.f;
   if (t.dataset.w) { const [si, k] = t.dataset.w.split(':').map(Number); toggleWall(state.floors[cur].strips[si], k); sel = null; save(); render(); }
   else if (t.dataset.fw) { toggleFixed(state.floors[cur], t.dataset.fw); sel = null; save(); render(); }
-  else if (t.dataset.k) { sel = t.dataset.k; render(); }
+  else if (t.dataset.k && (e.ctrlKey || e.metaKey) && !ro() && !editing) {   // Ctrl+누르기: 여러 실 고르기(다시 누르면 빠진다). 정보 창을 열어 둔 실이 있으면 그 실부터 넣는다
+    if (!multi.size && sel) multi.set(pc + ' ' + sel, [pc, sel]);
+    const id = cur + ' ' + t.dataset.k; if (!multi.delete(id)) multi.set(id, [cur, t.dataset.k]); sel = null; render(); }
+  else if (t.dataset.k) { multi.clear(); sel = t.dataset.k; render(); }
+  else if (multi.size) { multi.clear(); render(); }
 };
+$('wkMulti').onclick = () => wkOpen(null, [...multi.values()]);
+addEventListener('keydown', e => { if (e.key === 'Escape' && multi.size && !document.querySelector('dialog[open]')) { multi.clear(); render(); } });
 $('tbl').onclick = e => { const tr = e.target.closest('tr[data-k]'); if (tr) { cur = +tr.dataset.f; sel = tr.dataset.k; render(); if (allView) document.querySelector('.room.sel')?.scrollIntoView({ block: 'center' }); else $('planbox').scrollIntoView({ block: 'nearest' }); } };
 // 구역 접기: 접은 상태는 이 기기(브라우저)에 기억한다.
 for (const sec of document.querySelectorAll('section[data-fold]')) {

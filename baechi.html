@@ -585,6 +585,9 @@ function migrate(s) {
   if (s.v < 13) { const nm = { '고등학교 급식시설(6호동)': B6, '중학교 기계실(5호동)': B5, '중학교 씨름연습장(8호동)': B8 }; for (const f of s.floors) f.bld = nm[f.bld] || f.bld; s.v = 13; } // v13: 부속 건물 이름을 호동 번호만으로
   if (s.v < 14) { const i = s.floors.findIndex(f => f.bld === HALL);   // v14: 강당·도서관동 → 강당, 도서관동(다른 건물)
     if (i >= 0) { const hs = s.floors.filter(f => f.bld === HALL); s.floors = s.floors.filter(f => f.bld !== HALL); s.floors.splice(i, 0, ...splitHall(hs)); } s.v = 14; }
+  if (s.v < 15) {   // v15: 시험으로 올린 보수요청(2026-11-27까지 요청분)을 모두 비운다(사용자 요청 2026-11-27). 그 뒤에 올린 것은 건드리지 않는다
+    const walk = o => { if (!o || typeof o !== 'object') return; if (Array.isArray(o.reqs)) { o.reqs = o.reqs.filter(q => !(q.d <= '2026-11-27')); if (!o.reqs.length) delete o.reqs; } for (const k in o) if (k !== 'reqs') walk(o[k]); };
+    walk(s.floors); s.v = 15; }
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -593,7 +596,7 @@ function migrate(s) {
   s.items ||= []; s.log ||= []; return s;
 }
 function defaults() {
-  return { v: 14, items: [], log: [], floors: [
+  return { v: 15, items: [], log: [], floors: [
     basement(),
     mainFloor('1층', [[2, ST], [6, '보건실'], [8, '인쇄실'], [10, '평가관리실'], [12, '행정실장실'], [18, '행정실']],
       [[6, '컴퓨터실'], [8, '서버실'], [12, '사회교과중점교실A'], [16, '사회교과중점교실B'], [18, ST]], ['홀'], ['화장실', ST, '당직실·창고'], ['행정문서고', '교무문서고']),
@@ -1076,7 +1079,7 @@ function renderPanel() {
   <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><button type="button" data-phzpick>📷 사진 고르기</button><span class="phz-t" data-t="여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요">여기에 끌어다 놓아도 됩니다 · 3장까지 · 학생 얼굴·개인정보가 찍힌 사진은 올리지 마세요</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
-    ${reqs.map((q, n) => ({ q, n })).sort((a, b) => a.q.done - b.q.done || b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">${q.done ? '되돌리기' : '완료'}</button></div></div>`).join('')}</div>` : ''}
+    ${reqs.map((q, n) => ({ q, n })).filter(x => !x.q.done).sort((a, b) => b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">완료</button></div></div>`).join('')}${reqs.length > openN ? `<p class="hint" style="margin:6px 0 0">✅ 완료한 요청 ${reqs.length - openN}건은 위쪽 "🚨 보수요청" 목록의 "전체"에서 봅니다.</p>` : ''}</div>` : ''}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1095,7 +1098,7 @@ function renderPanel() {
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
-// 보수요청 완료·되돌리기. 보수요청은 지우지 못한다 — 완료로만 끝내 기록에 남긴다(사용자 결정 2026-11-26). fi = 층 번호, key = 실 키. 완료할 때는 완료일을 고르는 창을 띄운다(처음 값은 오늘).
+// 보수요청 완료·되돌리기(되돌리기는 목록 창에서만 — 실 정보 창에는 진행 중인 요청만 보인다, 사용자 요청 2026-11-27). 보수요청은 지우지 못한다 — 완료로만 끝내 기록에 남긴다(사용자 결정 2026-11-26). fi = 층 번호, key = 실 키. 완료할 때는 완료일을 고르는 창을 띄운다(처음 값은 오늘).
 function reqAct(fi, key, n) {
   const find = () => { const r = roomsOf(state.floors[fi]).find(x => x.key === key); return r && { r, q: (r.info.reqs || [])[n] }; };
   const at = t => { const c = cur; cur = fi; log(t); cur = c; };   // 변경 이력의 위치는 그 실이 있는 층으로 적는다

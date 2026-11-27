@@ -153,7 +153,7 @@
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
   /* 머리줄 오른쪽 위: 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 예전처럼 제목 옆) */
-  @media not all and (pointer:coarse) and (max-width: 960px) { #reqJump { order:2; margin-left:auto; } #wkJump { order:3; } .bar > .grp.push { order:4; margin-left:0; } }
+  @media not all and (pointer:coarse) and (max-width: 960px) { #reqJump { order:2; margin-left:auto; } #wkJump { order:3; margin-left:-8px; } .bar > .grp.push { order:4; margin-left:-8px; } }   /* 머리줄 간격(14px)을 묶음 안 간격(6px)에 맞춘다 */
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
   .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
   .acs-head button { padding:2px 9px; font-size:12px; }

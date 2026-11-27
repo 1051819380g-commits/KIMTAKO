@@ -162,7 +162,7 @@
     #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; } #syncState { margin-left:0; }
-  /* 머리줄 오른쪽 위: 벽 편집 · 암호 입력 · 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 보수요청·하자보증만 제목 옆, 나머지는 메뉴 안) */
+  /* 머리줄 오른쪽 위: 암호 입력 · 벽 편집 · 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 보수요청·하자보증만 제목 옆, 나머지는 메뉴 안) */
   @media not all and (pointer:coarse) and (max-width: 960px) { #grpL { order:2; margin-left:auto; } #reqJump { order:3; margin-left:-8px; } #wkJump { order:3; margin-left:-8px; } .bar > .grp.push:not(#grpL) { order:4; margin-left:-8px; } }   /* 머리줄 간격(14px)을 묶음 안 간격(6px)에 맞춘다 */
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
   .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
@@ -309,8 +309,8 @@
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
     <div class="grp push noprint" id="grpL">
-      <label class="chk" id="editLbl" title="켜면 벽 자리를 눌러 벽을 허물거나 세울 수 있습니다"><input type="checkbox" id="edit"> 벽 편집</label>
       <button id="syncBtn" hidden title="암호를 넣거나 바꿉니다. 마지막에 넣은 암호의 권한(행정실·교원)으로 씁니다">🔑 암호 입력</button>
+      <label class="chk" id="editLbl" title="켜면 벽 자리를 눌러 벽을 허물거나 세울 수 있습니다"><input type="checkbox" id="edit"> 벽 편집</label>
     </div>
     <div class="grp push noprint">
       <button id="printPlan">도면 인쇄</button>

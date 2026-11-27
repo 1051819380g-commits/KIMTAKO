@@ -95,7 +95,8 @@
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
   body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
   /* 교원(보수요청만): 고치는 단추·행정실용 화면을 숨긴다. 실 정보 창에는 이름·면적·보수요청만 */
-  body.tch :is(#stats, main ~ section, #setMenu, #wkJump, #vWork, #wkMulti, #editLbl, #locOk, [data-reqdone], [data-reqmemo], [data-rq], [data-rm], .mx, #panel .f, #panel .it-head, #panel .its, #panel .wk-item, #panel .wk-note, #panel > .hint) { display:none !important; }
+  body.tch :is(#stats, main ~ section, #setMenu, #wkJump, #vWork, #wkMulti, #editLbl, #locOk, [data-reqdone], [data-reqmemo], [data-rq], [data-rm], .mx, [data-acadd], [data-acdel], #panel .wk-head, #panel .wk-item, #panel .wk-note, #panel .acs) { display:none !important; }
+  body.tch #panel .f > :not([for=i-memo]):not(#i-memo) { display:none !important; }   /* 교원: 입력 칸은 메모만 */
   body.ro #panel :is(input, select, textarea):disabled { opacity:1; color:var(--ink); background:var(--sheet); -webkit-text-fill-color:var(--ink); }
   body.ro #panel :disabled::placeholder { -webkit-text-fill-color:transparent; color:transparent; }
   /* 보수요청 */
@@ -153,7 +154,7 @@
     #reqList td.rd { margin-left:0; } #reqList td.rd::before { content:'요청 '; } #reqList td.dd:empty { display:none; } #reqList td.dd::before { content:'· 완료 '; } #reqList td.who:empty { display:none; } #reqList td.who::before { content:'· '; }
     #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
-  #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; }
+  #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; } #syncState { margin-left:-4px; }
   /* 머리줄 오른쪽 위: 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 예전처럼 제목 옆) */
   @media not all and (pointer:coarse) and (max-width: 960px) { #reqJump { order:2; margin-left:auto; } #wkJump { order:3; margin-left:-8px; } .bar > .grp.push { order:4; margin-left:-8px; } }   /* 머리줄 간격(14px)을 묶음 안 간격(6px)에 맞춘다 */
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
@@ -318,7 +319,7 @@
   <div class="bar noprint">
     <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button><button id="vWork" title="공사했거나 물품을 들인 실을 하자보증 기간에 따라 칠합니다">하자보증</button></div>
     <label class="chk" id="editLbl"><input type="checkbox" id="edit"> 벽 편집</label>
-    <button id="syncBtn" hidden></button>
+    <button id="syncBtn" hidden title="암호를 넣거나 바꿉니다. 마지막에 넣은 암호의 권한(행정실·교원)으로 씁니다">🔑 암호 입력</button><span id="syncState" class="hint"></span>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다. 휴대폰에서는 두 손가락으로 끌어 옮기고 벌리거나 오므려 크기를 바꿉니다.">도면 크기 <input type="range" id="zoom" min="10" max="300" value="100"></label>
   </div>
@@ -1137,12 +1138,12 @@ function renderPanel() {
     <label for="i-memo">메모</label><textarea id="i-memo" data-k="memo" rows="3">${esc(i.memo)}</textarea>
     <label for="i-alias">물품 위치명</label><input id="i-alias" data-k="alias" value="${esc(i.alias)}" placeholder="물품대장에 적힌 다른 이름, 쉼표로 구분">
   </div>
-  <h2 class="it-head"><span>공사·하자보증 ${ws.length ? ws.length + '건' : ''}</span><button type="button" data-wkadd>+ 공사·물품 추가</button></h2>
+  <h2 class="it-head wk-head"><span>공사·하자보증 ${ws.length ? ws.length + '건' : ''}</span><button type="button" data-wkadd>+ 공사·물품 추가</button></h2>
   ${ws.length ? ws.sort(wkSort).map(wkHtml).join('') : ''}
   <h2 class="it-head"><span>보유 물품 ${its.length ? `${grp.size}종 ${[...grp.values()].reduce((a, b) => a + b, 0)}점` : ''}</span><button type="button" data-itadd>+ 물품 추가</button></h2>
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 아래 "연결되지 않은 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
-  if (ro()) for (const x of p.querySelectorAll('.f :is(input, select, textarea)')) x.disabled = true;
+  if (ro()) for (const x of p.querySelectorAll('.f :is(input, select, textarea)' + (role === 'teacher' ? ':not(#i-memo)' : ''))) x.disabled = true;
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
@@ -1388,11 +1389,12 @@ function renderLog() {
 // 쓰기 권한: 규칙에만 적힌 gate/<암호> 값을 같이 바꿔야 baechi를 쓸 수 있다(암호는 공개 자료에 남지 않는다).
 const lsv = (k, v) => { try { return v === undefined ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch (e) {} };
 let pw = lsv(KEY + '-pw') || '', remote = null, pushT = 0, asked = false;
-// 암호별 권한(2026-11-27, 사용자 결정): 행정실 암호 = 전부, 교원 암호 = 도면 보기 + 보수요청 올리기(사진 포함), 암호 없음 = 파일에 든 기본 도면만.
+// 암호별 권한(2026-11-27, 사용자 결정): 행정실 암호 = 전부, 교원 암호 = 도면 보기 + 보수요청 올리기(사진 포함) + 실 메모·물품 고치기, 암호 없음 = 파일에 든 기본 도면만.
 // 저장 자리(주소에 암호가 들어 있어 암호를 모르면 읽지 못하고, 쓰기는 Firebase 규칙이 gate/<암호>로 막는다):
 //   sec/<행정실 암호>   배치도·물품·하자보증·변경 이력 한 덩어리 {s, t} — 행정실만 읽고 쓴다
 //   pub/<교원 암호>     교원에게 보여 줄 사본 {s, t}(물품·하자보증·이력을 뺀 것) — 행정실이 저장할 때마다 같이 쓴다
 //   req/<교원 암호>/<번호>  보수요청 한 건씩 {…요청, b 건물, fl 층, k 실 키, rn 실 이름} — 교원은 올리기·고치기만(지우지 못함), 행정실은 전부
+//   tw/<교원 암호>      물품대장과 실 메모 {s, t} — 행정실·교원 모두 쓴다
 //   photo/<번호>        보수요청 사진 — 행정실·교원
 //   bak/<행정실 암호>/<날짜>  하루 한 번 백업 {s, t} — 행정실
 // 화면 안에서는 보수요청을 예전처럼 실 정보(info.reqs)에 달아 쓰고, 올릴 때·받을 때만 한 건씩으로 나눈다. 교원 암호는 행정실 자료(state.tpw)에 적어 둔다 — 없으면 보수요청도 한 덩어리 안에 둔다(예전 방식).
@@ -1401,19 +1403,38 @@ let es = null, esReq = null, src = '', role = '', mainSent = '', reqStore = {}, 
 // ro = 고칠 수 없음(행정실이 아님), noReq = 보수요청도 못 올림(암호가 없거나 자료를 아직 못 받음)
 const ro = () => !!DB && role !== 'admin', noReq = () => !!DB && !role;
 const tkey = () => role === 'teacher' ? pw : role === 'admin' ? state.tpw || '' : '';
-const KEYOK = /^[A-Za-z0-9_-]+$/, syncOn = () => role === 'admin' ? '함께 쓰기: 켜짐 (행정실)' : '함께 쓰기: 켜짐 (교원 — 보수요청)';
+const KEYOK = /^[A-Za-z0-9_-]+$/, syncOn = () => '연결됨';
 if (KEYOK.test(location.hash.slice(1))) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
-const syncMsg = t => { $('syncBtn').textContent = t; };
+// 단추에는 지금 권한을, 그 옆에는 상태(저장됨·올리는 중 등)를 적는다
+const syncMsg = t => { $('syncBtn').textContent = '🔑 암호 입력' + (role === 'admin' ? ' · 행정실' : role === 'teacher' ? ' · 교원' : ''); $('syncState').textContent = t.replace('함께 쓰기: ', ''); };
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+// 암호 입력: 누를 때마다 묻고, 마지막에 넣은 암호의 권한으로 쓴다. 비워서 확인하면 암호를 지우고 기본 도면으로 돌아간다.
 function askPw() {
-  const v = (prompt('암호를 넣으세요.\n행정실 암호: 모두 보고 고칩니다. 교원 암호: 도면을 보고 보수요청을 올립니다.') || '').trim();
-  if (v && !KEYOK.test(v)) { alert('암호는 영문·숫자만 씁니다.'); return false; }
-  if (v) { pw = v; lsv(KEY + '-pw', pw); pwChanged(); } return !!v;
+  const v = prompt('암호를 넣으세요.\n행정실 암호: 모두 보고 고칩니다.\n교원 암호: 도면을 보고 보수요청·실 메모·물품을 고칩니다.\n(비워 두고 확인하면 암호를 지우고 기본 도면만 봅니다)', ''); if (v === null) return false;
+  const t = v.trim();
+  if (!t) { if (pw && confirm('암호를 지우고 기본 도면만 볼까요?')) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); } return false; }
+  if (!KEYOK.test(t)) { alert('암호는 영문·숫자만 씁니다.'); return false; }
+  pw = t; lsv(KEY + '-pw', pw); pwChanged(); return true;
 }
 function queuePush() { if (!pw || !role) return; clearTimeout(pushT); pushT = setTimeout(push, 400); syncMsg('함께 쓰기: 올리는 중…'); }
 // 올릴 글: 본 자료(교원 암호를 정했으면 보수요청을 뺀다), 교원용 사본(물품·하자보증·이력·교원 암호를 뺀다)
-const mainJson = () => state.tpw ? JSON.stringify(state, (k, v) => k === 'reqs' ? undefined : v) : JSON.stringify(state);
-const pubJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }, (k, v) => k === 'reqs' || k === 'works' ? undefined : v);
+// 물품대장과 실 메모는 교원도 고칠 수 있게 tw/<교원 암호>에 따로 둔다(2026-11-27 사용자 요청). 그 자리가 생긴 뒤(twSent)에는 본 자료에서 물품을 빼고, 메모는 tw의 것이 이긴다.
+let esTw = null, twSent = '', twRemote = null, twReady = false;
+const mainJson = () => JSON.stringify(state, (k, v) => k === 'reqs' && state.tpw ? undefined : k === 'items' && twSent && Array.isArray(v) ? [] : v);
+const twRef = (f, r) => f.bld + '|' + f.name + '|' + r.key;
+const twJson = () => { const memo = {}; for (const f of state.floors) for (const r of roomsOf(f)) if (r.info.memo) memo[twRef(f, r)] = r.info.memo; return JSON.stringify({ items: state.items, memo }); };
+function applyTw(s) { let d; try { d = JSON.parse(s); } catch (e) { return; }
+  state.items = Array.isArray(d.items) ? d.items : []; const m = d.memo || {}; for (const f of state.floors) for (const r of roomsOf(f)) r.info.memo = m[twRef(f, r)] || ''; }
+function listenTw(tk) {
+  if (esTw) esTw.close(); esTw = null; twSent = ''; twRemote = null; twReady = false; if (!tk) return;
+  const me = esTw = new EventSource(DB + '/tw/' + tk + '.json');
+  const on = e => { if (esTw !== me) return; const d = JSON.parse(e.data); if (d.path !== '/') return; twReady = true;
+    if (d.data && d.data.s) { twRemote = twSent = d.data.s; if (!typing() && !pushT && !pushing) applyRemote(); }
+    else if (role === 'admin') queuePush();   // 아직 없으면 행정실 화면의 물품·메모를 올려 만든다
+    maybeBackup(); };
+  me.addEventListener('put', on); me.addEventListener('patch', on); me.onerror = () => {};
+}
+const pubJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }   /* 물품·메모는 tw 자리에서 받는다 */, (k, v) => k === 'reqs' || k === 'works' ? undefined : v);
 // 화면의 보수요청 → {번호: 한 건}(번호가 없으면 붙인다)
 function collectReqs() { const out = {};
   for (const f of state.floors) for (const r of roomsOf(f)) for (const q of r.info.reqs || []) { q.id ||= Date.now().toString(36) + Math.random().toString(36).slice(2, 6); out[q.id] = { ...q, b: f.bld, fl: f.name, k: r.key, rn: r.info.name }; }
@@ -1433,26 +1454,27 @@ async function push() {
   pushT = 0; if (!pw || !role) return; pushing = true;
   const t = Date.now(), tk = tkey(), s = mainJson(), main = {}, extra = {}, sent = {};
   if (tk) for (const [id, n] of Object.entries(collectReqs())) { const j = JSON.stringify(n); if (reqSent[id] !== j) { extra['req/' + tk + '/' + id] = n; sent[id] = [n, j]; } }
+  let twNew = ''; if (tk && twReady) { const w = twJson(); if (w !== twSent) { extra['tw/' + tk] = { s: w, t }; twNew = w; } }   // 물품·메모(교원도 올린다). 그 자리를 아직 못 읽었으면 올리지 않는다(빈 것으로 덮지 않게)
   if (role === 'admin' && (s !== mainSent || src === 'old')) { main['sec/' + pw] = { s, t }; main.baechi = null; if (tk) extra['pub/' + tk] = { s: pubJson(), t }; }   // 암호 자리에 올리고 예전 공개 자리는 비운다
   const send = b => fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...b, ['gate/' + pw]: t }) });
   try {
     if (!Object.keys(main).length && !Object.keys(extra).length) return syncMsg(syncOn());
     let r = await send({ ...main, ...extra }), note = '', reqOk = true;
     if (r.status === 401 && role === 'admin' && src === 'old') { r = await send({ baechi: { s: JSON.stringify(state), t } }); reqOk = false; note = '(예전 자리 — Firebase 규칙을 바꾸면 암호 자리로 옮겨집니다)'; }   // 규칙을 아직 안 바꿨으면 예전 자리에
-    else if (r.status === 401 && role === 'admin' && Object.keys(extra).length && Object.keys(main).length) { r = await send(main); reqOk = false; note = '(보수요청·교원용 자료는 못 올림 — 설정의 교원 암호가 Firebase 규칙과 같은지 확인)'; }
-    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return syncMsg('암호가 틀려 올리지 못했습니다 — 눌러서 다시 넣기'); }
+    else if (r.status === 401 && role === 'admin' && Object.keys(extra).length && Object.keys(main).length) { main['sec/' + pw] = { s: JSON.stringify(state), t }; r = await send(main); reqOk = false; note = '(보수요청·교원용 자료는 못 올림 — 설정의 교원 암호가 Firebase 규칙과 같은지 확인)'; }
+    if (r.status === 401) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return syncMsg('암호가 틀려 올리지 못했습니다 — 암호를 다시 넣으세요'); }
     if (!r.ok) throw new Error(r.status);
-    if (reqOk) for (const [id, [n, j]] of Object.entries(sent)) { reqSent[id] = j; reqStore[id] = n; }
-    if (Object.keys(main).length) mainSent = s;
+    if (reqOk) { for (const [id, [n, j]] of Object.entries(sent)) { reqSent[id] = j; reqStore[id] = n; } if (twNew) twSent = twNew; }
+    if (Object.keys(main).length) mainSent = reqOk ? s : '';
     syncMsg('함께 쓰기: 저장됨' + note);
     if (src === 'old' && !note.startsWith('(예전')) tryMain('sec');   // 방금 암호 자리로 옮겼으면 이제 그 자리를 듣는다
-  } catch (e) { syncMsg('함께 쓰기: 올리지 못함 — 눌러서 다시 시도'); }
-  finally { pushing = false; if ((needAttach || remote) && !typing()) applyRemote(); }
+  } catch (e) { syncMsg('올리지 못함 — 잠시 뒤 다시 올립니다'); clearTimeout(pushT); pushT = setTimeout(push, 5000); }
+  finally { pushing = false; if ((needAttach || remote || twRemote) && !typing()) applyRemote(); }
 }
 // 본 자료 듣기: 행정실 자리(sec) → 교원 자리(pub) → 예전 공개 자리(old, 옮기기 전) 순서로 찾는다. 어디서 받았는지로 권한이 정해진다. 어디에도 없으면 암호가 틀린 것.
 function tryMain(kind) {
   if (es) es.close(); let got = false; const me = es = new EventSource(DB + (kind === 'sec' ? '/sec/' + pw : kind === 'pub' ? '/pub/' + pw : '/baechi') + '.json');
-  const none = () => { if (got || es !== me) return; me.close(); const nx = { sec: 'pub', pub: 'old' }[kind]; if (nx) return tryMain(nx); es = null; syncMsg('이 암호로 저장된 자료가 없습니다 — 눌러서 암호 다시 넣기'); };
+  const none = () => { if (got || es !== me) return; me.close(); const nx = { sec: 'pub', pub: 'old' }[kind]; if (nx) return tryMain(nx); es = null; syncMsg('이 암호로 저장된 자료가 없습니다 — 암호를 다시 넣으세요'); };
   const on = e => { if (es !== me) return; const d = JSON.parse(e.data); if (d.path !== '/') return; if (!d.data || !d.data.s) return none();
     const first = !got; got = true; src = kind; role = kind === 'pub' ? 'teacher' : 'admin'; remote = mainSent = d.data.s;
     if (first || !typing()) applyRemote(); if (first) { listenReq(); render(); } syncMsg(syncOn()); };
@@ -1461,7 +1483,7 @@ function tryMain(kind) {
 }
 // 보수요청 듣기(교원 암호 자리). 한 건씩 바뀐 것도 받는다.
 function listenReq() {
-  if (esReq) esReq.close(); esReq = null; reqReady = false; reqStore = {}; reqSent = {}; const tk = tkey(); if (!tk) return maybeBackup();
+  if (esReq) esReq.close(); esReq = null; reqReady = false; reqStore = {}; reqSent = {}; const tk = tkey(); listenTw(tk); if (!tk) return maybeBackup();
   const me = esReq = new EventSource(DB + '/req/' + tk + '.json');
   const got = () => { const first = !reqReady; reqReady = needAttach = true; if (!typing() && !pushT && !pushing) applyRemote(); if (first) maybeBackup(); };
   const on = e => { if (esReq !== me) return; const d = JSON.parse(e.data), p = d.path.split('/').filter(Boolean), put = e.type === 'put';
@@ -1475,7 +1497,9 @@ function listenReq() {
 // 백업: 행정실 암호로 연 화면이 오전 8시 이후 그날 처음 자료를 받았을 때, 받은 그대로를 bak/<암호>/<날짜>에 한 번 넣는다(서버가 없어 정각에 돌릴 수는 없다 — 그날 행정실에서 아무도 안 열면 그날 백업은 없다).
 // 날짜 백업은 30일치, 되돌리기 직전 백업(pre-…)은 5개만 남긴다.
 async function maybeBackup() {
-  const day = today(); if (role !== 'admin' || src !== 'sec' || new Date().getHours() < 8 || bakDay === day) return; bakDay = day;
+  const day = today(); if (role !== 'admin' || src !== 'sec' || new Date().getHours() < 8 || bakDay === day) return;
+  if (tkey() && (!reqReady || !twReady || twRemote || needAttach)) return;   // 보수요청·물품·메모까지 다 받은 뒤의 모습을 백업한다
+  bakDay = day;
   try { const keys = await (await fetch(DB + '/bak/' + pw + '.json?shallow=true')).json() || {}; if (keys.error || keys[day]) return;
     const t = Date.now(), body = { ['bak/' + pw + '/' + day]: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }, old = re => Object.keys(keys).filter(k => re.test(k)).sort();
     for (const k of [...old(/^\d{4}-\d\d-\d\d$/).slice(0, -29), ...old(/^pre-/).slice(0, -5)]) body['bak/' + pw + '/' + k] = null;
@@ -1484,9 +1508,9 @@ async function maybeBackup() {
 }
 // 암호가 바뀌었을 때(넣음·틀려서 지워짐): 먼저 기본 도면으로 돌리고, 암호가 있으면 자료를 받는다
 function pwChanged() {
-  if (!DB) return render(); for (const x of [es, esReq]) if (x) x.close(); es = esReq = null; remote = null; role = src = mainSent = ''; reqStore = {}; reqSent = {}; reqReady = needAttach = false;
+  if (!DB) return render(); for (const x of [es, esReq, esTw]) if (x) x.close(); es = esReq = esTw = null; twSent = ''; twRemote = null; twReady = false; remote = null; role = src = mainSent = ''; reqStore = {}; reqSent = {}; reqReady = needAttach = false;
   state = defaults(); cur = Math.min(cur, state.floors.length - 1); sel = null; lsv(KEY, '');
-  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
+  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중');
   render();
 }
 function applyRemote() {
@@ -1495,16 +1519,17 @@ function applyRemote() {
     if (s !== mainJson()) {
       if (!lsv(KEY + '-synced') && lsv(KEY)) lsv(KEY + '-before-sync', lsv(KEY)); // 처음 이어질 때 이 기기에 있던 자료는 따로 남겨 둔다
       state = migrate(JSON.parse(s)); cur = Math.min(cur, state.floors.length - 1); lsv(KEY, s); ch = true; if (reqReady) needAttach = true;
+      if (twReady && twSent && !twRemote) twRemote = twSent;   // 본 자료를 새로 받았으면 물품·메모를 다시 얹는다
     }
     lsv(KEY + '-synced', '1'); }
   if (needAttach && reqReady && tkey()) { needAttach = false; attachReqs(); ch = true; }
+  if (twRemote && tkey()) { const s = twRemote; twRemote = null; if (s !== twJson()) { applyTw(s); ch = true; } }
   if (ch) { if (!findSel()) sel = null; render(); }
 }
 if (DB) {
   $('syncBtn').hidden = false;
-  $('syncBtn').onclick = () => { if (!pw) return askPw(); if (!role) { pw = ''; lsv(KEY + '-pw', ''); pwChanged(); return askPw(); }   // 자료를 못 받은 암호는 지우고 다시 묻는다
-    syncMsg('함께 쓰기: 올리는 중…'); push(); };
-  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중 — 눌러서 암호 넣기');
+  $('syncBtn').onclick = () => askPw();
+  if (pw) { syncMsg('함께 쓰기: 잇는 중…'); tryMain('sec'); } else syncMsg('기본 도면만 보는 중');
   $('panel').addEventListener('focusout', () => setTimeout(() => { if (!typing()) applyRemote(); }));
 }
 // 설정: 교원 암호 정하기(Firebase 규칙에 넣은 교원 암호와 같아야 한다)
@@ -1524,7 +1549,7 @@ $('bakBtn').onclick = async () => { if (ro()) return;
     const n = new Date(), p2 = x => String(x).padStart(2, '0'), t = Date.now(), pre = 'pre-' + today() + '-' + p2(n.getHours()) + p2(n.getMinutes()) + p2(n.getSeconds());
     const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['bak/' + pw + '/' + pre]: { s: JSON.stringify(state), t }, ['gate/' + pw]: t }) });
     if (!r.ok) return alert('지금 상태를 백업하지 못해 되돌리기를 멈췄습니다.');
-    const tp = state.tpw; state = migrate(JSON.parse(b.s)); if (tp) state.tpw = tp; cur = Math.min(cur, state.floors.length - 1); sel = null; mainSent = '';
+    const tp = state.tpw; state = migrate(JSON.parse(b.s)); if (tp) state.tpw = tp; cur = Math.min(cur, state.floors.length - 1); sel = null; mainSent = ''; twRemote = null;
     if (tkey() && reqReady) { for (const f2 of state.floors) for (const r2 of roomsOf(f2)) delete r2.info.reqs; attachReqs(); }   // 보수요청은 되돌리지 않는다(따로 저장된 것을 그대로 단다)
     log('백업(' + d + ')으로 되돌림'); save(); render(); alert(d + ' 백업으로 되돌렸습니다. 직전 상태는 ' + pre + ' 이름으로 남겼습니다.');
   } catch (e) { alert('백업을 불러오지 못했습니다: ' + e.message); }
@@ -1725,7 +1750,7 @@ $('panel').onclick = e => {
     const pf = [...$('r-ph').files]; (r.info.reqs ||= []).push({ t, who, d: today(), done: false }); log(`보수요청: ${r.info.name} — ${t}`); reqForm = ''; save(); render(); return phAttach(cur, sel, r.info.reqs.length - 1, pf);
   }
   if (d.reqphv != null) return phShow(cur, sel, +d.reqphv); if (d.reqph != null) return phPick(cur, sel, +d.reqph);
-  if (ro()) return;   // 아래는 행정실만(진행 메모·완료·하자보증·냉난방기·물품)
+  if (ro() && d.itadd == null && d.itdel == null) return;   // 아래는 행정실만(진행 메모·완료·하자보증·냉난방기) — 물품 추가·지움은 교원도
   if (d.reqmdel != null) { applyRemote(); if (!findSel()) return; const [n, k] = d.reqmdel.split(':'); return reqMemo(cur, sel, +n, +k); }
   if (d.reqmemo != null) { applyRemote(); if (!findSel()) return; return reqMemo(cur, sel, +d.reqmemo); }
   if (d.reqdone != null) { applyRemote(); if (!findSel()) return; return reqAct(cur, sel, +d.reqdone); }
@@ -1738,11 +1763,12 @@ $('panel').onclick = e => {
     const n = Math.round(+prompt(`"${name}" 수량`, '1')); if (!(n > 0)) return;
     addItem(r, name, n); save(); return render();
   }
+  if (ro()) return;
   if (d.acadd != null) r.info.acs.push({ t: '', y: '', m: '' }); else r.info.acs.splice(+d.acdel, 1);
   r.info.acN = r.info.acs.length; save(); render();
 };
 addEventListener('keydown', e => { if (e.key === 'Escape' && sel && !$('mapDlg').open && !$('locDlg').open && !$('reqDlg').open && !$('doneDlg').open && !$('wkDlg').open && !$('wkList').open && !$('phDlg').open) { sel = null; render(); } });
-$('panel').onchange = e => { if (ro()) return;
+$('panel').onchange = e => { if (noReq() || (ro() && e.target.dataset.k !== 'memo' && e.target.dataset.itq == null)) return;   // 교원은 실 메모와 물품 수량만
   applyRemote(); // 입력하는 동안 미뤄 둔 남의 변경을 먼저 받고 그 위에 고친다
   const k = e.target.dataset.k, ac = e.target.dataset.ac, r = findSel(); if (!r) return;
   const v = e.target.value.trim();

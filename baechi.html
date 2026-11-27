@@ -327,7 +327,7 @@
   </div>
   <aside class="card" id="panel"></aside>
 </main>
-<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div><button id="tblPrint" class="push noprint" title="지금 보이는 면적표를 인쇄합니다">인쇄</button></div><div id="tbl" class="scroll"></div></section>
+<section class="card" data-fold="tbl"><div class="sec-head"><h2 id="tblTitle"></h2><div id="sum" class="sum"></div><span class="grp push noprint"><button id="tblCsv" title="지금 보이는 면적표를 엑셀에서 열리는 파일(CSV)로 내려받습니다">엑셀로 내보내기</button><button id="tblPrint" title="지금 보이는 면적표를 인쇄합니다">인쇄</button></span></div><div id="tbl" class="scroll"></div></section>
 <section class="card noprint" data-fold="unm"><div class="sec-head"><h2>물품대장에서 실과 연결되지 않은 위치</h2><button id="itemClear" class="push">물품대장 비우기</button></div><div id="unm"></div></section>
 <section class="card" data-fold="log"><div class="sec-head"><h2>변경 이력</h2></div><div id="log"></div>
   <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
@@ -1654,11 +1654,14 @@ $('loadFile').onchange = async e => { if (ro()) return; const f = e.target.files
   try { const s = JSON.parse(await f.text()); if (!Array.isArray(s.floors)) throw new Error('배치도 저장파일이 아닙니다.');
     if (!confirm('지금 화면의 내용을 이 파일 내용으로 바꿉니다. 계속할까요?')) return; state = migrate(s); cur = home(); sel = null; save(); render(); }
   catch (err) { alert('불러오지 못했습니다: ' + err.message); } };
-$('csvBtn').onclick = () => { const idx = itemIndex(), q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
+// bld를 주면 그 건물만, 없으면 모든 건물
+function exportCsv(bld) { const idx = itemIndex(), q = s => `"${String(s ?? '').replace(/"/g, '""')}"`;
   const rows = [['건물', '층', '실명', '용도', '면적(㎡)', '크기', '냉난방기 종류', '대수', '설치연도', '모델', '물품 건수', '메모']];
   const uniq = (i, k) => [...new Set(i.acs.map(a => a[k]).filter(Boolean))].join(', ');
-  for (const f of state.floors) for (const r of roomsOf(f)) rows.push([f.bld, f.name, r.info.name, r.info.use, fmt(r.area), r.units ? unitLabel(r.units) : '', acSum(r.info), r.info.acN || '', uniq(r.info, 'y'), uniq(r.info, 'm'), itemsFor(r.info, idx, f).length || '', r.info.memo]);
-  download(`실별현황_${today()}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv'); };
+  for (const f of state.floors) if (!bld || f.bld === bld) for (const r of roomsOf(f)) rows.push([f.bld, f.name, r.info.name, r.info.use, fmt(r.area), r.units ? unitLabel(r.units) : '', acSum(r.info), r.info.acN || '', uniq(r.info, 'y'), uniq(r.info, 'm'), itemsFor(r.info, idx, f).length || '', r.info.memo]);
+  download(`실별현황_${bld ? bld.replace(/ /g, '') + '_' : ''}${today()}.csv`, '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n'), 'text/csv'); }
+$('csvBtn').onclick = () => exportCsv();
+$('tblCsv').onclick = () => exportCsv(site ? null : state.floors[cur].bld);   // 면적표의 단추: 전체 배치에서는 모든 건물, 건물 화면에서는 그 건물
 
 // ── 물품대장 읽기 (xlsx · csv · 엑셀로 저장된 html 표) ──
 async function readXlsx(buf) {

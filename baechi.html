@@ -467,6 +467,14 @@ function splitHall(floors) {
     if (fixed.length) out.push({ ...f, bld: b, fixed, open: (f.open || []).filter(o => o.split('|').every(i => ids.has(i))) }); }
   return out;
 }
+// 도서관동 4층 뒤쪽 실(예전 '관리자숙소' 한 칸)을 3층과 같은 네 칸으로 나눈다 — 벽 편집으로 벽을 세워 실을 나눌 수 있게(사용자 요청 2026-11-27).
+// 처음에는 칸 사이 벽을 모두 터 둬서(LIB4_OPEN) 예전처럼 한 실로 보인다. info = 첫 칸에 줄 실 정보(저장분을 옮길 때는 예전 실의 정보를 그대로 준다).
+const LIB4_OPEN = ['g1|g2', 'g1|g3', 'g2|g3', 'g3|g4'];
+function lib4Cells(info) {
+  const nm = info.name, mk = (id, p) => mkRoom(id, nm, p, info.use || '지원');
+  const cells = [mk('g1', [2.35, 25.2, 5.9, 28.6]), mk('g2', [2.35, 28.6, 5.9, 31.05]), mk('g3', [5.9, 25.2, 9.7, 31.05]), mk('g4', [9.7, 25.2, 13.1, 31.05])];
+  cells[0].info = info; return cells;
+}
 function hallFloors() {
   const mk = mkRoom, ac = acList;
   const core = () => [mk('ev', '승강기', [-3.15, 25.2, -0.45, 31.05], '공용'), mk('st', '계단실', [-0.45, 25.2, 2.35, 31.05], '공용')];
@@ -501,7 +509,7 @@ function hallFloors() {
     ]),
     F('4층', [
       mk('chapel', '채플실', [-0.4, -1.75, 13.1, 17.1], '특별실', { acs: ac(2, '천장형', ''), memo: '2023 도면에는 "회의실"로 적힘' }),
-      mk('link', '연결통로', [2.6, 17.1, 4.5, 25.2], '공용'), ...core(), mk('guest', '관리자숙소(게스트하우스)', [2.35, 25.2, 13.1, 31.05], '지원'),
+      mk('link', '연결통로', [2.6, 17.1, 4.5, 25.2], '공용'), ...core(), ...lib4Cells(mk('guest', '관리자숙소(게스트하우스)', [2.35, 25.2, 13.1, 31.05], '지원').info),
     ]),
     F('5층', [...core(), mk('guest', '관리자숙소', [2.35, 25.2, 13.1, 31.05], '지원')]),
   ];
@@ -599,7 +607,9 @@ function migrate(s) {
   if (s.v < 15) {   // v15: 시험으로 올린 보수요청(2026-11-27까지 요청분)을 모두 비운다(사용자 요청 2026-11-27). 그 뒤에 올린 것은 건드리지 않는다
     const walk = o => { if (!o || typeof o !== 'object') return; if (Array.isArray(o.reqs)) { o.reqs = o.reqs.filter(q => !(q.d <= '2026-11-27')); if (!o.reqs.length) delete o.reqs; } for (const k in o) if (k !== 'reqs') walk(o[k]); };
     walk(s.floors); s.v = 15; }
-  if (s.v < 17) { nameStairs(s.floors); s.v = 17; }   // v16: 계단실 이름을 방위로, v17: 복도도(신관)
+  if (s.v < 17) { nameStairs(s.floors); s.v = 17; }
+  if (s.v < 18) { const f4 = s.floors.find(x => x.bld === LIB && x.name === '4층'), i = f4 ? f4.fixed.findIndex(x => x.id === 'guest') : -1;   // v18: 도서관동 4층 뒤쪽 실을 네 칸으로(벽은 터 둔다)
+    if (i >= 0) { f4.fixed.splice(i, 1, ...lib4Cells(f4.fixed[i].info)); lib4Open(s.floors); } s.v = 18; }   // v16: 계단실 이름을 방위로, v17: 복도도(신관)
   // 냉난방기: 예전의 '종류·대수·연도 한 줄'을 한 대씩의 목록(acs: [{t 종류, y 연도, m 모델}])으로 옮긴다. acN은 대수(= acs 길이)로 계속 둔다.
   for (const f of s.floors) for (const i of [...(f.strips || []).flatMap(x => Object.values(x.rooms)), ...(f.fixed || []).map(x => x.info)]) {
     i.acs ||= Array.from({ length: +i.acN || 0 }, () => ({ t: i.acType || '', y: i.acYear || '', m: '' }));
@@ -623,7 +633,8 @@ function nameStairs(floors) {
     const cors = rs.filter(r => r.info.name === '복도'); if (cors.length > 1) for (const r of cors) r.info.name = side(r) + '복도'; }
   return floors;
 }
-function defaults() { const s = defaults0(); nameStairs(s.floors); s.v = 17; return s; }
+function defaults() { const s = defaults0(); nameStairs(s.floors); lib4Open(s.floors); s.v = 18; return s; }
+const lib4Open = floors => { const f4 = floors.find(x => x.bld === LIB && x.name === '4층'); if (f4 && f4.fixed.some(x => x.id === 'g1')) f4.open = [...new Set([...(f4.open || []), ...LIB4_OPEN])]; };
 function defaults0() {
   return { v: 15, items: [], log: [], floors: [
     basement(),

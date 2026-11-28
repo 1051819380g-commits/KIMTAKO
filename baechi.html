@@ -186,6 +186,7 @@
   #reqNew { margin:10px 0 4px; } #reqNew summary { display:inline-block; padding:4px 12px; border:1px solid #f3b8ae; border-radius:6px; background:#fff4f2; color:#b42318; font-size:13px; font-weight:600; cursor:pointer; list-style:none; } #reqNew summary::-webkit-details-marker { display:none; }
   #reqNew[open] summary { margin-bottom:6px; } #reqNew .rsel { display:flex; gap:6px; } #reqNew .rsel select { flex:1; min-width:0; } #reqNew .rsel #rn-b, .sn-line #sn-b { flex:1.6; } #reqNew .rsel #rn-r, .sn-line #sn-r { flex:1.2; }   /* 건물·층·실 한 줄 — 건물칸을 가장 넓게 */
   @media (pointer:coarse) and (max-width: 960px) { .sn-line:has(#sn-r) { flex-wrap:wrap; } .sn-line #sn-r { flex:1 1 100%; } }   /* 휴대폰 일정 등록은 이름표 칸 때문에 좁아 실만 아랫줄로 */
+  @media (pointer:coarse) { dialog input:is([type=date],[type=time]) { -webkit-appearance:none; appearance:none; min-width:0; max-width:100%; display:block; min-height:2.4em; } dialog input:is([type=date],[type=time])::-webkit-date-and-time-value { text-align:left; } }   /* iOS 사파리는 날짜·시간 칸이 제 너비를 고집해 칸 밖으로 삐져나감 → 폭에 맞춤 */
   #reqList td.noprint { white-space:nowrap; text-align:right; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */

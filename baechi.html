@@ -178,13 +178,13 @@
   #reqList td.noprint { white-space:nowrap; text-align:right; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
-  #scDlg { width:min(900px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; } #scDlg .sec-head { position:relative; padding-right:36px; flex-wrap:wrap; gap:8px; } #scDlg .p-close { top:-4px; right:-6px; } #scDlg h2 { margin:0; }
+  #scDlg { width:min(600px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; } #scDlg .sec-head { position:relative; padding-right:36px; flex-wrap:wrap; gap:8px; } #scDlg .p-close { top:-4px; right:-6px; } #scDlg h2 { margin:0; }
   /* 사용일정 목록 팝업 다듬기(2026-11-28 — "못생겼다"): 입력칸을 앱의 다른 입력칸과 같은 모양으로, 이름표를 왼쪽에 둔 카드 */
   #scDlg .sec-head { align-items:center; } #scDlg .sc-pick { display:inline-flex; align-items:center; gap:4px; padding:0 4px 0 9px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--sub); font-size:13px; }
   #scDlg .sc-pick:hover { border-color:var(--line-strong); } #scDlg .sc-pick input { border:0; background:transparent; padding:5px 4px; font:inherit; color:var(--ink); outline:none; }
   #scNew { margin:14px 0 6px; } #scNew summary { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid #b9cdf0; border-radius:8px; background:#f2f6ff; color:#2456b3; font-size:13.5px; font-weight:700; cursor:pointer; list-style:none; } #scNew summary::-webkit-details-marker { display:none; }
   #scNew summary:hover { background:#e3ecfd; } #scNew[open] summary { display:none; }
-  .sn-card { max-width:520px; display:grid; gap:10px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 2px 10px rgba(22,33,46,.06); }
+  .sn-card { max-width:none; display:grid; gap:10px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 2px 10px rgba(22,33,46,.06); }
   .sn-f { display:grid; grid-template-columns:40px minmax(0, 1fr); gap:10px; align-items:center; } .sn-f > label { font-size:12.5px; font-weight:600; color:var(--sub); } .sn-f:has(textarea), .sn-f:has(.sn-col) { align-items:start; } .sn-f:has(textarea) > label, .sn-f:has(.sn-col) > label { padding-top:8px; }
   .sn-col { display:grid; gap:6px; min-width:0; } .sn-line { display:flex; gap:6px; align-items:center; min-width:0; } .sn-line > * { flex:1; min-width:0; } .sn-line > .sn-til { flex:none; color:var(--faint); font-size:13px; }
   .sn-card :is(input, select, textarea), .sc-form :is(input, select, textarea) { width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--sheet); font:inherit; font-size:14px; color:var(--ink); }
@@ -193,8 +193,8 @@
   .sn-card textarea, .sc-form textarea { resize:vertical; } .sn-act { display:flex; gap:8px; justify-content:flex-end; padding-top:2px; } .sn-act button { padding:7px 18px; border-radius:8px; }
   .sc-form { gap:8px !important; padding:12px !important; border-radius:10px !important; } .sc-form .rb button { padding:6px 16px; border-radius:8px; }
   #scList .sc-date { margin:14px 0 4px; font-size:14px; font-weight:700; } #scList .sc-date em { font-style:normal; font-size:11px; color:#fff; background:#3b6fd1; border-radius:8px; padding:1px 7px; margin-left:6px; }
-  #scList .sc-row { display:grid; grid-template-columns:96px 200px 1fr; gap:4px 12px; padding:7px 10px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; margin-top:5px; cursor:pointer; font-size:13px; line-height:1.5; } #scList .sc-row:hover { background:#f5f8fe; }
-  #scList .sc-row.past { border-left-color:var(--line-strong); color:var(--sub); } #scList .sc-row .tm { font-weight:700; } #scList .sc-row .wh { color:var(--sub); } #scList .sc-row .wt { word-break:break-all; white-space:pre-wrap; } #scList .sc-row .wt b { color:var(--ink); }
+  #scList .sc-row { display:grid; grid-template-columns:118px minmax(0, 1fr); gap:4px 12px; padding:7px 10px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; margin-top:5px; cursor:pointer; font-size:13px; line-height:1.5; } #scList .sc-row:hover { background:#f5f8fe; }
+  #scList .sc-row.past { border-left-color:var(--line-strong); color:var(--sub); } #scList .sc-row .tm { font-weight:700; white-space:nowrap; } #scList .sc-row .tm small { font-size:11px; } #scList .sc-row .wh { color:var(--sub); } #scList .sc-row .wt { grid-column:2; word-break:break-all; white-space:pre-wrap; } #scList .sc-row .wt b { color:var(--ink); }
   #reqDlg, #wkList { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
   :is(#reqDlg, #wkList, #phDlg) .sec-head { position:relative; padding-right:36px; } :is(#reqDlg, #wkList, #phDlg) .p-close { top:-4px; right:-6px; } :is(#reqDlg, #wkList, #phDlg) h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }

@@ -483,7 +483,7 @@
   <div class="sn-f"><label for="sn-r">실</label><div class="sn-line"><select id="sn-b" aria-label="건물"></select><select id="sn-f" aria-label="층"></select><select id="sn-r" aria-label="실"></select></div></div>
   <div class="sn-f"><label for="sn-d">날짜</label><input type="date" id="sn-d"></div>
   <div class="sn-f"><label for="sn-s">시간</label><div class="sn-line"><input type="time" id="sn-s" step="600" aria-label="시작"><span class="sn-til">~</span><input type="time" id="sn-e" step="600" aria-label="끝"></div></div>
-  <div class="sn-f"><label for="sn-rep">반복</label><div class="sn-line"><select id="sn-rep"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="m">매월 반복</option></select><span class="sn-til" id="sn-untl" hidden>끝</span><input type="date" id="sn-until" aria-label="반복 끝 날" hidden></div></div>
+  <div class="sn-f"><label for="sn-rep">반복</label><div class="sn-line"><select id="sn-rep"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="mn">매월 반복</option><option value="ml" hidden disabled>매월 마지막 요일</option></select><span class="sn-til" id="sn-untl" hidden>끝</span><input type="date" id="sn-until" aria-label="반복 끝 날" hidden></div></div>
   <div class="sn-f"><label for="sn-who">누가</label><input id="sn-who" placeholder="이름·부서"></div>
   <div class="sn-f"><label for="sn-t">왜</label><textarea id="sn-t" rows="2" placeholder="예: 3학년 학부모 상담, 동아리 회의"></textarea></div>
   <div class="sn-act"><button type="button" id="sn-cancel">취소</button><button type="button" class="primary" id="sn-save">등록</button></div></div></details><div id="scList"></div></dialog>
@@ -1312,19 +1312,28 @@ function renderPanel() {
 // 함께 쓰기에서는 보수요청과 같은 자리(req/<교원 암호>/<번호>)에 sc:1을 붙여 한 건씩 올린다. 공개 사본(open·pub 본 자료)에는 넣지 않는다.
 let scForm = '', scPast = '';   // scForm = 입력 칸을 연 실, scPast = 지난 일정을 펼친 실('층번호:실키')
 const WD = '일월화수목금토', scDay = d => { const x = new Date(d + 'T00:00'); return `${+d.slice(5, 7)}/${+d.slice(8)}(${WD[x.getDay()]})`; };
-// 반복(사용자 요청 2026-11-28): rep 'w' 매주(같은 요일) / 'm' 매월(같은 날짜, 그 날짜가 없는 달은 건너뜀), until 반복 끝 날, ex 뺀 날짜들
+// 반복(사용자 요청 2026-11-28): rep 'w' 매주(같은 요일) / 'mn' 매월 n번째 x요일(첫 날짜 기준, 그 요일이 없는 달은 건너뜀) / 'ml' 매월 마지막 x요일 / 'm' 매월 같은 날짜(예전에 넣은 일정만), until 반복 끝 날, ex 뺀 날짜들
+const nthWd = (y, m, wd, n) => { const d = 1 + (wd - new Date(y, m - 1, 1).getDay() + 7) % 7 + 7 * (n - 1); return d <= new Date(y, m, 0).getDate() ? d : 0; }, lastWd = (y, m, wd) => { const l = new Date(y, m, 0); return l.getDate() - (l.getDay() - wd + 7) % 7; };
 const ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`, addD = (d, n) => { const x = new Date(d + 'T00:00'); x.setDate(x.getDate() + n); return ymd(x); };
 function scDates(q, a, b) {   // q가 a~b(포함) 사이에 잡힌 날짜들
   if (q.del) return [];   // 지운 일정(함께 쓰기 자리에는 지움 표시로 남는다)
   const out = [], end = q.rep && q.until && q.until < b ? q.until : b, ok = d => d >= a && d <= end && !(q.ex || []).includes(d);
   if (!q.rep) { if (ok(q.d)) out.push(q.d); return out; }
   if (q.rep === 'w') { let d = q.d; if (d < a) d = addD(d, Math.ceil((new Date(a + 'T00:00') - new Date(d + 'T00:00')) / 864e5 / 7) * 7); for (let k = 0; d <= end && k < 400; k++, d = addD(d, 7)) if (ok(d)) out.push(d); return out; }
-  const day = +q.d.slice(8); let y = +q.d.slice(0, 4), m = +q.d.slice(5, 7);
-  for (let k = 0; k < 240; k++) { const last = new Date(y, m, 0).getDate(); if (day <= last) { const d = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`; if (d > end) break; if (ok(d)) out.push(d); } if (++m > 12) { m = 1; y++; } if (`${y}-${String(m).padStart(2, '0')}` > end.slice(0, 7)) break; }
+  const day0 = +q.d.slice(8), wd = new Date(q.d + 'T00:00').getDay(), nth = Math.ceil(day0 / 7); let y = +q.d.slice(0, 4), m = +q.d.slice(5, 7);
+  for (let k = 0; k < 240; k++) { const last = new Date(y, m, 0).getDate(), day = q.rep === 'mn' ? nthWd(y, m, wd, nth) : q.rep === 'ml' ? lastWd(y, m, wd) : day0; if (day && day <= last) { const d = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`; if (d > end) break; if (ok(d)) out.push(d); } if (++m > 12) { m = 1; y++; } if (`${y}-${String(m).padStart(2, '0')}` > end.slice(0, 7)) break; }
   return out;
 }
 const scOn = (q, d) => scDates(q, d, d).length > 0, scNext = (q, from) => (scDates(q, from, q.rep ? addD(from, 800) : q.d)[0] || '');
-const repLbl = q => q.rep === 'w' ? `매주 ${WD[new Date(q.d + 'T00:00').getDay()]}요일` : q.rep === 'm' ? `매월 ${+q.d.slice(8)}일` : '';
+const repLbl = q => { const w = WD[new Date(q.d + 'T00:00').getDay()]; return q.rep === 'w' ? `매주 ${w}요일` : q.rep === 'mn' ? `매월 ${Math.ceil(+q.d.slice(8) / 7)}번째 ${w}요일` : q.rep === 'ml' ? `매월 마지막 ${w}요일` : q.rep === 'm' ? `매월 ${+q.d.slice(8)}일` : ''; };
+// 반복 고르기 글자를 첫 날짜에 맞춰 바꾼다: 매주 x요일 / 매월 n번째 x요일 / (그 달 마지막 주면) 매월 마지막 x요일
+function repOpts(p) {
+  const sel = $(p + 'rep'), d = $(p + 'd').value; if (!sel || !/^\d{4}-\d\d-\d\d$/.test(d)) return;
+  const day = +d.slice(8), lastWk = day + 7 > new Date(+d.slice(0, 4), +d.slice(5, 7), 0).getDate(), o = k => sel.querySelector(`option[value="${k}"]`);
+  o('w').textContent = repLbl({ d, rep: 'w' }); o('mn').textContent = repLbl({ d, rep: 'mn' }); o('ml').textContent = repLbl({ d, rep: 'ml' });
+  o('ml').hidden = o('ml').disabled = !lastWk; if (!lastWk && sel.value === 'ml') sel.value = 'mn';
+}
+for (const ev of ['focusin', 'pointerdown']) document.addEventListener(ev, e => { const id = e.target.id; if (id === 'sn-rep' || id === 'sc-rep') repOpts(id.slice(0, 3)); });
 const scUp = i => (i.sched || []).filter(q => scNext(q, today())).length;   // 앞으로 잡힌 일정 수(오늘 포함, 반복은 한 건)
 const scSort = (a, b) => (a.d + a.s).localeCompare(b.d + b.s);
 function scHtml(i, rk) {
@@ -1334,7 +1343,7 @@ function scHtml(i, rk) {
   if (scForm !== rk && !all.length) return '';   // 일정이 없으면 칸을 숨긴다(이름 옆 📅 단추로 적는다)
   return `<h2 class="it-head sc-head"><span>📅 사용일정 ${up.length ? up.length + '건' : ''}</span></h2>
   ${scForm === rk ? `<div class="sc-form"><div class="sc-row"><input type="date" id="sc-d" value="${t}" min="${t}" aria-label="날짜"><input type="time" id="sc-s" value="${hh}:00" step="600" aria-label="시작"><span>–</span><input type="time" id="sc-e" value="${String(+hh + 1).padStart(2, '0')}:00" step="600" aria-label="끝"></div>
-    <div class="sc-row"><select id="sc-rep" aria-label="반복"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="m">매월 반복</option></select><span class="sc-untl" hidden>끝</span><input type="date" id="sc-until" aria-label="반복 끝 날" hidden></div>
+    <div class="sc-row"><select id="sc-rep" aria-label="반복"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="mn">매월 반복</option><option value="ml" hidden disabled>매월 마지막 요일</option></select><span class="sc-untl" hidden>끝</span><input type="date" id="sc-until" aria-label="반복 끝 날" hidden></div>
     <input id="sc-who" placeholder="누가 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><textarea id="sc-t" rows="2" placeholder="왜 (예: 3학년 학부모 상담, 동아리 회의)"></textarea>
     <div class="rb"><button type="button" data-sccancel>취소</button><button type="button" class="primary" data-scsave>등록</button></div></div>` : ''}
   ${up.map(row).join('') || (scForm === rk ? '' : '<p class="hint sc-none">잡힌 일정이 없습니다.</p>')}
@@ -1399,8 +1408,8 @@ function fillScNew(lv = 0) {
   if (lv < 1 && sel) R.value = sel; if (R.selectedIndex < 0) R.selectedIndex = 0;
 }
 $('sn-b').onchange = () => fillScNew(1); $('sn-f').onchange = () => fillScNew(2);
-$('sn-rep').onchange = $('sn-d').onchange = () => { const on = !!$('sn-rep').value; $('sn-until').hidden = $('sn-untl').hidden = !on; $('sn-until').min = $('sn-d').value;
-  if (on && (!$('sn-until').value || $('sn-until').value < $('sn-d').value)) $('sn-until').value = addD($('sn-d').value, $('sn-rep').value === 'm' ? 182 : 84); };
+$('sn-rep').onchange = $('sn-d').onchange = () => { repOpts('sn-'); const on = !!$('sn-rep').value; $('sn-until').hidden = $('sn-untl').hidden = !on; $('sn-until').min = $('sn-d').value;
+  if (on && (!$('sn-until').value || $('sn-until').value < $('sn-d').value)) $('sn-until').value = addD($('sn-d').value, $('sn-rep').value[0] === 'm' ? 182 : 84); };
 $('sn-cancel').onclick = () => { $('scNew').open = false; };
 $('sn-save').onclick = () => {
   if (noReq()) return; const v = scVals('sn-'), bad = scAdd(+$('sn-f').value, $('sn-r').value, v); if (bad === 'cancel') return; if (bad) { if (bad === 'room') fillScNew(2); else $('sn-' + bad).focus(); return; }
@@ -2144,8 +2153,8 @@ $('reqList').onclick = e => {
   $('planbox').scrollIntoView({ block: 'nearest' });
 };
 $('panel').addEventListener('change', e => {   // 사용일정 입력: 반복을 고르면 끝 날 칸을 보이고 처음 값을 넣는다(매주 12주 뒤, 매월 6달 뒤)
-  if (e.target.id !== 'sc-rep' && e.target.id !== 'sc-d') return; const on = !!$('sc-rep').value; $('sc-until').hidden = document.querySelector('.sc-untl').hidden = !on;
-  $('sc-until').min = $('sc-d').value; if (on && (!$('sc-until').value || $('sc-until').value < $('sc-d').value)) $('sc-until').value = addD($('sc-d').value, $('sc-rep').value === 'm' ? 182 : 84); });
+  if (e.target.id !== 'sc-rep' && e.target.id !== 'sc-d') return; repOpts('sc-'); const on = !!$('sc-rep').value; $('sc-until').hidden = document.querySelector('.sc-untl').hidden = !on;
+  $('sc-until').min = $('sc-d').value; if (on && (!$('sc-until').value || $('sc-until').value < $('sc-d').value)) $('sc-until').value = addD($('sc-d').value, $('sc-rep').value[0] === 'm' ? 182 : 84); });
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
   if (noReq()) return;   // 여기부터 보수요청 올리기·사진·사용일정까지는 교원도 된다

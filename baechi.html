@@ -232,6 +232,9 @@
   #wkRows .wfl { display:none; } #listPrint .wsh, #listPrint .wml { display:none; } #wkRows .wsh b { color:#1e7a43; }
   #wkRows .wml { display:grid; gap:4px; margin:7px 0 2px; padding:8px 10px; border-radius:8px; background:var(--sheet); border:1px solid var(--line); } #wkRows .wmi { display:flex; align-items:center; gap:8px; font-size:12.5px; }
   #wkRows .wmi a { flex:1; color:var(--accent); text-decoration:none; } #wkRows .wmi a:hover { text-decoration:underline; } #wkRows .wmi button { padding:1px 9px; font-size:11.5px; }
+  #wkRows .wm-add { justify-self:start; margin-top:3px; padding:3px 12px; font-size:12px; color:#1e7a43; border-color:#b7e0c4; background:#eaf7ee; border-radius:7px; }
+  #wkRows tr.cohead { cursor:default; margin-top:16px; padding:6px 2px 2px; border:0; border-radius:0; background:none; } #wkRows tr.cohead:hover { background:none; } #wkRows tr.cohead td, #wkRows tr.cohead td:last-child { display:flex; flex-wrap:wrap; justify-content:flex-start; align-items:baseline; gap:4px 10px; padding:0; border:0; margin:0; font-size:14px; color:var(--ink); }   /* 카드의 단추 칸(td:last-child) 꾸밈을 받지 않게 */
+  #wkRows tr.cohead a { color:var(--accent); text-decoration:none; font-size:13px; } #wkRows tr.cohead small { color:var(--sub); font-size:12px; } #wkRows tr.cohead .pronly { display:none; } #listPrint tr.cohead td { background:#f1f4f8; font-weight:700; } #listPrint .pronly { display:inline; }
   #wkList .sec-head { flex-wrap:wrap; gap:8px; } #wkKindV button { padding:4px 10px; }
   /* 등록 칸: 사용일정 등록 칸처럼 흰 카드 */
   #reqNew summary, #wkNew #wn-add { border-radius:8px; } #reqNew summary { padding:6px 14px; font-size:13.5px; font-weight:700; } #reqNew[open] summary { display:none; }
@@ -508,7 +511,7 @@
   <p class="hint">공종이 섞인 공사는 공종별로 따로 적습니다. 물품은 계약서·보증서의 기간을 넣습니다.</p>
   <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
 </form></dialog>
-<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkKindV"><button data-wkk="">전체</button><button data-wkk="공사">🔧 공사</button><button data-wkk="물품">📦 물품</button></div><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button class="p-close" id="wkClose" aria-label="닫기" title="닫기 (Esc)">×</button></div>
+<dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkByV"><button data-wkby="">기한 순</button><button data-wkby="co">업체별</button></div><div class="seg" id="wkKindV"><button data-wkk="">전체</button><button data-wkk="공사">🔧 공사</button><button data-wkk="물품">📦 물품</button></div><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button class="p-close" id="wkClose" aria-label="닫기" title="닫기 (Esc)">×</button></div>
 <div id="wkNew" class="noprint"><button type="button" class="primary" id="wn-add">＋ 하자보증 추가</button><span class="hint">추가 창에서 건물·층을 고르고 실을 여러 개 고를 수 있습니다.</span></div><div id="wkRows"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
@@ -1510,7 +1513,7 @@ $('ws-alls').onclick = $('ws-chips').onclick = e => { const t = e.target.closest
   if (t.dataset.ws) { wsMode = wsMode === t.dataset.ws ? 'rooms' : t.dataset.ws; return wsRender(); }
   const id = wsF + ' ' + t.dataset.wr; wsMode = 'rooms'; if (!wsSel.delete(id)) wsSel.set(id, [wsF, t.dataset.wr]); wsRender(); };
 $('ws-sum').onclick = e => { if (e.target.dataset.wsclear != null) { wsSel.clear(); wsRender(); } };
-function wkOpen(id, many, at, grp) {   // grp = 같이 고칠 다른 기록들의 번호(같은 내용으로 여러 실에 넣은 묶음)
+function wkOpen(id, many, at, grp, tpl) {   // tpl = 새로 적을 때 미리 채울 내용(묶음에 '+ 곳 추가')   // grp = 같이 고칠 다른 기록들의 번호(같은 내용으로 여러 실에 넣은 묶음)
   const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id && !x) return;
   if (!x) {   // 새로 적기: 범위를 고르는 칸을 연다(정보 창 → 그 실, 도면에서 여러 실 → 그 실들, 층·건물 → 그 범위)
     wsSel = new Map(); wsMode = 'rooms'; wsB = f.bld; wsF = cur;
@@ -1522,8 +1525,8 @@ function wkOpen(id, many, at, grp) {   // grp = 같이 고칠 다른 기록들�
   $('ws').hidden = !!x; $('wk-scL').hidden = !x;   // 고칠 때는 범위를 바꾸지 않는다(어디에 적힌 것인지만 보인다)
   const atLbl = at && `${at.b} ${at.fl ? at.fl + ' 전체' : '건물 전체'}`;
   const rooms = () => (many || []).map(([fi, k]) => roomsOf(state.floors[fi]).find(q => q.key === k)).filter(Boolean);
-  const w = x ? x.w : { kind: '공사', d: today() }, dlg = $('wkDlg'), v = k => $('wk-' + k);
-  $('wkTitle').textContent = x ? '공사·하자보증 고침' : '공사·하자보증 추가';
+  const w = x ? x.w : tpl ? { ...tpl } : { kind: '공사', d: today() }, dlg = $('wkDlg'), v = k => $('wk-' + k);
+  $('wkTitle').textContent = x ? '공사·하자보증 고침' : tpl ? `같은 내용으로 곳 추가 — ${tpl.t}` : '공사·하자보증 추가';
   v('sc').innerHTML = x ? `<option>${esc(grp && grp.length ? `${x.where} 외 ${grp.length}곳 (같이 고칩니다)` : x.where)}</option>` : at ? `<option>${esc(atLbl)}</option>` : many ? `<option>고른 실 ${rooms().length}개 (${esc(rooms().map(q => q.info.name).join(', '))})</option>` : `<option value="r">이 실 (${esc(r.info.name)})</option><option value="f">${esc(f.bld)} ${esc(f.name)} 전체</option><option value="b">${esc(f.bld)} 건물 전체</option>`; v('sc').disabled = !!x || !!many || !!at;
   v('type').innerHTML = '<option value="">직접 입력</option>' + WK_TYPES.map(([t, y]) => `<option value="${esc(t)}" data-y="${y}">${esc(t)} — ${y}년</option>`).join('');
   v('kind').value = w.kind || '공사'; v('t').value = w.t || ''; v('type').value = w.type || ''; v('co').value = w.co || ''; v('tel').value = w.tel || ''; v('d').value = w.d || ''; v('y').value = w.y || ''; v('e').value = w.e || '';
@@ -1539,7 +1542,8 @@ function wkOpen(id, many, at, grp) {   // grp = 같이 고칠 다른 기록들�
       for (const y of ys) Object.assign(y.w, nw); where = ys.length > 1 ? `${ys[0].where} 외 ${ys.length - 1}곳` : ys[0].where; }
     else if (wsMode !== 'rooms') { const fl = wsMode === 'floor' ? state.floors[wsF].name : ''; (state.works ||= []).push({ ...nw, b: wsB, fl }); where = `${wsB} ${fl ? fl + ' 전체' : '건물 전체'}`; }
     else { const rs = [...wsSel.values()].map(([fi, k]) => roomsOf(state.floors[fi]).find(q => q.key === k)).filter(Boolean); if (!rs.length) return;
-      for (const q of rs) (q.info.works ||= []).push({ ...nw }); where = rs.map(q => q.info.name).join(', '); multi.clear(); }
+      const same = (a, b) => ['kind', 't', 'type', 'co', 'tel', 'd', 'y', 'e'].every(k => String(a[k] || '') === String(b[k] || ''));   // 이미 같은 내용이 들어간 실은 건너뛴다
+      for (const q of rs) if (!(q.info.works || []).some(w0 => same(w0, nw))) (q.info.works ||= []).push({ ...nw }); where = rs.map(q => q.info.name).join(', '); multi.clear(); }
     const c = cur; if (x && x.fi >= 0) cur = x.fi; log(`공사·하자보증 ${x ? '고침' : '등록'}: ${where} — ${nw.t}${nw.e ? ' (보증 ~' + nw.e + ')' : ''}`); cur = c; save(); render();
   };
   dlg.showModal();
@@ -1552,10 +1556,11 @@ function wkDel(id) {
   if (ro()) return; applyRemote(); const x = wkGet(id); if (!x || !confirm(`"${x.w.t}" (${x.where}) 기록을 지웁니다. 계속할까요?`)) return;
   x.arr.splice(x.n, 1); const c = cur; if (x.fi >= 0) cur = x.fi; log(`공사·하자보증 지움: ${x.where} — ${x.w.t}`); cur = c; save(); render();
 }
-let wkView = 'on', wkKind = '', wkMore = new Set();   // wkKind = '' 전체 / '공사' / '물품', wkMore = 자세히 펼친 묶음   // 목록에서 보증 중(만료일을 안 적은 것 포함) / 만료 / 전체
+let wkView = 'on', wkKind = '', wkMore = new Set(), wkBy = '';   // wkBy = '' 기한 순 / 'co' 업체별(사용자 요청 2026-11-28)   // wkKind = '' 전체 / '공사' / '물품', wkMore = 자세히 펼친 묶음   // 목록에서 보증 중(만료일을 안 적은 것 포함) / 만료 / 전체
 // 목록 창의 추가 칸: 건물 → 층(또는 건물 전체) → 실(또는 층 전체). lv 0 = 창을 열 때, 1 = 건물을 바꿨을 때, 2 = 층을 바꿨을 때
 function fillWkNew() {}   // 목록 창의 추가 칸은 단추만 남았다(범위는 추가 창에서 고른다 — 사용자 요청 2026-11-28)
 $('wn-add').onclick = () => { if (ro()) return; const r = findSel(); wkOpen(null, !site && r ? [[cur, r.key]] : [], null); };
+$('wkByV').onclick = e => { const k = e.target.dataset.wkby; if (k != null) { wkBy = k; renderWks(); } };
 $('wkKindV').onclick = e => { const k = e.target.dataset.wkk; if (k != null) { wkKind = k; renderWks(); } };
 $('wkView').onclick = e => { if (e.target.dataset.wv) { wkView = e.target.dataset.wv; renderWks(); } };
 function renderWks() {
@@ -1569,8 +1574,16 @@ function renderWks() {
   for (const x of list) { const k = gk(x.w); if (!G.has(k)) G.set(k, []); G.get(k).push(x); }
   $('wkCnt').textContent = `보증 중 ${on}건 · 만료 ${expN}건 · 전체 ${all.length}건`;
   for (const b of $('wkView').children) b.className = b.dataset.wv === wkView ? 'on' : '';
-  $('wkRows').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>만료일</th><th>위치</th><th>구분</th><th>이름</th><th>공종</th><th>업체</th><th>준공·납품일</th><th class="noprint"></th></tr></thead><tbody>${[...G.entries()].map(([k, xs]) => { const x = xs[0], w = x.w, s = wkSt(w), many = xs.length > 1, gid = encodeURIComponent(k), more = many && wkMore.has(k), ids = xs.map(wkId);
-    return `<tr data-wk="${wkId(x)}" class="${s}${many ? ' grp' : ''}" title="${many ? '자세히 보기를 눌러 들어간 곳을 봅니다' : '눌러서 이 위치로 가기'}"><td class="st">${WK_LBL[s]}</td><td class="we">${esc(w.e || '')}</td><td class="wh">${many ? `<span class="wsh">${esc(x.where)} <b>외 ${xs.length - 1}곳</b></span><span class="wfl">${xs.map(y => esc(y.where)).join('<br>')}</span>` : esc(x.where)}${more ? `<span class="wml noprint">${xs.map(y => `<span class="wmi"><a href="#" data-wkgo="${wkId(y)}">${esc(y.where)}</a><button type="button" data-wkdel="${wkId(y)}" title="이곳만 지우기">빼기</button></span>`).join('')}</span>` : ''}</td><td class="wk">${esc(w.kind || '')}</td><td class="wn"><b><span class="noprint">${(w.kind || '공사') === '물품' ? '📦' : '🔧'} </span>${esc(w.t)}</b></td><td class="wty">${esc(w.type || '')}</td><td class="wco">${esc(w.co || '')}${w.tel ? ' ' + esc(w.tel) : ''}</td><td class="wd">${esc(w.d || '')}</td><td class="noprint wb" style="white-space:nowrap">${many ? `<button data-wkmore="${gid}">${more ? '접기 ▴' : `자세히 보기 (${xs.length}곳) ▾`}</button>` : ''}<button data-wkedit="${wkId(x)}"${many ? ` data-wkg="${encodeURIComponent(JSON.stringify(ids.slice(1)))}" title="${xs.length}곳을 같이 고칩니다"` : ''}>고침</button> <button data-wkdel="${wkId(x)}"${many ? ` data-wkg="${encodeURIComponent(JSON.stringify(ids.slice(1)))}" title="${xs.length}곳 모두 지웁니다"` : ''}>${many ? '모두 지움' : '지움'}</button></td></tr>`; }).join('')}</tbody></table></div>`
+  for (const b of $('wkByV').children) b.className = b.dataset.wkby === wkBy ? 'on' : '';
+  let GE = [...G.entries()], coHead = () => '';
+  if (wkBy === 'co') {   // 업체별: 업체 이름(같은 이름이면 한데)으로 모으고, 업체마다 머리 줄에 전화·건수
+    const coOf = ([, xs]) => (xs[0].w.co || '').trim(), C = new Map(); for (const g of GE) { const c = coOf(g); if (!C.has(c)) C.set(c, []); C.get(c).push(g); }
+    GE = [...C.keys()].sort((a, b) => !a - !b || a.localeCompare(b, 'ko')).flatMap(c => C.get(c));
+    let last = null; coHead = g => { const c = coOf(g); if (c === last) return ''; last = c; const gs = C.get(c), tel = gs.map(([, xs]) => xs[0].w.tel).find(Boolean), n = gs.reduce((a, [, xs]) => a + xs.length, 0), soon = gs.filter(([, xs]) => wkSt(xs[0].w) === 'soon').length;
+      return `<tr class="cohead"><td colspan="9"><b>${c ? '🏢 ' + esc(c) : '업체 미입력'}</b>${tel ? ` <a href="tel:${esc(tel.replace(/[^0-9+]/g, ''))}" class="noprint">📞 ${esc(tel)}</a><span class="pronly"> ${esc(tel)}</span>` : ''}<small>${gs.length}건 · ${n}곳${soon ? ` · 임박 ${soon}건` : ''}</small></td></tr>`; };
+  }
+  $('wkRows').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>만료일</th><th>위치</th><th>구분</th><th>이름</th><th>공종</th><th>업체</th><th>준공·납품일</th><th class="noprint"></th></tr></thead><tbody>${GE.map(g => coHead(g) + (([k, xs]) => { const x = xs[0], w = x.w, s = wkSt(w), many = xs.length > 1, gid = encodeURIComponent(k), more = many && wkMore.has(k), ids = xs.map(wkId);
+    return `<tr data-wk="${wkId(x)}" class="${s}${many ? ' grp' : ''}" title="${many ? '자세히 보기를 눌러 들어간 곳을 봅니다' : '눌러서 이 위치로 가기'}"><td class="st">${WK_LBL[s]}</td><td class="we">${esc(w.e || '')}</td><td class="wh">${many ? `<span class="wsh">${esc(x.where)} <b>외 ${xs.length - 1}곳</b></span><span class="wfl">${xs.map(y => esc(y.where)).join('<br>')}</span>` : esc(x.where)}${more ? `<span class="wml noprint">${xs.map(y => `<span class="wmi"><a href="#" data-wkgo="${wkId(y)}">${esc(y.where)}</a><button type="button" data-wkdel="${wkId(y)}" title="이곳만 지우기">빼기</button></span>`).join('')}<button type="button" class="wm-add" data-wkaddto="${wkId(x)}" title="같은 내용으로 다른 실·층을 더 넣습니다">＋ 곳 추가</button></span>` : ''}</td><td class="wk">${esc(w.kind || '')}</td><td class="wn"><b><span class="noprint">${(w.kind || '공사') === '물품' ? '📦' : '🔧'} </span>${esc(w.t)}</b></td><td class="wty">${esc(w.type || '')}</td><td class="wco">${esc(w.co || '')}${w.tel ? ' ' + esc(w.tel) : ''}</td><td class="wd">${esc(w.d || '')}</td><td class="noprint wb" style="white-space:nowrap">${many ? `<button data-wkmore="${gid}">${more ? '접기 ▴' : `자세히 보기 (${xs.length}곳) ▾`}</button>` : `<button data-wkaddto="${wkId(x)}" title="같은 내용으로 다른 실·층을 더 넣습니다">＋ 곳 추가</button>`}<button data-wkedit="${wkId(x)}"${many ? ` data-wkg="${encodeURIComponent(JSON.stringify(ids.slice(1)))}" title="${xs.length}곳을 같이 고칩니다"` : ''}>고침</button> <button data-wkdel="${wkId(x)}"${many ? ` data-wkg="${encodeURIComponent(JSON.stringify(ids.slice(1)))}" title="${xs.length}곳 모두 지웁니다"` : ''}>${many ? '모두 지움' : '지움'}</button></td></tr>`; })(g)).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? (wkView === 'exp' ? '보증 기간이 끝난 기록이 없습니다.' : '보증 중인 기록이 없습니다.') : '아직 적은 것이 없습니다.'}</p>`;
 }
 $('wkJump').onclick = () => { fillWkNew(); $('wkList').showModal(); renderWks(); $('wkList').scrollTop = 0; };
@@ -1578,6 +1591,7 @@ $('wkClose').onclick = () => $('wkList').close();
 $('wkList').onclick = e => {
   if (e.target === $('wkList')) return $('wkList').close();   // 창 바깥(어두운 곳)을 누르면 닫기
   const d = e.target.dataset, gr = d.wkg ? JSON.parse(decodeURIComponent(d.wkg)) : null;
+  if (d.wkaddto != null) { if (ro()) return; const y = wkGet(d.wkaddto); if (!y) return; const { b, fl, ...t } = y.w; return wkOpen(null, [], null, null, t); }   // 같은 내용으로 곳 추가 → 저장하면 같은 묶음에 들어간다
   if (d.wkmore != null) { const k = decodeURIComponent(d.wkmore); wkMore.has(k) ? wkMore.delete(k) : wkMore.add(k); return renderWks(); }
   if (d.wkedit != null) return ro() || wkOpen(d.wkedit, null, null, gr); if (d.wkdel != null) return gr ? wkDelMany([d.wkdel, ...gr]) : wkDel(d.wkdel);
   if (d.wkgo != null) { e.preventDefault(); const y = wkGet(d.wkgo); if (!y || y.fi < 0) return; $('wkList').close(); cur = y.fi; sel = y.key || null; site = false; allView = false; open = school(state.floors[cur].bld); view = 'work'; render(); autoZoom(); return scrollTo(0, 0); }

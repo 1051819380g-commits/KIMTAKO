@@ -151,6 +151,7 @@
   #wkNew { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; } #wkNew select { flex:1; min-width:90px; } #wkNew #wn-r { flex:2; }
   #wkRows tr[data-wk] { cursor:pointer; } #wkRows tr.exp td { color:var(--sub); } #wkRows tr.soon td.st { color:#c2570a; font-weight:600; } #wkRows button { padding:1px 8px; font-size:12px; } #wkRows td { white-space:normal; } #wkJump b { color:#c2570a; }
   /* 사용일정 */
+  .sc-btn { color:#2456b3; background:#f2f6ff; border-color:#b9cdf0; margin-left:6px; } .sc-btn:hover { background:#e3ecfd; border-color:#8fb0e8; }
   .sc-head { margin-top:14px; } .sc-form { display:grid; gap:6px; padding:9px; margin-bottom:6px; border:1px solid #b9cdf0; border-radius:6px; background:#f5f8fe; }
   .sc-form .sc-row { display:flex; gap:6px; align-items:center; } .sc-form .sc-row input[type=date] { flex:1.4; min-width:0; } .sc-form .sc-row input[type=time] { flex:1; min-width:0; }
   .sc-form input, .sc-form textarea { width:100%; box-sizing:border-box; } .sc-form .rb { display:flex; gap:6px; justify-content:flex-end; }
@@ -1199,7 +1200,7 @@ function renderPanel() {
   const ws = wkAll().filter(x => x.key ? x.fi === cur && x.key === r.key : x.w.b === F.bld && (!x.w.fl || x.w.fl === F.name));   // 이 실 + 이 층 전체 + 이 건물 전체
   for (const it of its) grp.set(it.n, (grp.get(it.n) || 0) + (+it.q || 1));
   p.innerHTML = `<button class="p-close" data-close aria-label="닫기" title="닫기 (Esc)">×</button><div class="p-eyebrow">${esc(state.floors[cur].bld)} ${esc(state.floors[cur].name)}</div>
-  <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button></div>
+  <div class="p-name">${esc(i.name)}<button type="button" class="req-btn" data-reqadd title="이 실의 보수요청 적기">🚨 보수요청${openN ? ' ' + openN : ''}</button><button type="button" class="req-btn sc-btn" data-scadd title="이 실의 사용일정 적기">📅 사용일정${scUp(i) ? ' ' + scUp(i) : ''}</button></div>
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
     ${reqs.map((q, n) => ({ q, n })).filter(x => !x.q.done).sort((a, b) => b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">완료</button></div></div>`).join('')}${reqs.length > openN ? `<p class="hint" style="margin:6px 0 0">✅ 완료 ${reqs.length - openN}건 — 보수요청 목록의 "전체"에서 확인</p>` : ''}</div>` : ''}
@@ -1224,12 +1225,14 @@ function renderPanel() {
 // 함께 쓰기에서는 보수요청과 같은 자리(req/<교원 암호>/<번호>)에 sc:1을 붙여 한 건씩 올린다. 공개 사본(open·pub 본 자료)에는 넣지 않는다.
 let scForm = '', scPast = '';   // scForm = 입력 칸을 연 실, scPast = 지난 일정을 펼친 실('층번호:실키')
 const WD = '일월화수목금토', scDay = d => { const x = new Date(d + 'T00:00'); return `${+d.slice(5, 7)}/${+d.slice(8)}(${WD[x.getDay()]})`; };
+const scUp = i => (i.sched || []).filter(q => q.d >= today()).length;   // 앞으로 잡힌 일정 수(오늘 포함)
 const scSort = (a, b) => (a.d + a.s).localeCompare(b.d + b.s);
 function scHtml(i, rk) {
   const all = (i.sched || []).map((q, n) => ({ q, n })), t = today(), up = all.filter(x => x.q.d >= t).sort((a, b) => scSort(a.q, b.q)), past = all.filter(x => x.q.d < t).sort((a, b) => scSort(b.q, a.q));
   const row = ({ q, n }) => `<div class="sc-item${q.d === t ? ' today' : ''}${q.d < t ? ' past' : ''}"><div class="sc-when"><b>${scDay(q.d)}</b> ${esc(q.s)}–${esc(q.e)}${q.d === t ? ' <em>오늘</em>' : ''}</div><div class="sc-what">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</div>${noReq() ? '' : `<button type="button" class="sc-del" data-scdel="${n}" title="이 일정 지우기">지움</button>`}</div>`;
   const now = new Date(), hh = String(Math.min(22, now.getHours() + 1)).padStart(2, '0');
-  return `<h2 class="it-head sc-head"><span>📅 사용일정 ${up.length ? up.length + '건' : ''}</span>${noReq() ? '' : '<button type="button" data-scadd>+ 사용일정</button>'}</h2>
+  if (scForm !== rk && !all.length) return '';   // 일정이 없으면 칸을 숨긴다(이름 옆 📅 단추로 적는다)
+  return `<h2 class="it-head sc-head"><span>📅 사용일정 ${up.length ? up.length + '건' : ''}</span></h2>
   ${scForm === rk ? `<div class="sc-form"><div class="sc-row"><input type="date" id="sc-d" value="${t}" min="${t}" aria-label="날짜"><input type="time" id="sc-s" value="${hh}:00" step="600" aria-label="시작"><span>–</span><input type="time" id="sc-e" value="${String(+hh + 1).padStart(2, '0')}:00" step="600" aria-label="끝"></div>
     <input id="sc-who" placeholder="누가 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><textarea id="sc-t" rows="2" placeholder="왜 (예: 3학년 학부모 상담, 동아리 회의)"></textarea>
     <div class="rb"><button type="button" data-sccancel>취소</button><button type="button" class="primary" data-scsave>등록</button></div></div>` : ''}

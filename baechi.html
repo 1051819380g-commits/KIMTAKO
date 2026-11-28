@@ -116,7 +116,7 @@
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
-  body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #scJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #scJump, #wkJump, #vWork, #vSch, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
   /* 교원(보수요청만): 고치는 단추·행정실용 화면을 숨긴다. 실 정보 창에는 이름·면적·보수요청만 */
   body.tch :is(#stats, main ~ section, #setMenu, #wkJump, #vWork, #wkMulti, #editLbl, #locOk, [data-reqdone], [data-reqmemo], [data-rq], [data-rm], .mx, [data-acadd], [data-acdel], #panel .wk-head, #panel .wk-item, #panel .wk-note, #panel .acs) { display:none !important; }
   body.tch #panel .f > :not([for=i-memo]):not(#i-memo) { display:none !important; }   /* 교원: 입력 칸은 메모만 */
@@ -157,7 +157,11 @@
   .sc-form input, .sc-form textarea { width:100%; box-sizing:border-box; } .sc-form .rb { display:flex; gap:6px; justify-content:flex-end; }
   .sc-item { position:relative; padding:6px 52px 6px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; font-size:13px; line-height:1.5; }
   .sc-item.today { background:#f2f6ff; } .sc-item.past { border-left-color:var(--line-strong); color:var(--sub); } .sc-item .sc-when em { font-style:normal; font-size:11px; font-weight:700; color:#fff; background:#3b6fd1; border-radius:8px; padding:0 6px; margin-left:4px; }
-  .sc-item .sc-what { word-break:break-all; white-space:pre-wrap; } .sc-item .sc-del { position:absolute; top:6px; right:6px; padding:1px 8px; font-size:11px; }
+  .sc-item .sc-what { word-break:break-all; white-space:pre-wrap; } .sc-item { padding-right:84px; }
+  .sc-item .sc-rep { font-size:11px; color:#2456b3; font-weight:600; white-space:nowrap; } .sc-item .sc-btns { position:absolute; top:6px; right:6px; display:flex; flex-direction:column; gap:4px; } .sc-item .sc-btns button { padding:1px 8px; font-size:11px; }
+  .sc-form select { min-width:0; } .sc-form .sc-row .sc-untl { color:var(--sub); font-size:12px; }
+  #acTot .scnav { display:inline-flex; gap:4px; align-items:center; } #acTot .scnav button { padding:2px 8px; font-size:12px; } #acTot .scnav input { padding:2px 4px; font-size:13px; } #acTot b.ps { color:#2456b3; background:#e8f0fe; }
+  #panel .sc-item + .f, #panel .sc-pastbtn + .f { margin-top:14px; }
   .sc-pastbtn { margin-top:6px; padding:2px 10px; font-size:12px; } .sc-none { margin:4px 0 0; }
   .req-form { display:grid; gap:6px; padding:9px; border:1px solid #f3b8ae; border-radius:6px; background:#fff8f6; }
   .req-form textarea, .req-form input { width:100%; box-sizing:border-box; } .req-form .rb { display:flex; gap:6px; justify-content:flex-end; }
@@ -300,7 +304,7 @@
   @media (pointer:coarse) and (max-width: 960px) {
     /* 실 정보 창: 화면을 채우는 팝업 */
     #panel { inset:0 !important; width:auto !important; max-height:none !important; border:0; border-radius:0; box-shadow:none; z-index:30; padding:18px 18px 28px; overscroll-behavior:contain; }
-    #panel input, #panel select, #panel textarea { font-size:16px; } .sc-item .sc-del { padding:4px 10px; font-size:12px; }   /* 16px보다 작으면 아이폰이 입력할 때 화면을 확대해 팝업이 잘린다 */
+    #panel input, #panel select, #panel textarea { font-size:16px; } .sc-item .sc-btns button { padding:4px 10px; font-size:12px; } #acTot .scnav input { font-size:16px; }   /* 16px보다 작으면 아이폰이 입력할 때 화면을 확대해 팝업이 잘린다 */
     #panel .p-close { top:10px; right:10px; width:40px; height:40px; font-size:26px; }
     body.popup { overflow:hidden; }
     /* 머리: 첫 줄은 제목+메뉴 단추, 둘째 줄은 학교·층 단추를 옆으로 밀어 보는 한 줄. 파일 단추·보기 설정은 메뉴를 눌러야 보인다. */
@@ -389,7 +393,7 @@
     </div>
   </div>
   <div class="bar noprint">
-    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button><button id="vWork" title="공사했거나 물품을 들인 실을 하자보증 기간에 따라 칠합니다">하자보증</button></div>
+    <div class="seg"><button id="vUse">용도 보기</button><button id="vAc">에어컨 보기</button><button id="vFire" title="소방시설과 실별 대피 동선(비상대피도)">소방·안전</button><button id="vWork" title="공사했거나 물품을 들인 실을 하자보증 기간에 따라 칠합니다">하자보증</button><button id="vSch" title="고른 날짜에 사용일정이 있는 실을 칠합니다">일정 보기</button></div>
     <span id="syncState" class="hint"></span>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다. 휴대폰에서는 두 손가락으로 끌어 옮기고 벌리거나 오므려 크기를 바꿉니다.">도면 크기 <input type="range" id="zoom" min="10" max="300" value="100"></label>
@@ -871,7 +875,7 @@ function addItem(r, name, n) {
 // ── 그리기 ──
 // 여러 실 고르기(Ctrl+누르기): '층번호 실키' → [층 번호, 실 키]. 지금 화면에 보이는 실만 남긴다(다른 건물·층으로 가면 풀린다).
 const multi = new Map();
-function render() { document.body.classList.toggle('ro', noReq()); for (const v of ['use', 'ac', 'fire', 'work']) document.body.classList.toggle('v-' + v, view === v); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
+function render() { document.body.classList.toggle('ro', noReq()); for (const v of ['use', 'ac', 'fire', 'work', 'sched']) document.body.classList.toggle('v-' + v, view === v); document.body.classList.toggle('tch', role === 'teacher'); if (ro() && editing) { editing = false; $('edit').checked = false; }
   for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site, pb = $('planbox'), keep = [pb.scrollLeft, pb.scrollTop]; render.site = site;
@@ -887,11 +891,12 @@ function renderTabs() {
     const names = [...new Set(state.floors.filter(f => SITE[f.bld]).map(f => f.name))].sort((p, q) => lvOf(p) - lvOf(q) || p.localeCompare(q));
     $('floorTabs').innerHTML = `<button class="${siteLv == null ? 'on' : ''}" data-lv="">전체</button>` + names.map(n => `<button class="${siteLv === n ? 'on' : ''}" data-lv="${esc(n)}">${esc(n)}</button>`).join('');
   } else $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
-  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : ''; $('vWork').className = view === 'work' ? 'on' : '';
+  $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : ''; $('vWork').className = view === 'work' ? 'on' : ''; $('vSch').className = view === 'sched' ? 'on' : '';
   $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('gapLbl').hidden = !site;
 }
 function fill(i, f) {
   if (view === 'work') return WK_FILL[wkBest(f ? wkFor(f, i) : i.works || [])];
+  if (view === 'sched') return (i.sched || []).some(q => scOn(q, scDate)) ? SC_FILL.on : i.use === '공용' ? '#fff' : SC_FILL.off;   // 일정 보기: 고른 날짜에 일정이 있는 실만 파랗게
   if (view === 'use') return USES[i.use] || '#fff';
   if (view === 'fire') return /계단/.test(i.name) ? '#c9ebd3' : i.use === '공용' ? '#fff' : '#f1f2f4';   // 소방·안전: 피난 계단만 초록, 나머지는 옅게(동선이 잘 보이게)
   if (+i.acN > 0) return AC_FILL.on;
@@ -1067,7 +1072,8 @@ function drawFloor(fi) {
     const nq = noReq() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
     const nw = ro() || view !== 'work' ? 0 : (r.info.works || []).filter(w => wkOn(w)).length;   // 하자보증 기간이 남은 공사·물품이 있으면 🔧(하자보증 보기에서만 — 사용자 요청)
     const acv = view === 'ac' && +r.info.acN > 0;   // 실의 ❄ 대수는 에어컨 보기에서만(사용자 요청 2026-11-27)
-    const nsc = noReq() ? 0 : (r.info.sched || []).filter(q => q.d === today()).length;   // 오늘 사용일정이 있으면 📅(사용자 요청 2026-11-28)
+    const scD = view === 'sched' ? scDate : today(), scs = noReq() ? [] : (r.info.sched || []).filter(q => scOn(q, scD)).sort(scSort), nsc = view === 'sched' ? 0 : scs.length;   // 오늘 사용일정이 있으면 📅(사용자 요청 2026-11-28)
+    if (view === 'sched' && scs.length) extra.unshift(scs[0].s + '–' + scs[0].e + (scs.length > 1 ? ` +${scs.length - 1}` : ''));   // 일정 보기: 그날 첫 일정 시간
     if (!fire && (acv || nq || nw || nsc)) extra.push([acv ? '❄' + r.info.acN : '', nq ? '🚨' : '', nw ? '🔧' : '', nsc ? '📅' : ''].filter(Boolean).join(' '));
     const tryFit = (names, ex) => ({ lines: [...names, ...ex], nameN: names.length,
       fs: Math.min(1.3, box.w * 0.9 / Math.max(.1, ...names.map(textW), ...ex.map(t => textW(t) * 0.85)), box.h * 0.88 / ((names.length + ex.length * 0.85) * 1.2)) });
@@ -1192,6 +1198,7 @@ function renderPlan() {
   $('legend').innerHTML = view === 'fire' ? '<span style="color:#e0201b;font-weight:600">━▶ 대피 동선</span><span><span class="sw" style="background:#c9ebd3"></span>계단실</span>'
       + [['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].map(([k, t]) => `<span><svg class="fm fmi" viewBox="-12 -12 24 24" width="18" height="18" text-anchor="middle">${FIRE_SYM[k]}</svg>${t}</span>`).join('')
     : view === 'work' ? ['ok', 'soon', 'exp'].map(s => `<span><span class="sw" style="background:${WK_FILL[s]}"></span>${WK_LBL[s]}${s === 'soon' ? '(90일 안)' : ''}</span>`).join('')
+    : view === 'sched' ? `<span><span class="sw" style="background:${SC_FILL.on}"></span>${scDate === today() ? '오늘' : scDay(scDate)} 일정 있음</span><span><span class="sw" style="background:${SC_FILL.off}"></span>일정 없음</span>`
     : view === 'use' ? Object.entries(USES).map(([u, c]) => `<span><span class="sw" style="background:${c}"></span>${u}</span>`).join('')
     : `<span><span class="sw" style="background:${AC_FILL.on}"></span>에어컨 있음</span><span><span class="sw" style="background:${AC_FILL.off}"></span>에어컨 없음</span><span><span class="sw" style="background:${AC_FILL.na}"></span>대상 아님</span>`;
   $('legend').innerHTML += '<span><svg viewBox="-1.5 -0.2 3 1.6" width="26" height="14" style="vertical-align:-2px;margin-right:4px"><g class="door"><path class="leaf" d="M-1.2 0v1.2M1.2 0v1.2"/><path class="arc" d="M-1.2 1.2A1.2 1.2 0 0 0 0 0A1.2 1.2 0 0 0 1.2 1.2"/></g></svg>건물 출입구</span>';
@@ -1233,37 +1240,53 @@ function renderPanel() {
 // 함께 쓰기에서는 보수요청과 같은 자리(req/<교원 암호>/<번호>)에 sc:1을 붙여 한 건씩 올린다. 공개 사본(open·pub 본 자료)에는 넣지 않는다.
 let scForm = '', scPast = '';   // scForm = 입력 칸을 연 실, scPast = 지난 일정을 펼친 실('층번호:실키')
 const WD = '일월화수목금토', scDay = d => { const x = new Date(d + 'T00:00'); return `${+d.slice(5, 7)}/${+d.slice(8)}(${WD[x.getDay()]})`; };
-const scUp = i => (i.sched || []).filter(q => q.d >= today()).length;   // 앞으로 잡힌 일정 수(오늘 포함)
+// 반복(사용자 요청 2026-11-28): rep 'w' 매주(같은 요일) / 'm' 매월(같은 날짜, 그 날짜가 없는 달은 건너뜀), until 반복 끝 날, ex 뺀 날짜들
+const ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`, addD = (d, n) => { const x = new Date(d + 'T00:00'); x.setDate(x.getDate() + n); return ymd(x); };
+function scDates(q, a, b) {   // q가 a~b(포함) 사이에 잡힌 날짜들
+  const out = [], end = q.rep && q.until && q.until < b ? q.until : b, ok = d => d >= a && d <= end && !(q.ex || []).includes(d);
+  if (!q.rep) { if (ok(q.d)) out.push(q.d); return out; }
+  if (q.rep === 'w') { let d = q.d; if (d < a) d = addD(d, Math.ceil((new Date(a + 'T00:00') - new Date(d + 'T00:00')) / 864e5 / 7) * 7); for (let k = 0; d <= end && k < 400; k++, d = addD(d, 7)) if (ok(d)) out.push(d); return out; }
+  const day = +q.d.slice(8); let y = +q.d.slice(0, 4), m = +q.d.slice(5, 7);
+  for (let k = 0; k < 240; k++) { const last = new Date(y, m, 0).getDate(); if (day <= last) { const d = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`; if (d > end) break; if (ok(d)) out.push(d); } if (++m > 12) { m = 1; y++; } if (`${y}-${String(m).padStart(2, '0')}` > end.slice(0, 7)) break; }
+  return out;
+}
+const scOn = (q, d) => scDates(q, d, d).length > 0, scNext = (q, from) => (scDates(q, from, q.rep ? addD(from, 800) : q.d)[0] || '');
+const repLbl = q => q.rep === 'w' ? `매주 ${WD[new Date(q.d + 'T00:00').getDay()]}요일` : q.rep === 'm' ? `매월 ${+q.d.slice(8)}일` : '';
+const scUp = i => (i.sched || []).filter(q => scNext(q, today())).length;   // 앞으로 잡힌 일정 수(오늘 포함, 반복은 한 건)
 const scSort = (a, b) => (a.d + a.s).localeCompare(b.d + b.s);
 function scHtml(i, rk) {
-  const all = (i.sched || []).map((q, n) => ({ q, n })), t = today(), up = all.filter(x => x.q.d >= t).sort((a, b) => scSort(a.q, b.q)), past = all.filter(x => x.q.d < t).sort((a, b) => scSort(b.q, a.q));
-  const row = ({ q, n }) => `<div class="sc-item${q.d === t ? ' today' : ''}${q.d < t ? ' past' : ''}"><div class="sc-when"><b>${scDay(q.d)}</b> ${esc(q.s)}–${esc(q.e)}${q.d === t ? ' <em>오늘</em>' : ''}</div><div class="sc-what">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</div>${noReq() ? '' : `<button type="button" class="sc-del" data-scdel="${n}" title="이 일정 지우기">지움</button>`}</div>`;
+  const t = today(), all = (i.sched || []).map((q, n) => ({ q, n, nx: scNext(q, t) })), up = all.filter(x => x.nx).sort((a, b) => (a.nx + a.q.s).localeCompare(b.nx + b.q.s)), past = all.filter(x => !x.nx).sort((a, b) => scSort(b.q, a.q));
+  const row = ({ q, n, nx }) => { const d = nx || q.d; return `<div class="sc-item${d === t ? ' today' : ''}${!nx ? ' past' : ''}"><div class="sc-when"><b>${scDay(d)}</b> ${esc(q.s)}–${esc(q.e)}${d === t ? ' <em>오늘</em>' : ''}${q.rep ? ` <span class="sc-rep">🔁 ${repLbl(q)}${q.until ? ' · ' + scDay(q.until) + '까지' : ''}</span>` : ''}</div><div class="sc-what">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</div>${noReq() ? '' : `<span class="sc-btns">${q.rep && nx ? `<button type="button" data-scskip="${n}" title="${scDay(nx)} 한 번만 빼기">이번만 빼기</button>` : ''}<button type="button" data-scdel="${n}" title="${q.rep ? '반복 일정 전체 지우기' : '이 일정 지우기'}">${q.rep ? '전체 지움' : '지움'}</button></span>`}</div>`; };
   const now = new Date(), hh = String(Math.min(22, now.getHours() + 1)).padStart(2, '0');
   if (scForm !== rk && !all.length) return '';   // 일정이 없으면 칸을 숨긴다(이름 옆 📅 단추로 적는다)
   return `<h2 class="it-head sc-head"><span>📅 사용일정 ${up.length ? up.length + '건' : ''}</span></h2>
   ${scForm === rk ? `<div class="sc-form"><div class="sc-row"><input type="date" id="sc-d" value="${t}" min="${t}" aria-label="날짜"><input type="time" id="sc-s" value="${hh}:00" step="600" aria-label="시작"><span>–</span><input type="time" id="sc-e" value="${String(+hh + 1).padStart(2, '0')}:00" step="600" aria-label="끝"></div>
+    <div class="sc-row"><select id="sc-rep" aria-label="반복"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="m">매월 반복</option></select><span class="sc-untl" hidden>끝</span><input type="date" id="sc-until" aria-label="반복 끝 날" hidden></div>
     <input id="sc-who" placeholder="누가 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><textarea id="sc-t" rows="2" placeholder="왜 (예: 3학년 학부모 상담, 동아리 회의)"></textarea>
     <div class="rb"><button type="button" data-sccancel>취소</button><button type="button" class="primary" data-scsave>등록</button></div></div>` : ''}
   ${up.map(row).join('') || (scForm === rk ? '' : '<p class="hint sc-none">잡힌 일정이 없습니다.</p>')}
   ${past.length ? `<button type="button" class="sc-pastbtn" data-scpast>${scPast === rk ? '지난 일정 접기' : `지난 일정 ${past.length}건 보기`}</button>${scPast === rk ? past.map(row).join('') : ''}` : ''}`;
 }
 // 사용일정 목록(모든 실, 날짜별 — 사용자 요청 2026-11-28): 오늘 / 이번 주(오늘~일요일) / 앞으로 / 지난 일정 / 고른 날짜
-let scView = 'today';
+let scView = 'today', scDate = today();   // scDate = 일정 보기에서 칠할 날짜
+const SC_FILL = { on: '#a9c8f7', off: '#f1f2f4' };
+$('acTot').addEventListener('click', e => { const v = e.target.dataset.scd; if (v == null) return; scDate = v === '0' ? today() : addD(scDate, +v); render(); });
+$('acTot').addEventListener('change', e => { if (e.target.id === 'scDate' && e.target.value) { scDate = e.target.value; render(); } });
 function scAllList() { const out = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.sched || []).forEach((q, n) => out.push({ f, fi, r, q, n })); }); return out; }
 function renderScList() {
   const t = today(), all = scAllList(), wd = new Date(t + 'T00:00').getDay(), sun = new Date(new Date(t + 'T00:00').getTime() + (wd ? 7 - wd : 0) * 864e5), p = n => String(n).padStart(2, '0'),
     weekEnd = `${sun.getFullYear()}-${p(sun.getMonth() + 1)}-${p(sun.getDate())}`, day = $('scDay').value;
-  const keep = x => scView === 'day' ? x.q.d === day : scView === 'today' ? x.q.d === t : scView === 'week' ? x.q.d >= t && x.q.d <= weekEnd : scView === 'next' ? x.q.d >= t : x.q.d < t;
-  const list = all.filter(keep).sort((a, b) => scView === 'past' ? scSort(b.q, a.q) : scSort(a.q, b.q));
+  const [a, b] = scView === 'day' ? [day, day] : scView === 'today' ? [t, t] : scView === 'week' ? [t, weekEnd] : scView === 'next' ? [t, addD(t, 60)] : [addD(t, -60), addD(t, -1)];   // 앞으로·지난 일정은 60일
+  const list = all.flatMap(x => scDates(x.q, a, b).map(d => ({ ...x, q: { ...x.q, d } }))).sort((p, q) => scView === 'past' ? scSort(q.q, p.q) : scSort(p.q, q.q));
   for (const b of $('scView').children) b.className = b.dataset.sv === scView ? 'on' : '';
-  $('scCnt').textContent = `${scView === 'day' ? scDay(day) : { today: '오늘', week: '이번 주', next: '앞으로', past: '지난 일정' }[scView]} ${list.length}건 · 오늘 ${all.filter(x => x.q.d === t).length}건`;
+  $('scCnt').textContent = `${scView === 'day' ? scDay(day) : { today: '오늘', week: '이번 주', next: '앞으로 60일', past: '지난 60일' }[scView]} ${list.length}건 · 오늘 ${all.filter(x => scOn(x.q, t)).length}건`;
   let last = '', h = '';
   for (const { f, fi, r, q, n } of list) {
     if (q.d !== last) { last = q.d; h += `<div class="sc-date">${scDay(q.d)}${q.d === t ? '<em>오늘</em>' : ''}</div>`; }
-    h += `<div class="sc-row${q.d < t ? ' past' : ''}" data-f="${fi}" data-k="${r.key}" title="눌러서 이 실로 가기"><span class="tm">${esc(q.s)}–${esc(q.e)}</span><span class="wh">${esc(f.bld)} ${esc(f.name)} <b style="color:var(--ink)">${esc(r.info.name)}</b></span><span class="wt">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</span></div>`;
+    h += `<div class="sc-row${q.d < t ? ' past' : ''}" data-f="${fi}" data-k="${r.key}" title="눌러서 이 실로 가기"><span class="tm">${esc(q.s)}–${esc(q.e)}${q.rep ? ` <small title="${repLbl(q)}">🔁</small>` : ''}</span><span class="wh">${esc(f.bld)} ${esc(f.name)} <b style="color:var(--ink)">${esc(r.info.name)}</b></span><span class="wt">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</span></div>`;
   }
   $('scList').innerHTML = h || `<p class="hint">${all.length ? '이 기간에 잡힌 사용일정이 없습니다.' : '아직 사용일정이 없습니다. 실을 눌러 이름 옆 "📅 사용일정"으로 적습니다.'}</p>`;
-  const nToday = all.filter(x => x.q.d === t).length;
+  const nToday = all.filter(x => scOn(x.q, t)).length;
   $('scJump').innerHTML = `📅<span class="jl"> 사용일정</span>${nToday ? ` <b>(${nToday})</b>` : ''}`;   // 오늘 일정 수를 (n)으로
 }
 $('scJump').onclick = () => { scView = 'today'; $('scDay').value = ''; renderScList(); $('scDlg').showModal(); $('scDlg').scrollTop = 0; };
@@ -1278,13 +1301,20 @@ function scSave() {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return $('sc-d').focus(); if (!s0) return $('sc-s').focus(); if (!e0 || e0 <= s0) { alert('끝나는 시간이 시작 시간보다 늦어야 합니다.'); return $('sc-e').focus(); }
   if (!who && !t) { alert('누가, 왜 쓰는지 적어 주세요.'); return $('sc-who').focus(); }
   lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
-  const hit = (r.info.sched || []).filter(q => q.d === d && q.s < e0 && s0 < q.e);   // 같은 날 시간대가 겹치는 일정
-  if (hit.length && !confirm(`이 시간에 이미 잡힌 일정이 있습니다.\n\n${hit.map(q => `${q.s}–${q.e} ${q.who || ''} ${q.t || ''}`).join('\n')}\n\n그래도 등록할까요?`)) return;
-  (r.info.sched ||= []).push({ d, s: s0, e: e0, who, t, at: today() }); log(`사용일정: ${r.info.name} — ${d} ${s0}–${e0} ${who}${t ? ' (' + t + ')' : ''}`); scForm = ''; save(); render();
+  const rp = $('sc-rep').value, until = rp ? $('sc-until').value : ''; if (rp && (!until || until < d)) { alert('반복이 끝나는 날을 시작 날짜 뒤로 골라 주세요.'); return $('sc-until').focus(); }
+  const nq = { d, s: s0, e: e0, who, t, at: today(), ...(rp ? { rep: rp, until } : {}) }, days = scDates(nq, d, until || d), hit = [];
+  for (const q of r.info.sched || []) { if (!(q.s < e0 && s0 < q.e)) continue; const dd = days.filter(x => scOn(q, x)); if (dd.length) hit.push(`${scDay(dd[0])}${dd.length > 1 ? ` 외 ${dd.length - 1}번` : ''} ${q.s}–${q.e} ${q.who || ''} ${q.t || ''}`); }   // 시간대가 겹치는 날이 있는 일정
+  if (hit.length && !confirm(`이 시간에 이미 잡힌 일정이 있습니다.\n\n${hit.join('\n')}\n\n그래도 등록할까요?`)) return;
+  (r.info.sched ||= []).push(nq); log(`사용일정: ${r.info.name} — ${d} ${s0}–${e0}${rp ? ` (${repLbl(nq)}, ${until}까지 ${days.length}번)` : ''} ${who}${t ? ' (' + t + ')' : ''}`); scForm = ''; save(); render();
+}
+function scSkip(n) {   // 반복 일정에서 다음 한 번만 뺀다(그날 쉬는 날 등)
+  applyRemote(); const r = findSel(); const q = r && (r.info.sched || [])[n]; if (!q) return; const nx = scNext(q, today()); if (!nx) return;
+  if (!confirm(`「${r.info.name}」 ${repLbl(q)} ${q.s}–${q.e} 일정에서 ${scDay(nx)} 한 번만 뺍니다. 계속할까요?`)) return;
+  (q.ex ||= []).push(nx); log(`사용일정 한 번 뺌: ${r.info.name} — ${nx} ${q.s}–${q.e} ${q.who || ''}`); save(); render();
 }
 function scDel(n) {
   applyRemote(); const r = findSel(); const q = r && (r.info.sched || [])[n]; if (!q) return;
-  if (!confirm(`「${r.info.name}」 ${scDay(q.d)} ${q.s}–${q.e} ${q.who || ''} 일정을 지웁니다. 계속할까요?`)) return;
+  if (!confirm(`「${r.info.name}」 ${q.rep ? repLbl(q) + ' 반복' : scDay(q.d)} ${q.s}–${q.e} ${q.who || ''} 일정을${q.rep ? ' 모두' : ''} 지웁니다. 계속할까요?`)) return;
   r.info.sched.splice(n, 1); if (!r.info.sched.length) delete r.info.sched; log(`사용일정 지움: ${r.info.name} — ${q.d} ${q.s}–${q.e} ${q.who || ''}`);
   const tk = tkey(); if (tk && q.id) { delete reqStore[q.id]; delete reqSent[q.id];   // 함께 쓰기 자리에서도 지운다(다시 붙지 않게)
     fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['req/' + tk + '/' + q.id]: null, ['gate/' + pw]: Date.now() }) }).catch(() => {}); }
@@ -1530,7 +1560,9 @@ function renderTable() {
     for (const w of state.works || []) if (shown.some(([f]) => f.bld === w.b && (!w.fl || w.fl === f.name))) wkAdd(w);   // 층·건물 전체 공사·물품은 그 건물(층)이 보이면 한 번
     $('acTot').innerHTML = view === 'use' ? Object.keys(USES).filter(u => T.use[u]).map(u => `<b class="pu"><i class="sw" style="background:${USES[u]}"></i>${u} ${T.use[u]}실</b>`).join('')
       : view === 'fire' ? ([['소화전', '옥내소화전'], ['펌프', '소방펌프'], ['탐지기', '화재탐지'], ['방화문', '방화문']].filter(([k]) => T.fire[k]).map(([k, t]) => `<b class="pf">${t} ${T.fire[k]}곳</b>`).join('') || '<b class="pf">소방시설 0곳</b>')
-      : view === 'work' ? `<b class="pw">보증 중 ${T.wk}건</b><b class="pw${T.wkSoon ? ' soon' : ''}">만료 임박 ${T.wkSoon}건</b>` : ''; }
+      : view === 'work' ? `<b class="pw">보증 중 ${T.wk}건</b><b class="pw${T.wkSoon ? ' soon' : ''}">만료 임박 ${T.wkSoon}건</b>`
+      : view === 'sched' ? (() => { let nr = 0, ne = 0; for (const [f] of shown) for (const r of roomsOf(f)) { const k = (r.info.sched || []).filter(q => scOn(q, scDate)).length; if (k) { nr++; ne += k; } }
+        return `<span class="scnav"><button type="button" data-scd="-1" title="전날">◀</button><input type="date" id="scDate" value="${scDate}" aria-label="일정 볼 날짜"><button type="button" data-scd="1" title="다음 날">▶</button>${scDate !== today() ? '<button type="button" data-scd="0">오늘</button>' : ''}</span><b class="ps">${scDay(scDate)} 일정 있는 실 ${nr}곳 · ${ne}건</b>`; })() : ''; }
   $('stats').classList.toggle('two', site);
   $('stats').innerHTML = site ? [['hs', '고등학교'], ['ms', '중학교']].filter(([k]) => acc[k]).map(([k, t]) => `<div class="srow"><em>${t}</em>${line(acc[k], t)}</div>`).join('') : line(acc.one || newAcc(), b);
   $('tblTitle').textContent = `${site ? '모든 건물' : b} 실별 면적표`;
@@ -1776,7 +1808,7 @@ for (const ev of ['scroll', 'resize']) addEventListener(ev, () => { flMenu.hidde
 addEventListener('keydown', e => { if (e.key === 'Escape') flMenu.hidden = true; });
 $('floorTabs').onclick = e => { if (site && e.target.dataset.lv != null) { siteLv = e.target.dataset.lv || null; sel = null; return render(); }
   const v = e.target.dataset.f; if (!v) return; site = false; allView = v === 'all'; if (!allView) { cur = +v; sel = null; } render(); autoZoom(); $('planbox').scrollTop = 0; scrollTo(0, 0); };   // 층 단추를 누르면 화면(도면 상자 안도) 맨 위로
-$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); }; $('vWork').onclick = () => { view = 'work'; render(); };
+$('vUse').onclick = () => { view = 'use'; render(); }; $('vAc').onclick = () => { view = 'ac'; render(); }; $('vFire').onclick = () => { view = 'fire'; render(); }; $('vWork').onclick = () => { view = 'work'; render(); }; $('vSch').onclick = () => { view = 'sched'; render(); };
 $('edit').onchange = e => { editing = e.target.checked && !ro(); render(); };
 // 도면 크기는 늘 "도면 크기" 값 그대로(상자 폭의 %)다. 한 화면에 맞춰 높이를 누르던 것은 껐다 — 어느 값까지는 크기가 안 바뀌는 구간이 생겼기 때문(사용자 요청).
 function fitPlan() {
@@ -1950,11 +1982,14 @@ $('reqList').onclick = e => {
   $('reqDlg').close(); cur = +tr.dataset.f; sel = tr.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom();   // 목록을 닫고 그 실이 있는 층으로 가서 정보 창을 연다
   $('planbox').scrollIntoView({ block: 'nearest' });
 };
+$('panel').addEventListener('change', e => {   // 사용일정 입력: 반복을 고르면 끝 날 칸을 보이고 처음 값을 넣는다(매주 12주 뒤, 매월 6달 뒤)
+  if (e.target.id !== 'sc-rep' && e.target.id !== 'sc-d') return; const on = !!$('sc-rep').value; $('sc-until').hidden = document.querySelector('.sc-untl').hidden = !on;
+  $('sc-until').min = $('sc-d').value; if (on && (!$('sc-until').value || $('sc-until').value < $('sc-d').value)) $('sc-until').value = addD($('sc-d').value, $('sc-rep').value === 'm' ? 182 : 84); });
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
   if (noReq()) return;   // 여기부터 보수요청 올리기·사진·사용일정까지는 교원도 된다
   if (d.scadd != null || d.sccancel != null) { scForm = d.scadd != null ? cur + ':' + sel : ''; renderPanel(); if (scForm) $('sc-who').value ? $('sc-t').focus() : $('sc-who').focus(); return; }
-  if (d.scsave != null) return scSave(); if (d.scdel != null) return scDel(+d.scdel);
+  if (d.scsave != null) return scSave(); if (d.scdel != null) return scDel(+d.scdel); if (d.scskip != null) return scSkip(+d.scskip);
   if (d.scpast != null) { const k = cur + ':' + sel; scPast = scPast === k ? '' : k; return renderPanel(); }
   if (d.reqadd != null || d.reqcancel != null) { reqForm = d.reqadd != null ? cur + ':' + sel : ''; renderPanel(); if (reqForm) $('r-text').focus(); return; }
   if (d.reqsave != null) {

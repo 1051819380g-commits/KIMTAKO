@@ -143,12 +143,17 @@
   .wk-item .req-meta button { padding:1px 8px; font-size:11px; } .wk-item.soon .wk-st { color:#c2570a; font-weight:600; } .wk-item.ok .wk-st { color:#1e7a43; font-weight:600; }
   .wk-sc { font-size:11px; padding:0 6px; border:1px solid var(--line); border-radius:9px; color:var(--sub); font-weight:400; }
   .wk-note { margin-top:6px; padding:6px 9px; border-radius:6px; background:#eaf7ee; border:1px solid #b7e0c4; font-size:12px; line-height:1.5; white-space:normal; }
-  #wkDlg { width:min(520px, calc(100vw - 32px)); box-sizing:border-box; }
+  #wkDlg { width:min(560px, calc(100vw - 32px)); box-sizing:border-box; max-height:calc(100vh - 40px); overflow:auto; }
+  #wkDlg .ws { display:grid; gap:7px; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--sheet); } #wkDlg .ws-h { font-size:12px; font-weight:600; color:var(--sub); } #wkDlg .ws-h small { font-weight:400; color:var(--faint); }
+  #wkDlg .ws-sel { display:flex; gap:6px; } #wkDlg .ws-sel select { flex:1; min-width:0; background:var(--surface); }
+  #wkDlg .ws-chips { display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow:auto; } #wkDlg .ws-chips button { padding:4px 10px; font-size:12.5px; border-radius:16px; background:var(--surface); }
+  #wkDlg .ws-chips button.on { background:#2e9e5b; border-color:#2e9e5b; color:#fff; font-weight:600; } #wkDlg .ws-alls { max-height:none; } #wkDlg .ws-chips .ws-all { border-style:dashed; } #wkDlg .wkf:has(#ws:not([hidden])) > label:first-child { grid-column:1 / -1; } #wkDlg .ws-chips .ws-all.on { background:#1e7a43; border-style:solid; }
+  #wkDlg .ws-sum { font-size:12.5px; color:var(--sub); line-height:1.6; } #wkDlg .ws-sum b { color:var(--ink); } #wkDlg .ws-sum button { padding:1px 8px; font-size:11.5px; margin-left:4px; } #wkDlg .ws-sum .warn { color:#c2570a; }
   #wkDlg .wkf { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; } #wkDlg .wkf label { display:grid; gap:3px; font-size:12px; color:var(--sub); } #wkDlg .wkf .wide { grid-column:1 / -1; }
   #wkDlg .wkf :is(input, select), #wkNew select { width:100%; box-sizing:border-box; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
   #wkDlg .wkf :is(input, select):hover, #wkNew select:hover { border-color:var(--line-strong); } #wkDlg h2 { margin:0 0 12px; } #wkDlg .hint { margin:10px 0 0; }
   #wkNew select { width:auto; } #wkNew button { white-space:nowrap; }
-  #wkNew { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; } #wkNew select { flex:1; min-width:90px; } #wkNew #wn-r { flex:2; }
+  #wkNew { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; margin:10px 0 4px; } #wkNew .hint { margin:0; font-size:12px; }
   #wkRows tr[data-wk] { cursor:pointer; } #wkRows tr.exp td { color:var(--sub); } #wkRows tr.soon td.st { color:#c2570a; font-weight:600; } #wkRows button { padding:1px 8px; font-size:12px; } #wkRows td { white-space:normal; } #wkJump b { color:#c2570a; }
   /* 사용일정 */
   .sc-btn { color:#2456b3; background:#f2f6ff; border-color:#b9cdf0; margin-left:6px; } .sc-btn:hover { background:#e3ecfd; border-color:#8fb0e8; }
@@ -225,7 +230,7 @@
   #reqNew summary, #wkNew #wn-add { border-radius:8px; } #reqNew summary { padding:6px 14px; font-size:13.5px; font-weight:700; } #reqNew[open] summary { display:none; }
   #reqNew .req-form { gap:10px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 2px 10px rgba(22,33,46,.06); }
   #reqNew .req-form :is(select, textarea, input:not([type=file])) { padding:7px 10px; border-radius:8px; background:var(--sheet); font-size:14px; }
-  #reqNew .rb { gap:8px; } #wkNew { padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface); gap:8px; }
+  #reqNew .rb { gap:8px; } #wkNew { padding:0; border:0; background:none; }
   #reqDlg, #wkList { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
   :is(#reqDlg, #wkList, #phDlg) .sec-head { position:relative; padding-right:36px; } :is(#reqDlg, #wkList, #phDlg) .p-close { top:-4px; right:-6px; } :is(#reqDlg, #wkList, #phDlg) h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
@@ -481,7 +486,10 @@
   <h2 id="wkTitle"></h2>
   <div class="wkf">
     <label>구분<select id="wk-kind"><option>공사</option><option>물품</option></select></label>
-    <label>범위<select id="wk-sc"></select></label>
+    <label id="wk-scL">범위<select id="wk-sc"></select></label>
+    <div class="wide ws" id="ws"><span class="ws-h">범위 <small>— 실을 여러 개 고를 수 있습니다(다른 층으로 바꿔도 고른 실은 남습니다)</small></span>
+      <div class="ws-sel"><select id="ws-b" aria-label="건물"></select><select id="ws-f" aria-label="층"></select></div>
+      <div id="ws-alls" class="ws-chips ws-alls"></div><div id="ws-chips" class="ws-chips"></div><div id="ws-sum" class="ws-sum"></div></div>
     <label class="wide">이름<input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품"></label>
     <label class="wide" id="wk-typeL">공종 (고르면 법정 기간이 들어갑니다)<select id="wk-type"></select></label>
     <label>업체<input id="wk-co" placeholder="업체 이름"></label>
@@ -494,7 +502,7 @@
   <div class="acts"><button value="cancel" formnovalidate>취소</button><button value="ok" class="primary">저장</button></div>
 </form></dialog>
 <dialog id="wkList"><div class="sec-head"><h2>🔧 공사·하자보증 목록 <span id="wkCnt" class="hint"></span></h2><div class="seg" id="wkView"><button data-wv="on">보증 중</button><button data-wv="exp">만료</button><button data-wv="all">전체</button></div><button id="wkPrint" title="지금 보이는 목록(보증 중·만료·전체)을 인쇄합니다">인쇄</button><button class="p-close" id="wkClose" aria-label="닫기" title="닫기 (Esc)">×</button></div>
-<div id="wkNew" class="noprint"><select id="wn-b" aria-label="건물"></select><select id="wn-f" aria-label="층"></select><select id="wn-r" aria-label="실"></select><button type="button" class="primary" id="wn-add">＋ 하자보증 추가</button></div><div id="wkRows"></div></dialog>
+<div id="wkNew" class="noprint"><button type="button" class="primary" id="wn-add">＋ 하자보증 추가</button><span class="hint">추가 창에서 건물·층을 고르고 실을 여러 개 고를 수 있습니다.</span></div><div id="wkRows"></div></dialog>
 <dialog id="doneDlg"><form method="dialog">
   <h2>보수요청 완료</h2>
   <p id="doneWhat" style="margin:0 0 10px; font-weight:600; white-space:pre-wrap; word-break:break-all;"></p>
@@ -1474,8 +1482,36 @@ const wkHtml = x => { const w = x.w, s = wkSt(w); return `<div class="wk-item ${
 const wkNote = (f, i) => { const ws = wkOnOf(f, i); return ws.length ? `<div class="wk-note">🔧 <b>하자보증 중</b> — 고치기 전에 업체에 하자보수를 청구할 수 있는지 확인하세요.<br>${ws.map(w => `${esc(w.t)}${w.co ? ' — ' + esc(w.co) : ''}${w.tel ? ' ' + esc(w.tel) : ''} (~${esc(w.e)})`).join('<br>')}</div>` : ''; };
 // 입력 창: id가 없으면 고른 실에 새로 적고, 있으면 그 항목을 고친다
 // many = [[층 번호, 실 키], …]를 주면 그 실들에 같은 내용을 하나씩 적는다(실마다 따로 고치고 지울 수 있다)
+// 하자보증 추가 창의 범위 고르기(사용자 요청 2026-11-28): 건물 → 층을 고르고, 그 층의 실을 눌러 여러 개 고른다(다른 층 실도 섞어 고를 수 있다).
+// '층 전체'·'건물 전체'를 누르면 그 범위 하나로 바뀐다. wsMode = 'rooms' | 'floor' | 'bld'
+let wsSel = new Map(), wsMode = 'rooms', wsB = '', wsF = -1;
+function wsRender() {
+  const opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`, fs = state.floors.map((f, i) => [f, i]).filter(([f]) => f.bld === wsB);
+  $('ws-b').innerHTML = [...new Set(state.floors.map(f => f.bld))].map(b => opt(b, b)).join(''); $('ws-b').value = wsB;
+  $('ws-f').innerHTML = fs.map(([f, i]) => opt(i, f.name)).join(''); $('ws-f').value = wsF;
+  const rs = wsF >= 0 ? roomsOf(state.floors[wsF]).filter(r => !/뚫림/.test(r.info.name)).sort((a, b) => a.info.name.localeCompare(b.info.name, 'ko', { numeric: true })) : [];
+  $('ws-alls').innerHTML = `<button type="button" class="ws-all${wsMode === 'bld' ? ' on' : ''}" data-ws="bld">🏢 ${esc(wsB)} 건물 전체</button><button type="button" class="ws-all${wsMode === 'floor' ? ' on' : ''}" data-ws="floor">▦ ${esc(wsF >= 0 ? state.floors[wsF].name : '')} 전체</button>`;
+  $('ws-chips').innerHTML = rs.map(r => `<button type="button" class="${wsMode === 'rooms' && wsSel.has(wsF + ' ' + r.key) ? 'on' : ''}" data-wr="${esc(r.key)}">${esc(r.info.name)}</button>`).join('');
+  const picked = [...wsSel.values()].map(([fi, k]) => { const f = state.floors[fi], r = f && roomsOf(f).find(x => x.key === k); return r ? `${f.bld === wsB ? '' : f.bld + ' '}${f.name} ${r.info.name}` : ''; }).filter(Boolean);
+  $('ws-sum').innerHTML = wsMode === 'bld' ? `고른 범위: <b>${esc(wsB)} 건물 전체</b>` : wsMode === 'floor' ? `고른 범위: <b>${esc(wsB)} ${esc(state.floors[wsF].name)} 전체</b>`
+    : picked.length ? `고른 실 <b>${picked.length}개</b>: ${esc(picked.join(', '))} <button type="button" data-wsclear>모두 빼기</button>` : '<span class="warn">실을 눌러 고르거나 층·건물 전체를 누르세요.</span>';
+}
+$('ws-b').onchange = () => { wsB = $('ws-b').value; const fs = state.floors.map((f, i) => [f, i]).filter(([f]) => f.bld === wsB); wsF = (fs.find(([f]) => f.name === '1층') || fs[0])[1]; if (wsMode !== 'rooms') { wsMode = 'rooms'; } wsRender(); };
+$('ws-f').onchange = () => { wsF = +$('ws-f').value; if (wsMode === 'floor') wsMode = 'rooms'; wsRender(); };
+$('ws-alls').onclick = $('ws-chips').onclick = e => { const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.ws) { wsMode = wsMode === t.dataset.ws ? 'rooms' : t.dataset.ws; return wsRender(); }
+  const id = wsF + ' ' + t.dataset.wr; wsMode = 'rooms'; if (!wsSel.delete(id)) wsSel.set(id, [wsF, t.dataset.wr]); wsRender(); };
+$('ws-sum').onclick = e => { if (e.target.dataset.wsclear != null) { wsSel.clear(); wsRender(); } };
 function wkOpen(id, many, at) {
-  const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id ? !x : !r && !many && !at) return;
+  const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id && !x) return;
+  if (!x) {   // 새로 적기: 범위를 고르는 칸을 연다(정보 창 → 그 실, 도면에서 여러 실 → 그 실들, 층·건물 → 그 범위)
+    wsSel = new Map(); wsMode = 'rooms'; wsB = f.bld; wsF = cur;
+    if (at) { wsB = at.b; wsMode = at.fl ? 'floor' : 'bld'; const i = state.floors.findIndex(q => q.bld === at.b && (!at.fl || q.name === at.fl)); wsF = i; }
+    else if (many && many.length) { for (const [fi, k] of many) wsSel.set(fi + ' ' + k, [fi, k]); wsB = state.floors[many[0][0]].bld; wsF = many[0][0]; }
+    else if (!many && r) wsSel.set(cur + ' ' + r.key, [cur, r.key]);
+    if (state.floors[wsF] && state.floors[wsF].bld !== wsB) wsF = state.floors.findIndex(q => q.bld === wsB);
+    wsRender(); }
+  $('ws').hidden = !!x; $('wk-scL').hidden = !x;   // 고칠 때는 범위를 바꾸지 않는다(어디에 적힌 것인지만 보인다)
   const atLbl = at && `${at.b} ${at.fl ? at.fl + ' 전체' : '건물 전체'}`;
   const rooms = () => (many || []).map(([fi, k]) => roomsOf(state.floors[fi]).find(q => q.key === k)).filter(Boolean);
   const w = x ? x.w : { kind: '공사', d: today() }, dlg = $('wkDlg'), v = k => $('wk-' + k);
@@ -1486,15 +1522,15 @@ function wkOpen(id, many, at) {
   const kind = () => { v('typeL').hidden = v('kind').value === '물품'; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
   kind(); v('kind').onchange = kind; v('d').onchange = v('y').oninput = calc;
   v('type').onchange = () => { const y = v('type').selectedOptions[0].dataset.y; if (y) { v('y').value = y; calc(); } };
+  dlg.querySelector('form').onsubmit = e => { if (!x && e.submitter && e.submitter.value === 'ok' && wsMode === 'rooms' && !wsSel.size) { e.preventDefault(); alert('범위를 골라 주세요. 실을 누르거나 층·건물 전체를 누르면 됩니다.'); } };
   dlg.returnValue = ''; dlg.onclose = () => {
     if (dlg.returnValue !== 'ok' || ro()) return;
     const nw = { kind: v('kind').value, t: v('t').value.trim(), type: v('kind').value === '물품' ? '' : v('type').value, co: v('co').value.trim(), tel: v('tel').value.trim(), d: v('d').value, y: +v('y').value || '', e: v('e').value };
     if (!nw.t) return; applyRemote(); let where;   // 창이 떠 있는 동안 다른 사람이 바꿨으면 다시 찾는다
     if (x) { const y = wkGet(id); if (!y || y.w.t !== w.t || y.w.d !== w.d) return alert('창을 연 사이에 다른 사람이 이 목록을 바꿨습니다. 다시 열어 주세요.'); Object.assign(y.w, nw); where = y.where; }
-    else if (at) { (state.works ||= []).push({ ...nw, b: at.b, fl: at.fl }); where = atLbl; }
-    else if (many) { const rs = rooms(); if (!rs.length) return; for (const q of rs) (q.info.works ||= []).push({ ...nw }); where = rs.map(q => q.info.name).join(', '); multi.clear(); }
-    else { const sc = v('sc').value, r2 = findSel(); if (sc === 'r') { if (!r2) return; (r2.info.works ||= []).push(nw); where = r2.info.name; }
-      else { (state.works ||= []).push({ ...nw, b: f.bld, fl: sc === 'f' ? f.name : '' }); where = sc === 'f' ? '층 전체' : '건물 전체'; } }
+    else if (wsMode !== 'rooms') { const fl = wsMode === 'floor' ? state.floors[wsF].name : ''; (state.works ||= []).push({ ...nw, b: wsB, fl }); where = `${wsB} ${fl ? fl + ' 전체' : '건물 전체'}`; }
+    else { const rs = [...wsSel.values()].map(([fi, k]) => roomsOf(state.floors[fi]).find(q => q.key === k)).filter(Boolean); if (!rs.length) return;
+      for (const q of rs) (q.info.works ||= []).push({ ...nw }); where = rs.map(q => q.info.name).join(', '); multi.clear(); }
     const c = cur; if (x && x.fi >= 0) cur = x.fi; log(`공사·하자보증 ${x ? '고침' : '등록'}: ${where} — ${nw.t}${nw.e ? ' (보증 ~' + nw.e + ')' : ''}`); cur = c; save(); render();
   };
   dlg.showModal();
@@ -1505,17 +1541,8 @@ function wkDel(id) {
 }
 let wkView = 'on';   // 목록에서 보증 중(만료일을 안 적은 것 포함) / 만료 / 전체
 // 목록 창의 추가 칸: 건물 → 층(또는 건물 전체) → 실(또는 층 전체). lv 0 = 창을 열 때, 1 = 건물을 바꿨을 때, 2 = 층을 바꿨을 때
-function fillWkNew(lv = 0) {
-  const B = $('wn-b'), F = $('wn-f'), R = $('wn-r'), opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`;
-  if (lv < 1) { B.innerHTML = [...new Set(state.floors.map(f => f.bld))].map(b => opt(b, b)).join(''); B.value = state.floors[cur].bld; }
-  if (lv < 2) { const fs = state.floors.map((f, i) => [f, i]).filter(([f]) => f.bld === B.value); F.innerHTML = opt('', '건물 전체') + fs.map(([f, i]) => opt(i, f.name)).join('');
-    F.value = lv < 1 ? cur : (fs.find(([f]) => f.name === '1층') || fs[0])[1]; }
-  R.disabled = F.value === ''; R.innerHTML = opt('', R.disabled ? '—' : '층 전체') + (R.disabled ? '' : roomsOf(state.floors[+F.value]).map(r => [r.info.name, r.key]).sort((a, b) => a[0].localeCompare(b[0], 'ko', { numeric: true })).map(([n, k]) => opt(k, n)).join(''));
-  if (lv < 1 && sel) R.value = sel; if (R.selectedIndex < 0) R.selectedIndex = 0;
-}
-$('wn-b').onchange = () => fillWkNew(1); $('wn-f').onchange = () => fillWkNew(2);
-$('wn-add').onclick = () => { if (ro()) return; const b = $('wn-b').value, fv = $('wn-f').value, k = $('wn-r').value;
-  if (fv !== '' && k) wkOpen(null, [[+fv, k]]); else wkOpen(null, null, { b, fl: fv === '' ? '' : state.floors[+fv].name }); };
+function fillWkNew() {}   // 목록 창의 추가 칸은 단추만 남았다(범위는 추가 창에서 고른다 — 사용자 요청 2026-11-28)
+$('wn-add').onclick = () => { if (ro()) return; const r = findSel(); wkOpen(null, !site && r ? [[cur, r.key]] : [], null); };
 $('wkView').onclick = e => { if (e.target.dataset.wv) { wkView = e.target.dataset.wv; renderWks(); } };
 function renderWks() {
   const all = wkAll().sort(wkSort), soon = all.filter(x => wkSt(x.w) === 'soon').length, on = all.filter(x => wkOn(x.w)).length;

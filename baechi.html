@@ -150,6 +150,14 @@
   #wkNew select { width:auto; } #wkNew button { white-space:nowrap; }
   #wkNew { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 4px; } #wkNew select { flex:1; min-width:90px; } #wkNew #wn-r { flex:2; }
   #wkRows tr[data-wk] { cursor:pointer; } #wkRows tr.exp td { color:var(--sub); } #wkRows tr.soon td.st { color:#c2570a; font-weight:600; } #wkRows button { padding:1px 8px; font-size:12px; } #wkRows td { white-space:normal; } #wkJump b { color:#c2570a; }
+  /* 사용일정 */
+  .sc-head { margin-top:14px; } .sc-form { display:grid; gap:6px; padding:9px; margin-bottom:6px; border:1px solid #b9cdf0; border-radius:6px; background:#f5f8fe; }
+  .sc-form .sc-row { display:flex; gap:6px; align-items:center; } .sc-form .sc-row input[type=date] { flex:1.4; min-width:0; } .sc-form .sc-row input[type=time] { flex:1; min-width:0; }
+  .sc-form input, .sc-form textarea { width:100%; box-sizing:border-box; } .sc-form .rb { display:flex; gap:6px; justify-content:flex-end; }
+  .sc-item { position:relative; padding:6px 52px 6px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; font-size:13px; line-height:1.5; }
+  .sc-item.today { background:#f2f6ff; } .sc-item.past { border-left-color:var(--line-strong); color:var(--sub); } .sc-item .sc-when em { font-style:normal; font-size:11px; font-weight:700; color:#fff; background:#3b6fd1; border-radius:8px; padding:0 6px; margin-left:4px; }
+  .sc-item .sc-what { word-break:break-all; white-space:pre-wrap; } .sc-item .sc-del { position:absolute; top:6px; right:6px; padding:1px 8px; font-size:11px; }
+  .sc-pastbtn { margin-top:6px; padding:2px 10px; font-size:12px; } .sc-none { margin:4px 0 0; }
   .req-form { display:grid; gap:6px; padding:9px; border:1px solid #f3b8ae; border-radius:6px; background:#fff8f6; }
   .req-form textarea, .req-form input { width:100%; box-sizing:border-box; } .req-form .rb { display:flex; gap:6px; justify-content:flex-end; }
   .req-item { padding:7px 9px; margin-top:6px; border:1px solid var(--line); border-left:3px solid #d92d20; border-radius:6px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-all; }
@@ -285,7 +293,7 @@
   @media (pointer:coarse) and (max-width: 960px) {
     /* 실 정보 창: 화면을 채우는 팝업 */
     #panel { inset:0 !important; width:auto !important; max-height:none !important; border:0; border-radius:0; box-shadow:none; z-index:30; padding:18px 18px 28px; overscroll-behavior:contain; }
-    #panel input, #panel select, #panel textarea { font-size:16px; }   /* 16px보다 작으면 아이폰이 입력할 때 화면을 확대해 팝업이 잘린다 */
+    #panel input, #panel select, #panel textarea { font-size:16px; } .sc-item .sc-del { padding:4px 10px; font-size:12px; }   /* 16px보다 작으면 아이폰이 입력할 때 화면을 확대해 팝업이 잘린다 */
     #panel .p-close { top:10px; right:10px; width:40px; height:40px; font-size:26px; }
     body.popup { overflow:hidden; }
     /* 머리: 첫 줄은 제목+메뉴 단추, 둘째 줄은 학교·층 단추를 옆으로 밀어 보는 한 줄. 파일 단추·보기 설정은 메뉴를 눌러야 보인다. */
@@ -1050,7 +1058,8 @@ function drawFloor(fi) {
     const nq = noReq() ? 0 : (r.info.reqs || []).filter(q => !q.done).length;   // 보기 전용에는 🚨를 그리지 않는다   // 진행 중인 보수요청이 있으면 에어컨 표시(❄) 옆에 🚨
     const nw = ro() || view !== 'work' ? 0 : (r.info.works || []).filter(w => wkOn(w)).length;   // 하자보증 기간이 남은 공사·물품이 있으면 🔧(하자보증 보기에서만 — 사용자 요청)
     const acv = view === 'ac' && +r.info.acN > 0;   // 실의 ❄ 대수는 에어컨 보기에서만(사용자 요청 2026-11-27)
-    if (!fire && (acv || nq || nw)) extra.push([acv ? '❄' + r.info.acN : '', nq ? '🚨' : '', nw ? '🔧' : ''].filter(Boolean).join(' '));
+    const nsc = noReq() ? 0 : (r.info.sched || []).filter(q => q.d === today()).length;   // 오늘 사용일정이 있으면 📅(사용자 요청 2026-11-28)
+    if (!fire && (acv || nq || nw || nsc)) extra.push([acv ? '❄' + r.info.acN : '', nq ? '🚨' : '', nw ? '🔧' : '', nsc ? '📅' : ''].filter(Boolean).join(' '));
     const tryFit = (names, ex) => ({ lines: [...names, ...ex], nameN: names.length,
       fs: Math.min(1.3, box.w * 0.9 / Math.max(.1, ...names.map(textW), ...ex.map(t => textW(t) * 0.85)), box.h * 0.88 / ((names.length + ex.length * 0.85) * 1.2)) });
     const cands = ex => [tryFit([nm], ex), ...(nm.length > 3 ? [tryFit([nm.slice(0, half), nm.slice(half)], ex)] : [])].sort((x, y) => y.fs - x.fs)[0];
@@ -1194,6 +1203,7 @@ function renderPanel() {
   <div class="p-area"><b>${fmt(r.area)}㎡</b><span>${r.units ? unitLabel(r.units) + ' · ' : ''}${i.area !== '' ? `직접 입력 (계산값 ${fmt(r.calc)}㎡)` : '자동 계산'}</span></div>
   ${reqForm === rk || reqs.length ? `<div class="reqs">${reqForm === rk || openN ? wkNote(F, i) : ''}${reqForm === rk ? `<div class="req-form"><textarea id="r-text" rows="3" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="r-who" placeholder="요청자 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><div class="phz"><input type="file" id="r-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" data-reqcancel>취소</button><button type="button" class="primary" data-reqsave>등록</button></div></div>` : ''}
     ${reqs.map((q, n) => ({ q, n })).filter(x => !x.q.done).sort((a, b) => b.n - a.n).map(({ q, n }) => `<div class="req-item${q.done ? ' done' : ''}" data-rn="${n}"><span class="rt">${esc(q.t)}</span>${phBtn(q, n)}${pmHtml(q, n)}<div class="req-meta"><span>${q.done ? '✅ 완료 ' + esc(q.dd || '') : '🚨 진행 중'}</span><span>요청 ${esc(q.d)}${q.who ? ' · ' + esc(q.who) : ''}</span><button type="button" data-reqmemo="${n}" title="진행 상황을 적어 요청자에게 알리기 (예: 접수하였음, A/S 불렀음) — 적을 때마다 날짜별로 쌓입니다">진행 메모</button><button type="button" data-reqph="${n}" title="사진 붙이기 (요청마다 3장까지)">사진</button><button type="button" data-reqdone="${n}">완료</button></div></div>`).join('')}${reqs.length > openN ? `<p class="hint" style="margin:6px 0 0">✅ 완료 ${reqs.length - openN}건 — 보수요청 목록의 "전체"에서 확인</p>` : ''}</div>` : ''}
+  ${scHtml(i, rk)}
   <div class="f">
     <label for="i-name">실명</label><input id="i-name" data-k="name" value="${esc(i.name)}">
     <label for="i-use">용도</label><select id="i-use" data-k="use">${Object.keys(USES).map(u => `<option${u === i.use ? ' selected' : ''}>${u}</option>`).join('')}</select>
@@ -1209,6 +1219,39 @@ function renderPanel() {
   ${its.length ? `<table class="its"><tr><th>품명</th><th class="n">수량</th><th></th></tr>${[...grp].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([n, q]) => `<tr><td style="white-space:normal">${esc(n)}</td><td class="n"><input type="number" min="0" value="${q}" data-itq="${esc(n)}" aria-label="${esc(n)} 수량"></td><td><button type="button" data-itdel="${esc(n)}" aria-label="${esc(n)} 지우기" title="지우기">×</button></td></tr>`).join('')}</table>`
     : `<p class="hint">${state.items.length ? '연결된 물품이 없습니다. 설정 → "연결 안 된 물품 위치"에서 이름을 누르면 연결됩니다.' : '설정 → 물품대장 넣기로 물품대장 엑셀을 넣으면 나옵니다.'}</p>`}`;
   if (ro()) for (const x of p.querySelectorAll('.f :is(input, select, textarea)' + (role === 'teacher' ? ':not(#i-memo)' : ''))) x.disabled = true;
+}
+// 사용일정(사용자 요청 2026-11-28): 실 정보(info.sched)에 [{d 날짜, s 시작 'HH:MM', e 끝, who 쓰는 사람, t 메모(왜), at 적은 날}]. 행정실·교원 모두 적고 지울 수 있다.
+// 함께 쓰기에서는 보수요청과 같은 자리(req/<교원 암호>/<번호>)에 sc:1을 붙여 한 건씩 올린다. 공개 사본(open·pub 본 자료)에는 넣지 않는다.
+let scForm = '', scPast = '';   // scForm = 입력 칸을 연 실, scPast = 지난 일정을 펼친 실('층번호:실키')
+const WD = '일월화수목금토', scDay = d => { const x = new Date(d + 'T00:00'); return `${+d.slice(5, 7)}/${+d.slice(8)}(${WD[x.getDay()]})`; };
+const scSort = (a, b) => (a.d + a.s).localeCompare(b.d + b.s);
+function scHtml(i, rk) {
+  const all = (i.sched || []).map((q, n) => ({ q, n })), t = today(), up = all.filter(x => x.q.d >= t).sort((a, b) => scSort(a.q, b.q)), past = all.filter(x => x.q.d < t).sort((a, b) => scSort(b.q, a.q));
+  const row = ({ q, n }) => `<div class="sc-item${q.d === t ? ' today' : ''}${q.d < t ? ' past' : ''}"><div class="sc-when"><b>${scDay(q.d)}</b> ${esc(q.s)}–${esc(q.e)}${q.d === t ? ' <em>오늘</em>' : ''}</div><div class="sc-what">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</div>${noReq() ? '' : `<button type="button" class="sc-del" data-scdel="${n}" title="이 일정 지우기">지움</button>`}</div>`;
+  const now = new Date(), hh = String(Math.min(22, now.getHours() + 1)).padStart(2, '0');
+  return `<h2 class="it-head sc-head"><span>📅 사용일정 ${up.length ? up.length + '건' : ''}</span>${noReq() ? '' : '<button type="button" data-scadd>+ 사용일정</button>'}</h2>
+  ${scForm === rk ? `<div class="sc-form"><div class="sc-row"><input type="date" id="sc-d" value="${t}" min="${t}" aria-label="날짜"><input type="time" id="sc-s" value="${hh}:00" step="600" aria-label="시작"><span>–</span><input type="time" id="sc-e" value="${String(+hh + 1).padStart(2, '0')}:00" step="600" aria-label="끝"></div>
+    <input id="sc-who" placeholder="누가 (이름·부서)" value="${esc(lsv(KEY + '-who') || '')}"><textarea id="sc-t" rows="2" placeholder="왜 (예: 3학년 학부모 상담, 동아리 회의)"></textarea>
+    <div class="rb"><button type="button" data-sccancel>취소</button><button type="button" class="primary" data-scsave>등록</button></div></div>` : ''}
+  ${up.map(row).join('') || (scForm === rk ? '' : '<p class="hint sc-none">잡힌 일정이 없습니다.</p>')}
+  ${past.length ? `<button type="button" class="sc-pastbtn" data-scpast>${scPast === rk ? '지난 일정 접기' : `지난 일정 ${past.length}건 보기`}</button>${scPast === rk ? past.map(row).join('') : ''}` : ''}`;
+}
+function scSave() {
+  const d = $('sc-d').value, s0 = $('sc-s').value, e0 = $('sc-e').value, who = $('sc-who').value.trim(), t = $('sc-t').value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return $('sc-d').focus(); if (!s0) return $('sc-s').focus(); if (!e0 || e0 <= s0) { alert('끝나는 시간이 시작 시간보다 늦어야 합니다.'); return $('sc-e').focus(); }
+  if (!who && !t) { alert('누가, 왜 쓰는지 적어 주세요.'); return $('sc-who').focus(); }
+  lsv(KEY + '-who', who); applyRemote(); const r = findSel(); if (!r) return;
+  const hit = (r.info.sched || []).filter(q => q.d === d && q.s < e0 && s0 < q.e);   // 같은 날 시간대가 겹치는 일정
+  if (hit.length && !confirm(`이 시간에 이미 잡힌 일정이 있습니다.\n\n${hit.map(q => `${q.s}–${q.e} ${q.who || ''} ${q.t || ''}`).join('\n')}\n\n그래도 등록할까요?`)) return;
+  (r.info.sched ||= []).push({ d, s: s0, e: e0, who, t, at: today() }); log(`사용일정: ${r.info.name} — ${d} ${s0}–${e0} ${who}${t ? ' (' + t + ')' : ''}`); scForm = ''; save(); render();
+}
+function scDel(n) {
+  applyRemote(); const r = findSel(); const q = r && (r.info.sched || [])[n]; if (!q) return;
+  if (!confirm(`「${r.info.name}」 ${scDay(q.d)} ${q.s}–${q.e} ${q.who || ''} 일정을 지웁니다. 계속할까요?`)) return;
+  r.info.sched.splice(n, 1); if (!r.info.sched.length) delete r.info.sched; log(`사용일정 지움: ${r.info.name} — ${q.d} ${q.s}–${q.e} ${q.who || ''}`);
+  const tk = tkey(); if (tk && q.id) { delete reqStore[q.id]; delete reqSent[q.id];   // 함께 쓰기 자리에서도 지운다(다시 붙지 않게)
+    fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['req/' + tk + '/' + q.id]: null, ['gate/' + pw]: Date.now() }) }).catch(() => {}); }
+  save(); render();
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
 let reqForm = '', reqView = 'open';   // reqForm = 입력 칸을 연 실('층번호:실키'), reqView = 목록에서 진행 중만/전체
@@ -1509,8 +1552,8 @@ function queuePush() { if (!pw || !role) return; clearTimeout(pushT); pushT = se
 // 올릴 글: 본 자료(교원 암호를 정했으면 보수요청을 뺀다), 교원용 사본(물품·하자보증·이력·교원 암호를 뺀다)
 // 물품대장과 실 메모는 교원도 고칠 수 있게 tw/<교원 암호>에 따로 둔다(2026-11-27 사용자 요청). 그 자리가 생긴 뒤(twSent)에는 본 자료에서 물품을 빼고, 메모는 tw의 것이 이긴다.
 let esTw = null, twSent = '', twRemote = null, twReady = false, pwTry = [];
-const mainJson = () => JSON.stringify(state, (k, v) => k === 'reqs' && state.tpw ? undefined : k === 'items' && twSent && Array.isArray(v) ? [] : v);
-const openJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }, (k, v) => k === 'reqs' || k === 'works' ? undefined : k === 'memo' || k === 'alias' ? '' : v);
+const mainJson = () => JSON.stringify(state, (k, v) => (k === 'reqs' || k === 'sched') && state.tpw ? undefined : k === 'items' && twSent && Array.isArray(v) ? [] : v);
+const openJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }, (k, v) => k === 'reqs' || k === 'works' || k === 'sched' ? undefined : k === 'memo' || k === 'alias' ? '' : v);
 // 암호가 없을 때(또는 틀렸을 때): 공개용 사본을 듣고 그대로 보여 준다. 아직 없으면 파일에 든 기본 도면이 남는다.
 function listenOpen() {
   if (es) es.close(); const me = es = new EventSource(DB + '/open.json');
@@ -1528,7 +1571,7 @@ const REQ_WIPE = '2026-11-27'; let wiping = false;
 async function wipeOldReqs() {
   if (role !== 'admin' || wiping || state.reqWiped === REQ_WIPE) return; const tk = tkey(); if (tk && (!reqReady || needAttach)) return; wiping = true;
   try {
-    const old = q => !(q.d > REQ_WIPE), t = Date.now(), body = {};
+    const old = q => !q.sc && !(q.d > REQ_WIPE), t = Date.now(), body = {};
     if (tk) { for (const id of Object.keys(reqStore)) { const n = reqStore[id]; if (!n || !old(n)) continue; body['req/' + tk + '/' + id] = null; for (const p of n.ph || []) if (phOk(p)) body['photo/' + p] = null; }
       if (Object.keys(body).length) { const r = await fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ...body, ['gate/' + pw]: t }) }); if (!r.ok) return; }
       for (const k of Object.keys(body)) if (k.startsWith('req/')) delete reqStore[k.split('/')[2]];
@@ -1546,20 +1589,22 @@ function listenTw(tk) {
     maybeBackup(); };
   me.addEventListener('put', on); me.addEventListener('patch', on); me.onerror = () => {};
 }
-const pubJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }   /* 물품·메모는 tw 자리에서 받는다 */, (k, v) => k === 'reqs' || k === 'works' ? undefined : v);
+const pubJson = () => JSON.stringify({ ...state, items: [], log: [], tpw: '' }   /* 물품·메모는 tw 자리에서 받는다 */, (k, v) => k === 'reqs' || k === 'works' || k === 'sched' ? undefined : v);
 // 화면의 보수요청 → {번호: 한 건}(번호가 없으면 붙인다)
 function collectReqs() { const out = {};
-  for (const f of state.floors) for (const r of roomsOf(f)) for (const q of r.info.reqs || []) { q.id ||= Date.now().toString(36) + Math.random().toString(36).slice(2, 6); out[q.id] = { ...q, b: f.bld, fl: f.name, k: r.key, rn: r.info.name }; }
+  for (const f of state.floors) for (const r of roomsOf(f)) { for (const q of r.info.reqs || []) { q.id ||= Date.now().toString(36) + Math.random().toString(36).slice(2, 6); out[q.id] = { ...q, b: f.bld, fl: f.name, k: r.key, rn: r.info.name }; }
+    for (const q of r.info.sched || []) { q.id ||= Date.now().toString(36) + Math.random().toString(36).slice(2, 6); out[q.id] = { ...q, sc: 1, b: f.bld, fl: f.name, k: r.key, rn: r.info.name }; } }   // 사용일정도 같은 자리에 sc:1을 붙여 올린다
   return out; }
 // 받은 보수요청(reqStore)을 실에 다시 단다. 아직 올리지 못한 것(번호가 없거나 받은 적 없는 번호)은 남겨서 다음에 올린다.
 function attachReqs() {
   const idx = {}, keep = [];
   for (const f of state.floors) { const rs = roomsOf(f); idx[f.bld + '|' + f.name] = rs;
-    for (const r of rs) { for (const q of r.info.reqs || []) if (!q.id || (!(q.id in reqStore) && !(q.id in reqSent))) keep.push([r.info, q]); delete r.info.reqs; } }
+    for (const r of rs) { for (const q of r.info.reqs || []) if (!q.id || (!(q.id in reqStore) && !(q.id in reqSent))) keep.push([r.info, q]); delete r.info.reqs;
+      for (const q of r.info.sched || []) if (!q.id || (!(q.id in reqStore) && !(q.id in reqSent))) keep.push([r.info, q, 1]); delete r.info.sched; } }
   for (const id of Object.keys(reqStore).sort()) { const n = reqStore[id], rs = n && idx[n.b + '|' + n.fl]; if (!rs || !rs.length || typeof n.t !== 'string') continue;
-    const r = rs.find(x => x.key === n.k) || rs.find(x => x.info.name === n.rn) || rs[0], { b, fl, k, rn, ...q } = n; q.id = id; (r.info.reqs ||= []).push(q); }
+    const r = rs.find(x => x.key === n.k) || rs.find(x => x.info.name === n.rn) || rs[0], { b, fl, k, rn, sc, ...q } = n; q.id = id; (sc ? r.info.sched ||= [] : r.info.reqs ||= []).push(q); }
   reqSent = Object.fromEntries(Object.entries(collectReqs()).map(([id, n]) => [id, JSON.stringify(n)]));
-  for (const [info, q] of keep) (info.reqs ||= []).push(q);
+  for (const [info, q, sc] of keep) (sc ? info.sched ||= [] : info.reqs ||= []).push(q);
   if (keep.length) queuePush();
 }
 async function push() {
@@ -1870,7 +1915,10 @@ $('reqList').onclick = e => {
 };
 $('panel').onclick = e => {
   const d = e.target.dataset; if (d.close != null) { sel = null; return render(); }
-  if (noReq()) return;   // 여기부터 보수요청 올리기·사진까지는 교원도 된다
+  if (noReq()) return;   // 여기부터 보수요청 올리기·사진·사용일정까지는 교원도 된다
+  if (d.scadd != null || d.sccancel != null) { scForm = d.scadd != null ? cur + ':' + sel : ''; renderPanel(); if (scForm) $('sc-who').value ? $('sc-t').focus() : $('sc-who').focus(); return; }
+  if (d.scsave != null) return scSave(); if (d.scdel != null) return scDel(+d.scdel);
+  if (d.scpast != null) { const k = cur + ':' + sel; scPast = scPast === k ? '' : k; return renderPanel(); }
   if (d.reqadd != null || d.reqcancel != null) { reqForm = d.reqadd != null ? cur + ':' + sel : ''; renderPanel(); if (reqForm) $('r-text').focus(); return; }
   if (d.reqsave != null) {
     const t = $('r-text').value.trim(), who = $('r-who').value.trim(); if (!t) return $('r-text').focus();

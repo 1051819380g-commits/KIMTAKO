@@ -502,7 +502,7 @@
       <div id="ws-alls" class="ws-chips ws-alls"></div><div id="ws-chips" class="ws-chips"></div><div id="ws-sum" class="ws-sum"></div></div>
     <div class="wide wk-nl"><span>구분 · 이름</span><div class="wk-nrow"><span class="seg wk-kseg" id="wk-kseg"><button type="button" data-kd="공사">🔧 공사</button><button type="button" data-kd="물품">📦 물품</button></span><input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품" aria-label="이름"></div></div>
     <label class="wide" id="wk-typeL">공종 (고르면 법정 기간이 들어갑니다)<select id="wk-type"></select></label>
-    <label>업체<input id="wk-co" placeholder="업체 이름"></label>
+    <label>업체<input id="wk-co" placeholder="업체 이름 (적던 업체는 목록에서 고르기)" list="wk-colist" autocomplete="off"><datalist id="wk-colist"></datalist></label>
     <label>업체 전화<input id="wk-tel" placeholder="대표전화"></label>
     <label>준공일(납품일)<input type="date" id="wk-d" required></label>
     <label>보증 기간(년)<input type="number" id="wk-y" min="0" max="20" step="0.5" placeholder="예: 2"></label>
@@ -1513,6 +1513,8 @@ $('ws-alls').onclick = $('ws-chips').onclick = e => { const t = e.target.closest
   if (t.dataset.ws) { wsMode = wsMode === t.dataset.ws ? 'rooms' : t.dataset.ws; return wsRender(); }
   const id = wsF + ' ' + t.dataset.wr; wsMode = 'rooms'; if (!wsSel.delete(id)) wsSel.set(id, [wsF, t.dataset.wr]); wsRender(); };
 $('ws-sum').onclick = e => { if (e.target.dataset.wsclear != null) { wsSel.clear(); wsRender(); } };
+// 업체 이름 비교용(띄어쓰기·(주)·주식회사·㈜·문장부호·대소문자 무시) — 업체별 보기·자동 완성이 같이 쓴다
+const coNorm = c => (c || '').normalize('NFKC').replace(/\(?\s*(주식회사|유한회사|합자회사|주|유|사)\s*\)|㈜|㈔|주식회사|유한회사|합자회사/g, '').replace(/[\s().,·\-_'"]/g, '').toLowerCase();
 function wkOpen(id, many, at, grp, tpl) {   // tpl = 새로 적을 때 미리 채울 내용(묶음에 '+ 실 추가')   // grp = 같이 고칠 다른 기록들의 번호(같은 내용으로 여러 실에 넣은 묶음)
   const x = id ? wkGet(id) : null, f = state.floors[cur], r = findSel(); if (id && !x) return;
   if (!x) {   // 새로 적기: 범위를 고르는 칸을 연다(정보 창 → 그 실, 도면에서 여러 실 → 그 실들, 층·건물 → 그 범위)
@@ -1531,6 +1533,12 @@ function wkOpen(id, many, at, grp, tpl) {   // tpl = 새로 적을 때 미리 �
   v('type').innerHTML = '<option value="">직접 입력</option>' + WK_TYPES.map(([t, y]) => `<option value="${esc(t)}" data-y="${y}">${esc(t)} — ${y}년</option>`).join('');
   v('kind').value = w.kind || '공사'; v('t').value = w.t || ''; v('type').value = w.type || ''; v('co').value = w.co || ''; v('tel').value = w.tel || ''; v('d').value = w.d || ''; v('y').value = w.y || ''; v('e').value = w.e || '';
   const kind = () => { v('typeL').hidden = v('kind').value === '물품'; for (const bt of $('wk-kseg').children) bt.className = bt.dataset.kd === v('kind').value ? 'on' : ''; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
+  // 업체 자동 완성(사용자 요청 2026-11-28): 이미 적은 업체 이름을 목록으로 띄우고(많이 쓴 순), 고르면 전화가 비어 있을 때 그 업체 전화를 채운다
+  { const cos = new Map(); for (const y of wkAll()) { const c = (y.w.co || '').trim(); if (!c) continue; const k = coNorm(c), o = cos.get(k) || { n: 0, names: new Map(), tel: '' };
+      o.n++; o.names.set(c, (o.names.get(c) || 0) + 1); if (y.w.tel && !o.tel) o.tel = y.w.tel; cos.set(k, o); }
+    const list = [...cos.values()].sort((a, b) => b.n - a.n);
+    $('wk-colist').innerHTML = list.map(o => { const nm = [...o.names.entries()].sort((a, b) => b[1] - a[1])[0][0]; return `<option value="${esc(nm)}">${o.tel ? esc(o.tel) + ' · ' : ''}${o.n}건</option>`; }).join('');
+    v('co').onchange = () => { const o = cos.get(coNorm(v('co').value)); if (o && o.tel && !v('tel').value.trim()) v('tel').value = o.tel; }; }
   kind(); v('kind').onchange = kind; $('wk-kseg').onclick = e => { const k = e.target.dataset.kd; if (k) { v('kind').value = k; kind(); } };   // 구분: 공사/물품 두 단추(사용자 요청 2026-11-28) v('d').onchange = v('y').oninput = calc;
   v('type').onchange = () => { const y = v('type').selectedOptions[0].dataset.y; if (y) { v('y').value = y; calc(); } };
   dlg.querySelector('form').onsubmit = e => { if (!x && e.submitter && e.submitter.value === 'ok' && wsMode === 'rooms' && !wsSel.size) { e.preventDefault(); alert('범위를 골라 주세요. 실을 누르거나 층·건물 전체를 누르면 됩니다.'); } };
@@ -1578,7 +1586,7 @@ function renderWks() {
   let GE = [...G.entries()], coHead = () => '';
   if (wkBy === 'co') {   // 업체별: 업체 이름(같은 이름이면 한데)으로 모으고, 업체마다 머리 줄에 전화·건수
     // 이름이 조금 다른 같은 업체는 하나로(사용자 요청 2026-11-28): 띄어쓰기·(주)·주식회사·㈜·유한회사·점·괄호·문장부호·대소문자를 빼고 비교한다
-    const coKey = c => (c || '').normalize('NFKC').replace(/\(?\s*(주식회사|유한회사|합자회사|주|유|사)\s*\)|㈜|㈔|주식회사|유한회사|합자회사/g, '').replace(/[\s().,·\-_'"]/g, '').toLowerCase();
+    const coKey = coNorm;
     const coOf = ([, xs]) => coKey(xs[0].w.co), C = new Map(), names = new Map();
     for (const g of GE) { const c = coOf(g), nm = (g[1][0].w.co || '').trim(); if (!C.has(c)) { C.set(c, []); names.set(c, new Map()); } C.get(c).push(g); if (nm) names.get(c).set(nm, (names.get(c).get(nm) || 0) + g[1].length); }
     const shown = c => [...names.get(c).entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || '';   // 가장 많이 쓴 이름으로 보인다

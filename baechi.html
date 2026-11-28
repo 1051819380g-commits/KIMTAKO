@@ -53,10 +53,8 @@
   /* 벽 편집: 체크 상자는 감추고 단추 색으로 켜짐·꺼짐을 보인다 */
   #editLbl { padding:5px 11px; user-select:none; } #editLbl:hover { border-color:var(--line-strong); } #editLbl input { position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
   #editLbl.on { font-weight:700; }
-  /* 벽 편집은 설정 메뉴 안으로(사용자 요청 2026-11-28): 메뉴 항목처럼, 켜져 있으면 '켜짐'과 설정 단추에 '벽 편집 중' */
-  .set-box #editLbl { display:flex; align-items:center; gap:6px; border:0; border-radius:6px; padding:7px 10px; cursor:pointer; white-space:nowrap; font-weight:500; } .set-box #editLbl:hover { background:var(--accent-soft); }
-  .set-box #editLbl .sw-st { margin-left:auto; font-size:11px; color:var(--faint); } .set-box #editLbl .sw-st::after { content:'꺼짐'; } .set-box #editLbl.on .sw-st { color:#b4401a; font-weight:700; } .set-box #editLbl.on .sw-st::after { content:'켜짐'; }
-  #setMenu.editing > summary { border-color:#e8907f; background:#fff4f2; } #setMenu.editing > summary::after { content:' 🧱'; }   /* 글자를 붙이면 머리 줄이 넘쳐 둘째 줄로 밀리므로 아이콘만(도면 제목 옆에 '벽 자리를 누르면 철거/설치' 안내가 함께 뜬다) */ #editLbl:has(input:focus-visible) { outline:2px solid var(--accent); outline-offset:1px; }
+  /* 벽 편집은 도면 크기 옆으로(사용자 요청 2026-11-28 — 맨 위 줄에서 빼 머리를 한 줄로) */
+  .bar #editLbl { padding:4px 11px; font-size:12.5px; } .bar #editLbl.on { color:#b4401a; border-color:#e8907f; background:#fff4f2; }
   .zoom { display:flex; gap:6px; align-items:center; color:var(--sub); font-size:12px; }
   .zoom input { width:110px; accent-color:var(--accent); }
 
@@ -437,8 +435,6 @@
     <div class="grp push noprint">
       <button id="printPlan">도면 인쇄</button>
       <details id="setMenu"><summary title="물품대장 넣기, 엑셀로 내보내기, 저장파일 내보내기·불러오기">⚙ 설정 ▾</summary><div class="set-box">
-        <label class="chk" id="editLbl" title="켜면 벽 자리를 눌러 벽을 허물거나 세울 수 있습니다"><input type="checkbox" id="edit"> 🧱 벽 편집 <span class="sw-st"></span></label>
-        <hr>
         <button id="openTbl">실별 면적표</button>
         <button id="openUnm">연결 안 된 물품 위치</button>
         <button id="openLog">변경 이력</button>
@@ -460,6 +456,7 @@
     <span id="syncState" class="hint"></span>
     <span class="grp push" id="gapLbl" hidden><label class="zoom">층 간격 <input type="range" id="gapR" min="2" max="60" value="9"></label></span>
     <label class="zoom" title="Ctrl을 누른 채 마우스 휠을 돌려도 됩니다. 크게 키운 도면은 오른쪽 단추로 끌어 옮깁니다. 휴대폰에서는 두 손가락으로 끌어 옮기고 벌리거나 오므려 크기를 바꿉니다.">도면 크기 <input type="range" id="zoom" min="10" max="300" value="100"></label>
+    <label class="chk" id="editLbl" title="켜면 벽 자리를 눌러 벽을 허물거나 세울 수 있습니다"><input type="checkbox" id="edit"> 🧱 벽 편집</label>
     <div class="stats" id="stats"></div>
   </div>
 </header>
@@ -965,7 +962,7 @@ function renderTabs() {
     $('floorTabs').innerHTML = `<button class="${siteLv == null ? 'on' : ''}" data-lv="">전체</button>` + names.map(n => `<button class="${siteLv === n ? 'on' : ''}" data-lv="${esc(n)}">${esc(n)}</button>`).join('');
   } else $('floorTabs').innerHTML = `<button class="${!site && allView ? 'on' : ''}" data-f="all">전체</button>` + state.floors.map((f, i) => f.bld === b ? `<button class="${!site && !allView && i === cur ? 'on' : ''}" data-f="${i}">${esc(f.name)}</button>` : '').join('');
   $('vUse').className = view === 'use' ? 'on' : ''; $('vAc').className = view === 'ac' ? 'on' : ''; $('vFire').className = view === 'fire' ? 'on' : ''; $('vWork').className = view === 'work' ? 'on' : ''; $('vSch').className = view === 'sched' ? 'on' : '';
-  $('editLbl').className = 'chk' + (editing ? ' on' : ''); $('setMenu').classList.toggle('editing', editing); $('gapLbl').hidden = !site;
+  $('editLbl').className = 'chk' + (editing ? ' on' : '');  $('gapLbl').hidden = !site;
 }
 function fill(i, f) {
   if (view === 'work') return WK_FILL[wkBest(f ? wkFor(f, i) : i.works || [])];
@@ -2131,7 +2128,7 @@ function printList(title, cnt, rows) {
 $('tblPrint').onclick = () => printList('남제학원 ' + $('tblTitle').textContent, $('sum').innerText.replace(/\s+/g, ' ').trim(), $('tbl'));   // 실별 면적표(전체 배치에서는 모든 건물)
 $('reqPrint').onclick = () => printList(`남제학원 보수요청 목록 (${reqView === 'all' ? '전체' : '진행 중'})`, $('reqCnt').textContent, $('reqList'));
 $('wkPrint').onclick = () => printList(`남제학원 공사·하자보증 목록 (${{ on: '보증 중', exp: '만료', all: '전체' }[wkView]})`, $('wkCnt').textContent, $('wkRows'));
-addEventListener('click', e => { const m = $('setMenu'); if (m.open && (!m.contains(e.target) || e.target.closest('.set-box button, #editLbl'))) m.open = false; });   // 설정 메뉴: 바깥을 누르거나 항목을 고르면 닫힌다
+addEventListener('click', e => { const m = $('setMenu'); if (m.open && (!m.contains(e.target) || e.target.closest('.set-box button'))) m.open = false; });   // 설정 메뉴: 바깥을 누르거나 항목을 고르면 닫힌다
 $('reqClose').onclick = () => $('reqDlg').close();
 $('reqDlg').onclick = e => { if (e.target === $('reqDlg')) $('reqDlg').close(); };   // 창 바깥(어두운 곳)을 누르면 닫기
 $('reqList').onclick = e => {

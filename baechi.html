@@ -378,7 +378,7 @@
     header.open .bar > .grp.push { width:100%; margin-left:0; }
     /* 휴대폰 머리 다듬기(사용자 요청 2026-11-27): 첫 줄에 제목·보수요청·하자보증·메뉴가 한 줄로 들어가게 줄이고, 메뉴를 펼치면 단추는 두 칸 격자, 보기 단추·막대·합계는 화면 폭에 맞춘다. */
     .brand { flex:1 1 0; min-width:0; } .brand h1 { font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    #reqJump, #scJump, #wkJump, #menuBtn { flex:none; padding:4px 8px; font-size:12.5px; } #scJump .jl { display:none; }   /* 휴대폰은 📅만(머리 한 줄에 단추 넷이 들어가게) */ #menuBtn { margin-left:0; }
+    #reqJump, #scJump, #wkJump, #menuBtn { flex:none; padding:4px 7px; font-size:12px; letter-spacing:-.2px; } .jx { display:none; }   /* 휴대폰: 📅 뒤에도 글자(사용자 요청 2026-11-28). 단추 넷과 제목이 한 줄에 들도록 '보수·일정·하자'로 줄여 쓴다 */ #menuBtn { margin-left:0; }
     header.open { position:relative; }   /* 펼친 메뉴가 화면을 덮은 채 따라오지 않게: 펼쳤을 때는 위에 붙어 있지 않고 함께 올라간다 */
     header.open .bar > .grp.push { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
     header.open .bar > .grp.push > * { width:100%; box-sizing:border-box; justify-content:center; text-align:center; margin:0; }
@@ -421,9 +421,9 @@
 <header>
   <div class="bar">
     <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
-    <button id="reqJump" class="noprint" title="보수요청 목록으로">🚨 보수요청</button>
-    <button id="scJump" class="noprint" title="모든 실의 사용일정을 날짜별로">📅<span class="jl"> 사용일정</span></button>
-    <button id="wkJump" class="noprint" title="공사·물품 하자보증 목록으로">🔧 하자보증</button>
+    <button id="reqJump" class="noprint" title="보수요청 목록으로">🚨 보수<span class="jx">요청</span></button>
+    <button id="scJump" class="noprint" title="모든 실의 사용일정을 날짜별로">📅 <span class="jx">사용</span>일정</button>
+    <button id="wkJump" class="noprint" title="공사·물품 하자보증 목록으로">🔧 하자<span class="jx">보증</span></button>
     <button id="menuBtn" class="noprint" aria-expanded="false">메뉴 ▾</button>
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
     <div class="seg" id="floorTabs"></div></div>
@@ -1356,7 +1356,7 @@ function renderScList() {
   }
   $('scList').innerHTML = h || `<p class="hint">${all.length ? '이 기간에 잡힌 사용일정이 없습니다.' : '아직 사용일정이 없습니다. 위 "＋ 사용일정 등록"이나 실 정보 창의 "📅 사용일정"으로 적습니다.'}</p>`;
   const nToday = all.filter(x => scOn(x.q, t)).length;
-  $('scJump').innerHTML = `📅<span class="jl"> 사용일정</span>${nToday ? ` <b>(${nToday})</b>` : ''}`;   // 오늘 일정 수를 (n)으로
+  $('scJump').innerHTML = `📅 <span class="jx">사용</span>일정${nToday ? ` <b>(${nToday})</b>` : ''}`;   // 오늘 일정 수를 (n)으로
 }
 $('scJump').onclick = () => { scView = 'today'; $('scDay').value = ''; fillScNew(); renderScList(); $('scDlg').showModal(); $('scDlg').scrollTop = 0; };
 $('scClose').onclick = () => $('scDlg').close();
@@ -1573,7 +1573,7 @@ $('wkKindV').onclick = e => { const k = e.target.dataset.wkk; if (k != null) { w
 $('wkView').onclick = e => { if (e.target.dataset.wv) { wkView = e.target.dataset.wv; renderWks(); } };
 function renderWks() {
   const all = wkAll().sort(wkSort), soon = all.filter(x => wkSt(x.w) === 'soon').length, on = all.filter(x => wkOn(x.w)).length;
-  $('wkJump').innerHTML = `🔧 하자보증${soon ? ` <b>(임박 ${soon})</b>` : ''}`;   // 만료 90일 안인 건수
+  $('wkJump').innerHTML = `🔧 하자<span class="jx">보증</span>${soon ? ` <b>(임박 ${soon})</b>` : ''}`;   // 만료 90일 안인 건수
   if (!$('wkList').open) return;
   const expN = all.filter(x => wkSt(x.w) === 'exp').length, list = all.filter(x => (wkView === 'all' || (wkSt(x.w) === 'exp') === (wkView === 'exp')) && (!wkKind || (x.w.kind || '공사') === wkKind));
   for (const b of $('wkKindV').children) b.className = b.dataset.wkk === wkKind ? 'on' : '';
@@ -1681,7 +1681,7 @@ function renderReqs() {
   const all = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.reqs || []).forEach((q, n) => all.push({ f, fi, r, q, n })); });
   const openN = all.filter(x => !x.q.done).length, list = all.filter(x => reqView === 'all' || !x.q.done).sort((a, b) => a.q.done - b.q.done || (b.q.d > a.q.d) - (b.q.d < a.q.d));
   if (openN && !noReq() && !$('legend').querySelector('.lg-req')) $('legend').insertAdjacentHTML('beforeend', '<span class="lg-req">🚨 보수요청 있음</span>');
-  $('reqJump').innerHTML = `🚨 보수요청${openN ? ` <b>(${openN})</b>` : ''}`;   // 진행 중인 건수를 (n)으로
+  $('reqJump').innerHTML = `🚨 보수<span class="jx">요청</span>${openN ? ` <b>(${openN})</b>` : ''}`;   // 진행 중인 건수를 (n)으로
   $('reqCnt').textContent = `진행 중 ${openN}건 · 전체 ${all.length}건`;
   for (const b of $('reqView').children) b.className = b.dataset.rv === reqView ? 'on' : '';
   $('reqList').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>건물·층</th><th>실</th><th>요청 내용</th><th>요청일</th>${reqView === 'all' ? '<th>완료일</th>' : ''}<th>요청자</th><th class="noprint"></th></tr></thead><tbody>${list.map(({ f, fi, r, q, n }) =>

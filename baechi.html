@@ -184,7 +184,8 @@
   #flMenu { transform-origin:50% 0; animation:flGrow .18s ease-out; } @keyframes flGrow { from { opacity:0; transform:scaleY(.15); } }   /* 건물 단추에서 자라나듯 펼쳐진다 */
   #flMenu button { border:0; background:transparent; border-radius:6px; padding:6px 18px; text-align:left; white-space:nowrap; color:var(--ink); } #flMenu button:hover { background:var(--accent-soft); } #flMenu button.on { color:var(--accent); font-weight:700; }
   #reqNew { margin:10px 0 4px; } #reqNew summary { display:inline-block; padding:4px 12px; border:1px solid #f3b8ae; border-radius:6px; background:#fff4f2; color:#b42318; font-size:13px; font-weight:600; cursor:pointer; list-style:none; } #reqNew summary::-webkit-details-marker { display:none; }
-  #reqNew[open] summary { margin-bottom:6px; } #reqNew .rsel { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:6px; } #reqNew .rsel select { min-width:0; width:100%; } #reqNew .rsel #rn-r { grid-column:1 / -1; }   /* 일정 등록처럼 두 줄: 건물·층 / 실 */
+  #reqNew[open] summary { margin-bottom:6px; } #reqNew .rsel { display:flex; gap:6px; } #reqNew .rsel select { flex:1; min-width:0; } #reqNew .rsel #rn-b, .sn-line #sn-b { flex:1.6; } #reqNew .rsel #rn-r, .sn-line #sn-r { flex:1.2; }   /* 건물·층·실 한 줄 — 건물칸을 가장 넓게 */
+  @media (pointer:coarse) and (max-width: 960px) { .sn-line:has(#sn-r) { flex-wrap:wrap; } .sn-line #sn-r { flex:1 1 100%; } }   /* 휴대폰 일정 등록은 이름표 칸 때문에 좁아 실만 아랫줄로 */
   #reqList td.noprint { white-space:nowrap; text-align:right; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
@@ -478,7 +479,7 @@
 </dialog>
 
 <dialog id="scDlg"><div class="sec-head"><h2>📅 사용일정 <span id="scCnt" class="hint"></span></h2><div class="seg" id="scView"><button data-sv="today">오늘</button><button data-sv="week">이번 주</button><button data-sv="next">앞으로</button><button data-sv="past">지난 일정</button></div><label class="sc-pick" title="이 날짜만 보기">📅<input type="date" id="scDay" aria-label="날짜 고르기"></label><button class="p-close" id="scClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="scNew" class="noprint"><summary>＋ 사용일정 등록</summary><div class="sn-card">
-  <div class="sn-f"><label for="sn-r">실</label><div class="sn-col"><div class="sn-line"><select id="sn-b" aria-label="건물"></select><select id="sn-f" aria-label="층"></select></div><select id="sn-r" aria-label="실"></select></div></div>
+  <div class="sn-f"><label for="sn-r">실</label><div class="sn-line"><select id="sn-b" aria-label="건물"></select><select id="sn-f" aria-label="층"></select><select id="sn-r" aria-label="실"></select></div></div>
   <div class="sn-f"><label for="sn-d">날짜</label><input type="date" id="sn-d"></div>
   <div class="sn-f"><label for="sn-s">시간</label><div class="sn-line"><input type="time" id="sn-s" step="600" aria-label="시작"><span class="sn-til">~</span><input type="time" id="sn-e" step="600" aria-label="끝"></div></div>
   <div class="sn-f"><label for="sn-rep">반복</label><div class="sn-line"><select id="sn-rep"><option value="">반복 안 함</option><option value="w">매주 반복</option><option value="m">매월 반복</option></select><span class="sn-til" id="sn-untl" hidden>끝</span><input type="date" id="sn-until" aria-label="반복 끝 날" hidden></div></div>

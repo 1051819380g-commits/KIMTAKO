@@ -1759,7 +1759,7 @@ const tkey = () => role === 'teacher' ? pw : role === 'admin' ? state.tpw || '' 
 const KEYOK = /^[A-Za-z0-9_-]+$/, syncOn = () => '연결됨';
 if (KEYOK.test(location.hash.slice(1))) { pw = location.hash.slice(1); lsv(KEY + '-pw', pw); } // 주소 끝에 #암호를 붙인 링크로 열면 암호를 묻지 않는다
 // 단추에는 지금 권한을, 그 옆에는 상태(저장됨·올리는 중 등)를 적는다
-const syncMsg = t => { $('syncBtn').textContent = '🔑 암호 입력' + (role === 'admin' ? ' · 행정실' : role === 'teacher' ? ' · 교원' : ''); $('syncState').textContent = t.replace('함께 쓰기: ', ''); };
+const syncMsg = t => { $('syncBtn').textContent = '🔑 암호 입력' + (role === 'admin' ? ' · 행정실' : role === 'teacher' ? ' · 교원' : ''); const m = t.replace('함께 쓰기: ', ''); $('syncState').textContent = /^(연결됨|배치도만 보는 중|저장됨|올리는 중…|잇는 중…)$/.test(m) ? '' : m; };   // 평소 상태(연결됨·배치도만 보는 중·저장됨 등)는 띄우지 않고, 문제가 있을 때만 적는다(사용자 요청 2026-11-28)
 const typing = () => $('panel').contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
 // 암호 입력: 누를 때마다 묻고, 마지막에 넣은 암호의 권한으로 쓴다. 비워서 확인하면 암호를 지우고 기본 도면으로 돌아간다.
 function askPw() {

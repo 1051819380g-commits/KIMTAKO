@@ -33,7 +33,7 @@
   .set-box { position:absolute; right:0; top:calc(100% + 4px); z-index:40; display:grid; gap:2px; min-width:180px; padding:5px; background:var(--surface); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(22,33,46,.18); }
   .set-box button { border:0; text-align:left; padding:7px 10px; white-space:nowrap; } .set-box hr { width:100%; margin:3px 0; border:0; border-top:1px solid var(--line); }
   /* 도면 아래에 있던 구역(면적표·연결 안 된 물품 위치·변경 이력)은 설정 메뉴에서 여는 창으로(사용자 요청 2026-11-27) */
-  .secdlg { width:min(1300px, calc(100vw - 48px)); max-height:calc(100vh - 80px); box-sizing:border-box; padding:18px 20px 20px; overflow:auto; }
+  .secdlg { width:fit-content; min-width:min(560px, calc(100vw - 48px)); max-width:min(1300px, calc(100vw - 48px)); max-height:calc(100vh - 80px); box-sizing:border-box; padding:18px 20px 20px; overflow:auto; }
   .secdlg .sec-head { position:relative; padding-right:36px; align-items:center; } .secdlg .p-close { top:-4px; right:-6px; } .secdlg h2 { margin:0; } .secdlg .note { margin:10px 0 0; }
   @media (pointer:coarse) and (max-width: 960px) { .secdlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; } }
   @media (max-width: 760px) { .set-box { right:auto; left:0; } }
@@ -182,6 +182,7 @@
   /* 사용일정 목록 팝업 다듬기(2026-11-28 — "못생겼다"): 입력칸을 앱의 다른 입력칸과 같은 모양으로, 이름표를 왼쪽에 둔 카드 */
   #scDlg .sec-head { align-items:center; } #scDlg .sc-pick { display:inline-flex; align-items:center; gap:4px; padding:0 4px 0 9px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--sub); font-size:13px; }
   #scDlg .sc-pick:hover { border-color:var(--line-strong); } #scDlg .sc-pick input { border:0; background:transparent; padding:5px 4px; font:inherit; color:var(--ink); outline:none; }
+  #scDlg .sec-head > h2 { order:1; } #scDlg .sc-pick { order:2; margin-left:auto; } #scDlg .sec-head::after { content:''; order:3; flex-basis:100%; } #scView { order:4; }
   #scNew { margin:14px 0 6px; } #scNew summary { display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border:1px solid #b9cdf0; border-radius:8px; background:#f2f6ff; color:#2456b3; font-size:13.5px; font-weight:700; cursor:pointer; list-style:none; } #scNew summary::-webkit-details-marker { display:none; }
   #scNew summary:hover { background:#e3ecfd; } #scNew[open] summary { display:none; }
   .sn-card { max-width:none; display:grid; gap:10px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 2px 10px rgba(22,33,46,.06); }
@@ -195,23 +196,52 @@
   #scList .sc-date { margin:14px 0 4px; font-size:14px; font-weight:700; } #scList .sc-date em { font-style:normal; font-size:11px; color:#fff; background:#3b6fd1; border-radius:8px; padding:1px 7px; margin-left:6px; }
   #scList .sc-row { display:grid; grid-template-columns:118px minmax(0, 1fr); gap:4px 12px; padding:7px 10px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; margin-top:5px; cursor:pointer; font-size:13px; line-height:1.5; } #scList .sc-row:hover { background:#f5f8fe; }
   #scList .sc-row.past { border-left-color:var(--line-strong); color:var(--sub); } #scList .sc-row .tm { font-weight:700; white-space:nowrap; } #scList .sc-row .tm small { font-size:11px; } #scList .sc-row .wh { color:var(--sub); } #scList .sc-row .wt { grid-column:2; word-break:break-all; white-space:pre-wrap; } #scList .sc-row .wt b { color:var(--ink); }
+  /* ── 팝업 공통 다듬기(2026-11-28): 둥근 창, 입력칸은 사용일정 등록 칸과 같은 모양 ── */
+  dialog { border-radius:14px; } dialog h2 { font-size:16.5px; }
+  dialog :is(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), select, textarea) { box-sizing:border-box; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--sheet); font:inherit; font-size:14px; color:var(--ink); }
+  dialog :is(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), select, textarea):hover { border-color:var(--line-strong); }
+  dialog :is(input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), select, textarea):focus { outline:none; border-color:#6f95d6; background:var(--surface); box-shadow:0 0 0 3px rgba(59,111,209,.15); }
+  dialog .acts button, .req-form .rb button, #wkNew button { padding:7px 16px; border-radius:8px; }
+  #pwDlg #pwIn { width:100%; margin-top:10px; } #doneDlg #doneDate { flex:1; } #wkDlg .wkf label { font-weight:600; }
+  /* 보수요청·하자보증 목록: 표 대신 카드 줄(인쇄는 표 그대로) */
+  #reqDlg, #wkList { width:min(640px, calc(100vw - 48px)) !important; }
+  #reqDlg #reqList .scroll, #wkList #wkRows .scroll { border:0; overflow:visible; max-height:none; }
+  :is(#reqList, #wkRows) thead { display:none; } :is(#reqList, #wkRows) :is(table, tbody) { display:block; width:100%; }
+  :is(#reqList, #wkRows) tr { display:block; position:relative; padding:11px 14px 10px; margin-top:8px; border:1px solid var(--line); border-left:3px solid #d92d20; border-radius:10px; background:var(--surface); cursor:pointer; }
+  :is(#reqList, #wkRows) tr:hover { background:#fafbfd; border-color:var(--line-strong); }
+  :is(#reqList, #wkRows) td { display:inline; padding:0; border:0; font-size:12.5px; color:var(--sub); white-space:normal; background:none; } :is(#reqList, #wkRows) td + td { margin-left:6px; }
+  :is(#reqList, #wkRows) td:last-child { display:flex; justify-content:flex-end; gap:6px; margin:8px 0 0; padding-top:8px; border-top:1px dashed var(--line); } :is(#reqList, #wkRows) td:last-child button { padding:4px 14px; font-size:12.5px; border-radius:7px; margin:0; }
+  #reqList tr.done { border-left-color:var(--line-strong); } #reqList td.nm { color:var(--ink); font-weight:700; }
+  #reqList td.rt { display:block; margin:5px 0 3px; min-width:0; font-size:14.5px; color:var(--ink); }
+  #reqList td.rd { margin-left:0; } #reqList td.rd::before { content:'요청 '; } #reqList td.dd:empty { display:none; } #reqList td.dd::before { content:'· 완료 '; } #reqList td.who:empty { display:none; } #reqList td.who::before { content:'· '; }
+  #wkRows tr { border-left-color:#2e9e5b; } #wkRows tr.soon { border-left-color:#f08c00; } #wkRows tr.exp { border-left-color:var(--line-strong); }
+  #wkRows td.st { font-weight:700; color:#1e7a43; } #wkRows tr.soon td.st { color:#c2570a; } #wkRows tr.exp td.st { color:var(--sub); }
+  #wkRows tr { display:flex; flex-wrap:wrap; align-items:baseline; column-gap:0; } #wkRows td + td { margin-left:0; }
+  #wkRows td.st { order:1; margin-right:8px; } #wkRows td.we { order:2; } #wkRows td.we::before { content:'보증 끝 '; }
+  #wkRows td.wn { order:3; flex-basis:100%; margin:4px 0 1px; font-size:14.5px; color:var(--ink); } #wkRows td.wh { order:4; flex-basis:100%; color:var(--ink); margin-bottom:2px; }
+  #wkRows td.wk { order:5; } #wkRows td.wty { order:6; } #wkRows td.wco { order:7; } #wkRows td.wd { order:8; } #wkRows td:last-child { order:9; flex-basis:100%; }
+  #wkRows :is(td.wty, td.wco, td.wd)::before { content:'·'; margin:0 5px; } #wkRows td.wd::before { content:'· 준공'; margin:0 5px 0 5px; padding-right:0; } #wkRows td.wd::before { word-spacing:4px; } #wkRows :is(td.wk, td.wty, td.wco, td.wd):empty { display:none; }
+  /* 등록 칸: 사용일정 등록 칸처럼 흰 카드 */
+  #reqNew summary, #wkNew #wn-add { border-radius:8px; } #reqNew summary { padding:6px 14px; font-size:13.5px; font-weight:700; } #reqNew[open] summary { display:none; }
+  #reqNew .req-form { gap:10px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface); box-shadow:0 2px 10px rgba(22,33,46,.06); }
+  #reqNew .req-form :is(select, textarea, input:not([type=file])) { padding:7px 10px; border-radius:8px; background:var(--sheet); font-size:14px; }
+  #reqNew .rb { gap:8px; } #wkNew { padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--surface); gap:8px; }
   #reqDlg, #wkList { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
   :is(#reqDlg, #wkList, #phDlg) .sec-head { position:relative; padding-right:36px; } :is(#reqDlg, #wkList, #phDlg) .p-close { top:-4px; right:-6px; } :is(#reqDlg, #wkList, #phDlg) h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
   @media (pointer:coarse) and (max-width: 960px) { #scDlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; } #scDlg .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } #scView { display:flex; max-width:100%; overflow-x:auto; } #scDay, .sn-card :is(input, select, textarea), .sc-form :is(input, select, textarea) { font-size:16px; } .sn-card { max-width:none; padding:12px; } #scDlg .sec-head { gap:8px; }
     #scList .sc-row { grid-template-columns:1fr; gap:1px; }
-    #reqDlg, #wkList { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
+    #reqDlg, #wkList { width:100vw !important; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
     .sheet-head { flex-wrap:wrap; } #sheetTitle { white-space:nowrap; } #sheetSub { flex:1 1 100%; order:3; }   /* 제목이 세로로 한 글자씩 쪼개지지 않게: 제목·에어컨 대수 한 줄, 안내는 아랫줄 */
     #doneDlg { min-width:0; width:calc(100vw - 32px); box-sizing:border-box; } #doneDlg input[type=date] { font-size:16px; flex:1; }
     #reqDlg #reqList .scroll { max-height:none; }
     /* 휴대폰: 표 대신 요청마다 한 장씩(첫 줄 상태·위치·실, 둘째 줄 내용, 셋째 줄 요청일·요청자, 오른쪽 위 완료 단추) */
     #reqList thead { display:none; } #reqList table, #reqList tbody { display:block; }
-    #reqList tr { display:block; position:relative; padding:10px 84px 10px 12px; border-bottom:1px solid var(--line); }
     #reqList td { display:inline; padding:0; border:0; font-size:12px; color:var(--sub); white-space:normal; } #reqList td + td { margin-left:6px; }
     #reqList td.nm { color:var(--ink); font-weight:700; }
     #reqList td.rt { display:block; margin:4px 0 2px; min-width:0; font-size:15px; color:var(--ink); }
     #reqList td.rd { margin-left:0; } #reqList td.rd::before { content:'요청 '; } #reqList td.dd:empty { display:none; } #reqList td.dd::before { content:'· 완료 '; } #reqList td.who:empty { display:none; } #reqList td.who::before { content:'· '; }
-    #reqList td:last-child { position:absolute; top:10px; right:10px; margin:0; } #reqList td:last-child button { display:block; width:100%; margin-bottom:5px; padding:5px 12px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
+    #reqList td:last-child button, #wkRows td:last-child button { padding:6px 16px; font-size:13px; } :is(#reqDlg, #wkList, #phDlg) .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } }
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; } #syncState { margin-left:0; }
   /* 머리줄 오른쪽 위: 암호 입력 · 벽 편집 · 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 보수요청·하자보증만 제목 옆, 나머지는 메뉴 안) */
@@ -438,7 +468,7 @@
   <div class="sn-f"><label for="sn-who">누가</label><input id="sn-who" placeholder="이름·부서"></div>
   <div class="sn-f"><label for="sn-t">왜</label><textarea id="sn-t" rows="2" placeholder="예: 3학년 학부모 상담, 동아리 회의"></textarea></div>
   <div class="sn-act"><button type="button" id="sn-cancel">취소</button><button type="button" class="primary" id="sn-save">등록</button></div></div></details><div id="scList"></div></dialog>
-<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
+<dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" id="rn-cancel">취소</button><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="pwDlg"><form method="dialog">
   <h2>🔑 암호 입력</h2>
   <p class="hint" id="pwNow"></p>
@@ -1495,7 +1525,7 @@ function renderWks() {
   $('wkCnt').textContent = `보증 중 ${on}건 · 만료 ${expN}건 · 전체 ${all.length}건`;
   for (const b of $('wkView').children) b.className = b.dataset.wv === wkView ? 'on' : '';
   $('wkRows').innerHTML = list.length ? `<div class="scroll"><table><thead><tr><th>상태</th><th>만료일</th><th>위치</th><th>구분</th><th>이름</th><th>공종</th><th>업체</th><th>준공·납품일</th><th class="noprint"></th></tr></thead><tbody>${list.map(x => { const w = x.w, s = wkSt(w);
-    return `<tr data-wk="${wkId(x)}" class="${s}" title="눌러서 이 위치로 가기"><td class="st">${WK_LBL[s]}</td><td>${esc(w.e || '')}</td><td>${esc(x.where)}</td><td>${esc(w.kind || '')}</td><td><b>${esc(w.t)}</b></td><td>${esc(w.type || '')}</td><td>${esc(w.co || '')}${w.tel ? '<br>' + esc(w.tel) : ''}</td><td>${esc(w.d || '')}</td><td class="noprint" style="white-space:nowrap"><button data-wkedit="${wkId(x)}">고침</button> <button data-wkdel="${wkId(x)}">지움</button></td></tr>`; }).join('')}</tbody></table></div>`
+    return `<tr data-wk="${wkId(x)}" class="${s}" title="눌러서 이 위치로 가기"><td class="st">${WK_LBL[s]}</td><td class="we">${esc(w.e || '')}</td><td class="wh">${esc(x.where)}</td><td class="wk">${esc(w.kind || '')}</td><td class="wn"><b>${esc(w.t)}</b></td><td class="wty">${esc(w.type || '')}</td><td class="wco">${esc(w.co || '')}${w.tel ? ' ' + esc(w.tel) : ''}</td><td class="wd">${esc(w.d || '')}</td><td class="noprint wb" style="white-space:nowrap"><button data-wkedit="${wkId(x)}">고침</button> <button data-wkdel="${wkId(x)}">지움</button></td></tr>`; }).join('')}</tbody></table></div>`
     : `<p class="hint">${all.length ? (wkView === 'exp' ? '보증 기간이 끝난 기록이 없습니다.' : '보증 중인 기록이 없습니다.') : '아직 적은 것이 없습니다.'}</p>`;
 }
 $('wkJump').onclick = () => { fillWkNew(); $('wkList').showModal(); renderWks(); $('wkList').scrollTop = 0; };
@@ -2001,6 +2031,7 @@ function fillReqNew(lv = 0) {
   if (R.selectedIndex < 0) R.selectedIndex = 0;
 }
 $('rn-b').onchange = () => fillReqNew(1); $('rn-f').onchange = () => fillReqNew(2);
+$('rn-cancel').onclick = () => { $('reqNew').open = false; };
 $('rn-save').onclick = () => {
   if (noReq()) return; const t = $('rn-text').value.trim(), who = $('rn-who').value.trim(), fi = +$('rn-f').value, key = $('rn-r').value; if (!t) return $('rn-text').focus();
   lsv(KEY + '-who', who); applyRemote(); const r = roomsOf(state.floors[fi]).find(x => x.key === key); if (!r) return fillReqNew(2);

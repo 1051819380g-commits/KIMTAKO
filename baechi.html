@@ -147,7 +147,10 @@
   #wkDlg .ws { display:grid; gap:7px; padding:11px 12px; border:1px solid var(--line); border-radius:10px; background:var(--sheet); } #wkDlg .ws-h { font-size:12px; font-weight:600; color:var(--sub); } #wkDlg .ws-h small { font-weight:400; color:var(--faint); }
   #wkDlg .ws-sel { display:flex; gap:6px; } #wkDlg .ws-sel select { flex:1; min-width:0; background:var(--surface); }
   #wkDlg .ws-chips { display:flex; flex-wrap:wrap; gap:5px; max-height:180px; overflow:auto; } #wkDlg .ws-chips button { padding:4px 10px; font-size:12.5px; border-radius:16px; background:var(--surface); }
-  #wkDlg .ws-chips button.on { background:#2e9e5b; border-color:#2e9e5b; color:#fff; font-weight:600; } #wkDlg .ws-alls { max-height:none; } #wkDlg .ws-chips .ws-all { border-style:dashed; } #wkDlg .wkf:has(#ws:not([hidden])) > label:first-child { grid-column:1 / -1; } #wkDlg .ws-chips .ws-all.on { background:#1e7a43; border-style:solid; }
+  #wkDlg .ws-chips button.on { background:#2e9e5b; border-color:#2e9e5b; color:#fff; font-weight:600; } #wkDlg .ws-alls { max-height:none; } #wkDlg .ws-chips .ws-all { border-style:dashed; } #wkDlg .wk-nl { display:grid; gap:3px; font-size:12px; color:var(--sub); font-weight:600; } #wkDlg .wk-nrow { display:flex; gap:8px; align-items:center; } #wkDlg .wk-nrow input { flex:1; min-width:0; }
+  #wkDlg .wk-kseg { flex:none; } #wkDlg .wk-kseg button { padding:5px 11px; font-size:13px; }
+  #wkDlg .ws-chips button.sub { color:var(--faint); border-color:#e6e9ee; background:transparent; font-size:12px; } #wkDlg .ws-chips button.sub.on { color:#fff; background:#2e9e5b; border-color:#2e9e5b; }
+  #wkDlg .ws-chips .ws-sep { flex-basis:100%; height:0; border-top:1px dashed var(--line); margin:2px 0; } #wkDlg .ws-chips .ws-all.on { background:#1e7a43; border-style:solid; }
   #wkDlg .ws-sum { font-size:12.5px; color:var(--sub); line-height:1.6; } #wkDlg .ws-sum b { color:var(--ink); } #wkDlg .ws-sum button { padding:1px 8px; font-size:11.5px; margin-left:4px; } #wkDlg .ws-sum .warn { color:#c2570a; }
   #wkDlg .wkf { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; } #wkDlg .wkf label { display:grid; gap:3px; font-size:12px; color:var(--sub); } #wkDlg .wkf .wide { grid-column:1 / -1; }
   #wkDlg .wkf :is(input, select), #wkNew select { width:100%; box-sizing:border-box; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:var(--surface); }
@@ -485,12 +488,12 @@
 <dialog id="wkDlg"><form method="dialog">
   <h2 id="wkTitle"></h2>
   <div class="wkf">
-    <label>구분<select id="wk-kind"><option>공사</option><option>물품</option></select></label>
+    <select id="wk-kind" hidden aria-hidden="true"><option>공사</option><option>물품</option></select>
     <label id="wk-scL">범위<select id="wk-sc"></select></label>
     <div class="wide ws" id="ws"><span class="ws-h">범위 <small>— 실을 여러 개 고를 수 있습니다(다른 층으로 바꿔도 고른 실은 남습니다)</small></span>
       <div class="ws-sel"><select id="ws-b" aria-label="건물"></select><select id="ws-f" aria-label="층"></select></div>
       <div id="ws-alls" class="ws-chips ws-alls"></div><div id="ws-chips" class="ws-chips"></div><div id="ws-sum" class="ws-sum"></div></div>
-    <label class="wide">이름<input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품"></label>
+    <div class="wide wk-nl"><span>구분 · 이름</span><div class="wk-nrow"><span class="seg wk-kseg" id="wk-kseg"><button type="button" data-kd="공사">🔧 공사</button><button type="button" data-kd="물품">📦 물품</button></span><input id="wk-t" required placeholder="예: 옥상 방수공사, 냉난방기 교체, 전자칠판 납품" aria-label="이름"></div></div>
     <label class="wide" id="wk-typeL">공종 (고르면 법정 기간이 들어갑니다)<select id="wk-type"></select></label>
     <label>업체<input id="wk-co" placeholder="업체 이름"></label>
     <label>업체 전화<input id="wk-tel" placeholder="대표전화"></label>
@@ -1489,9 +1492,10 @@ function wsRender() {
   const opt = (v, t) => `<option value="${esc(v)}">${esc(t)}</option>`, fs = state.floors.map((f, i) => [f, i]).filter(([f]) => f.bld === wsB);
   $('ws-b').innerHTML = [...new Set(state.floors.map(f => f.bld))].map(b => opt(b, b)).join(''); $('ws-b').value = wsB;
   $('ws-f').innerHTML = fs.map(([f, i]) => opt(i, f.name)).join(''); $('ws-f').value = wsF;
-  const rs = wsF >= 0 ? roomsOf(state.floors[wsF]).filter(r => !/뚫림/.test(r.info.name)).sort((a, b) => a.info.name.localeCompare(b.info.name, 'ko', { numeric: true })) : [];
+  const subR = r => /계단|복도|화장실|홀|현관|승강기|엘리베이터|EV|ev/.test(r.info.name) || r.info.use === '화장실';   // 계단·복도·화장실 같은 곳은 맨 뒤에 옅게(사용자 요청 2026-11-28)
+  const rs = wsF >= 0 ? roomsOf(state.floors[wsF]).filter(r => !/뚫림/.test(r.info.name)).sort((a, b) => subR(a) - subR(b) || a.info.name.localeCompare(b.info.name, 'ko', { numeric: true })) : [];
   $('ws-alls').innerHTML = `<button type="button" class="ws-all${wsMode === 'bld' ? ' on' : ''}" data-ws="bld">🏢 ${esc(wsB)} 건물 전체</button><button type="button" class="ws-all${wsMode === 'floor' ? ' on' : ''}" data-ws="floor">▦ ${esc(wsF >= 0 ? state.floors[wsF].name : '')} 전체</button>`;
-  $('ws-chips').innerHTML = rs.map(r => `<button type="button" class="${wsMode === 'rooms' && wsSel.has(wsF + ' ' + r.key) ? 'on' : ''}" data-wr="${esc(r.key)}">${esc(r.info.name)}</button>`).join('');
+  $('ws-chips').innerHTML = rs.map((r, n) => `${n && subR(r) && !subR(rs[n - 1]) ? '<span class="ws-sep"></span>' : ''}<button type="button" class="${subR(r) ? 'sub' : ''}${wsMode === 'rooms' && wsSel.has(wsF + ' ' + r.key) ? ' on' : ''}" data-wr="${esc(r.key)}">${esc(r.info.name)}</button>`).join('');
   const picked = [...wsSel.values()].map(([fi, k]) => { const f = state.floors[fi], r = f && roomsOf(f).find(x => x.key === k); return r ? `${f.bld === wsB ? '' : f.bld + ' '}${f.name} ${r.info.name}` : ''; }).filter(Boolean);
   $('ws-sum').innerHTML = wsMode === 'bld' ? `고른 범위: <b>${esc(wsB)} 건물 전체</b>` : wsMode === 'floor' ? `고른 범위: <b>${esc(wsB)} ${esc(state.floors[wsF].name)} 전체</b>`
     : picked.length ? `고른 실 <b>${picked.length}개</b>: ${esc(picked.join(', '))} <button type="button" data-wsclear>모두 빼기</button>` : '<span class="warn">실을 눌러 고르거나 층·건물 전체를 누르세요.</span>';
@@ -1519,8 +1523,8 @@ function wkOpen(id, many, at) {
   v('sc').innerHTML = x ? `<option>${esc(x.where)}</option>` : at ? `<option>${esc(atLbl)}</option>` : many ? `<option>고른 실 ${rooms().length}개 (${esc(rooms().map(q => q.info.name).join(', '))})</option>` : `<option value="r">이 실 (${esc(r.info.name)})</option><option value="f">${esc(f.bld)} ${esc(f.name)} 전체</option><option value="b">${esc(f.bld)} 건물 전체</option>`; v('sc').disabled = !!x || !!many || !!at;
   v('type').innerHTML = '<option value="">직접 입력</option>' + WK_TYPES.map(([t, y]) => `<option value="${esc(t)}" data-y="${y}">${esc(t)} — ${y}년</option>`).join('');
   v('kind').value = w.kind || '공사'; v('t').value = w.t || ''; v('type').value = w.type || ''; v('co').value = w.co || ''; v('tel').value = w.tel || ''; v('d').value = w.d || ''; v('y').value = w.y || ''; v('e').value = w.e || '';
-  const kind = () => { v('typeL').hidden = v('kind').value === '물품'; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
-  kind(); v('kind').onchange = kind; v('d').onchange = v('y').oninput = calc;
+  const kind = () => { v('typeL').hidden = v('kind').value === '물품'; for (const bt of $('wk-kseg').children) bt.className = bt.dataset.kd === v('kind').value ? 'on' : ''; }, calc = () => { v('e').value = wkEnd(v('d').value, +v('y').value) || v('e').value; };
+  kind(); v('kind').onchange = kind; $('wk-kseg').onclick = e => { const k = e.target.dataset.kd; if (k) { v('kind').value = k; kind(); } };   // 구분: 공사/물품 두 단추(사용자 요청 2026-11-28) v('d').onchange = v('y').oninput = calc;
   v('type').onchange = () => { const y = v('type').selectedOptions[0].dataset.y; if (y) { v('y').value = y; calc(); } };
   dlg.querySelector('form').onsubmit = e => { if (!x && e.submitter && e.submitter.value === 'ok' && wsMode === 'rooms' && !wsSel.size) { e.preventDefault(); alert('범위를 골라 주세요. 실을 누르거나 층·건물 전체를 누르면 됩니다.'); } };
   dlg.returnValue = ''; dlg.onclose = () => {

@@ -116,7 +116,7 @@
   .f input:hover, .f select:hover, .f textarea:hover { border-color:var(--line-strong); }
   .f textarea { resize:vertical; }
   /* 보기 전용(함께 쓰기 암호 없음): 순수 배치도만 — 통계·보수요청·면적표·물품·이력과 고치는 단추를 숨긴다 */
-  body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
+  body.ro :is(#stats, main ~ section, #setMenu, #reqJump, #scJump, #wkJump, #vWork, #csvBtn, #saveBtn, #itemBtn, #loadBtn, #itemClear, #editLbl, #locOk, [data-acadd], [data-acdel], [data-itadd], [data-itdel], [data-reqadd], [data-reqdone], [data-reqdel], [data-rq], #log [data-del]) { display:none !important; }
   /* 교원(보수요청만): 고치는 단추·행정실용 화면을 숨긴다. 실 정보 창에는 이름·면적·보수요청만 */
   body.tch :is(#stats, main ~ section, #setMenu, #wkJump, #vWork, #wkMulti, #editLbl, #locOk, [data-reqdone], [data-reqmemo], [data-rq], [data-rm], .mx, [data-acadd], [data-acdel], #panel .wk-head, #panel .wk-item, #panel .wk-note, #panel .acs) { display:none !important; }
   body.tch #panel .f > :not([for=i-memo]):not(#i-memo) { display:none !important; }   /* 교원: 입력 칸은 메모만 */
@@ -174,10 +174,16 @@
   #reqList td.noprint { white-space:nowrap; text-align:right; }
   .req-meta button { padding:1px 8px; font-size:11px; } .req-meta button:first-of-type { margin-left:auto; }
   /* 보수요청 목록 팝업: PC는 가운데 큰 창, 휴대폰은 화면을 채운다 */
+  #scDlg { width:min(900px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; } #scDlg .sec-head { position:relative; padding-right:36px; flex-wrap:wrap; gap:8px; } #scDlg .p-close { top:-4px; right:-6px; } #scDlg h2 { margin:0; }
+  #scList .sc-date { margin:14px 0 4px; font-size:14px; font-weight:700; } #scList .sc-date em { font-style:normal; font-size:11px; color:#fff; background:#3b6fd1; border-radius:8px; padding:1px 7px; margin-left:6px; }
+  #scList .sc-row { display:grid; grid-template-columns:96px 200px 1fr; gap:4px 12px; padding:7px 10px; border:1px solid var(--line); border-left:3px solid #3b6fd1; border-radius:6px; margin-top:5px; cursor:pointer; font-size:13px; line-height:1.5; } #scList .sc-row:hover { background:#f5f8fe; }
+  #scList .sc-row.past { border-left-color:var(--line-strong); color:var(--sub); } #scList .sc-row .tm { font-weight:700; } #scList .sc-row .wh { color:var(--sub); } #scList .sc-row .wt { word-break:break-all; white-space:pre-wrap; } #scList .sc-row .wt b { color:var(--ink); }
   #reqDlg, #wkList { width:min(1100px, calc(100vw - 48px)); max-height:calc(100vh - 80px); padding:18px 20px 20px; overflow:auto; }
   :is(#reqDlg, #wkList, #phDlg) .sec-head { position:relative; padding-right:36px; } :is(#reqDlg, #wkList, #phDlg) .p-close { top:-4px; right:-6px; } :is(#reqDlg, #wkList, #phDlg) h2 { margin:0; }
   #reqDlg #reqList .scroll { max-height:calc(100vh - 200px); }
-  @media (pointer:coarse) and (max-width: 960px) { #reqDlg, #wkList { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
+  @media (pointer:coarse) and (max-width: 960px) { #scDlg { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; } #scDlg .p-close { width:40px; height:40px; font-size:26px; top:-6px; right:-4px; } #scView { display:flex; max-width:100%; overflow-x:auto; } #scDay { font-size:16px; }
+    #scList .sc-row { grid-template-columns:1fr; gap:1px; }
+    #reqDlg, #wkList { width:100vw; max-width:100vw; height:100%; max-height:100%; margin:0; min-width:0; border:0; border-radius:0; padding:16px 14px; }
     .sheet-head { flex-wrap:wrap; } #sheetTitle { white-space:nowrap; } #sheetSub { flex:1 1 100%; order:3; }   /* 제목이 세로로 한 글자씩 쪼개지지 않게: 제목·에어컨 대수 한 줄, 안내는 아랫줄 */
     #doneDlg { min-width:0; width:calc(100vw - 32px); box-sizing:border-box; } #doneDlg input[type=date] { font-size:16px; flex:1; }
     #reqDlg #reqList .scroll { max-height:none; }
@@ -192,7 +198,7 @@
   #reqList tr.done td { color:var(--sub); } #reqList tr.done .rt { text-decoration:line-through; } #reqList td.rt { white-space:pre-wrap; min-width:180px; }
   #reqList button { padding:1px 8px; font-size:12px; } #reqJump b { color:#b42318; } #syncState { margin-left:0; }
   /* 머리줄 오른쪽 위: 암호 입력 · 벽 편집 · 보수요청 · 하자보증 · 도면 인쇄 · 설정 순서(휴대폰은 보수요청·하자보증만 제목 옆, 나머지는 메뉴 안) */
-  @media not all and (pointer:coarse) and (max-width: 960px) { #grpL { order:2; margin-left:auto; } #reqJump { order:3; margin-left:-8px; } #wkJump { order:3; margin-left:-8px; } .bar > .grp.push:not(#grpL) { order:4; margin-left:-8px; } }   /* 머리줄 간격(14px)을 묶음 안 간격(6px)에 맞춘다 */
+  @media not all and (pointer:coarse) and (max-width: 960px) { #grpL { order:2; margin-left:auto; } #reqJump { order:3; margin-left:-8px; } #scJump { order:3; margin-left:-8px; } #wkJump { order:3; margin-left:-8px; } .bar > .grp.push:not(#grpL) { order:4; margin-left:-8px; } }   /* 머리줄 간격(14px)을 묶음 안 간격(6px)에 맞춘다 */
   .acs { grid-column:1 / -1; display:grid; gap:6px; padding:8px 0; border-block:1px solid var(--line); }
   .acs-head { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--sub); }
   .acs-head button { padding:2px 9px; font-size:12px; }
@@ -310,7 +316,7 @@
     header.open .bar > .grp.push { width:100%; margin-left:0; }
     /* 휴대폰 머리 다듬기(사용자 요청 2026-11-27): 첫 줄에 제목·보수요청·하자보증·메뉴가 한 줄로 들어가게 줄이고, 메뉴를 펼치면 단추는 두 칸 격자, 보기 단추·막대·합계는 화면 폭에 맞춘다. */
     .brand { flex:1 1 0; min-width:0; } .brand h1 { font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    #reqJump, #wkJump, #menuBtn { flex:none; padding:4px 8px; font-size:12.5px; } #menuBtn { margin-left:0; }
+    #reqJump, #scJump, #wkJump, #menuBtn { flex:none; padding:4px 8px; font-size:12.5px; } #scJump .jl { display:none; }   /* 휴대폰은 📅만(머리 한 줄에 단추 넷이 들어가게) */ #menuBtn { margin-left:0; }
     header.open { position:relative; }   /* 펼친 메뉴가 화면을 덮은 채 따라오지 않게: 펼쳤을 때는 위에 붙어 있지 않고 함께 올라간다 */
     header.open .bar > .grp.push { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
     header.open .bar > .grp.push > * { width:100%; box-sizing:border-box; justify-content:center; text-align:center; margin:0; }
@@ -354,6 +360,7 @@
   <div class="bar">
     <div class="brand"><small>시설 관리</small><h1>남제학원 실 배치도</h1></div>
     <button id="reqJump" class="noprint" title="보수요청 목록으로">🚨 보수요청</button>
+    <button id="scJump" class="noprint" title="모든 실의 사용일정을 날짜별로">📅<span class="jl"> 사용일정</span></button>
     <button id="wkJump" class="noprint" title="공사·물품 하자보증 목록으로">🔧 하자보증</button>
     <button id="menuBtn" class="noprint" aria-expanded="false">메뉴 ▾</button>
     <div class="tabrow"><div class="seg" id="bldTabs"></div>
@@ -406,6 +413,7 @@
   <!-- 도면 출처: 면적은 벽 중심선 치수 기준입니다. 신관(V자형)은 지음건축 2021 평면도(기둥 간격 4m, 깊이 8m), 본관(1자형)은 2016 배치도(교실 9.0m×7.2m)를 따랐습니다. 건축물대장 면적과 조금 다를 수 있습니다. 신관 가운데 부분(홀, 계단, 화장실 등)은 도면에서 잰 어림값이니 실을 눌러 면적을 직접 고치세요. 신관 지하 1층(급식소)은 2016 배치도의 지하 1층 평면도를 따랐고, 본관 2·3층은 1층 도면을 본뜬 추정 배치입니다. 강당과 도서관동은 2023 외벽개선공사 도면(1/200)의 기둥 간격 치수로 잡았고 실 경계는 어림값입니다. 중학교 구관은 2023 교실천장교체 도면, 중학교 본관은 2022 환경개선 도면의 기둥 간격(4.5m)을 따랐습니다. -->
 </dialog>
 
+<dialog id="scDlg"><div class="sec-head"><h2>📅 사용일정 <span id="scCnt" class="hint"></span></h2><div class="seg" id="scView"><button data-sv="today">오늘</button><button data-sv="week">이번 주</button><button data-sv="next">앞으로</button><button data-sv="past">지난 일정</button></div><input type="date" id="scDay" title="이 날짜만 보기" aria-label="날짜 고르기"><button class="p-close" id="scClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><div id="scList"></div></dialog>
 <dialog id="reqDlg"><div class="sec-head"><h2>🚨 보수요청 목록 <span id="reqCnt" class="hint"></span></h2><div class="seg" id="reqView"><button data-rv="open">진행 중</button><button data-rv="all">전체</button></div><button id="reqPrint" title="지금 보이는 목록(진행 중 또는 전체)을 인쇄합니다">인쇄</button><button class="p-close" id="reqClose" aria-label="닫기" title="닫기 (Esc)">×</button></div><details id="reqNew" class="noprint"><summary>＋ 보수요청 등록</summary><div class="req-form"><div class="rsel"><select id="rn-b" aria-label="건물"></select><select id="rn-f" aria-label="층"></select><select id="rn-r" aria-label="실"></select></div><textarea id="rn-text" rows="2" placeholder="보수할 내용 (예: 형광등 2개 나감, 출입문 손잡이 흔들림)"></textarea><input id="rn-who" placeholder="요청자 (이름·부서)"><div class="phz"><input type="file" id="rn-ph" accept="image/*" multiple hidden><span class="phz-t" data-t="📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지">📷 눌러서 고르거나 끌어다 놓기 · 3장까지 · 학생 얼굴·개인정보 사진 금지</span></div><div class="rb"><button type="button" class="primary" id="rn-save">등록</button></div></div></details><div id="reqList"></div></dialog>
 <dialog id="pwDlg"><form method="dialog">
   <h2>🔑 암호 입력</h2>
@@ -867,7 +875,7 @@ function render() { document.body.classList.toggle('ro', noReq()); for (const v 
   for (const [id, [fi, k]] of multi) { const mf = state.floors[fi]; if (site || ro() || editing || !mf || mf.bld !== state.floors[cur].bld || (!allView && fi !== cur) || !roomsOf(mf).some(r => r.key === k)) multi.delete(id); }
   $('wkMulti').hidden = !multi.size; $('wkMulti').textContent = `🔧 고른 ${multi.size}실 하자보증 추가`;
   const enter = site && !render.site, pb = $('planbox'), keep = [pb.scrollLeft, pb.scrollTop]; render.site = site;
-  renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
+  renderTabs(); renderPlan(); renderPanel(); renderReqs(); renderScList(); renderTable(); renderLog(); fitPlan();   // 합계 줄 수가 바뀌면 도면 자리 높이도 달라지므로 끝에서 한 번 더 맞춘다
   pb.scrollLeft = keep[0]; pb.scrollTop = keep[1];   // 다시 그리는 동안 도면 크기가 잠깐 바뀌어 상자 안 위치가 맨 위로 튀던 것을 되돌린다(실을 눌러 고를 때 도면이 움직이지 않게)
   if (enter) { const b = $('planbox'); b.scrollLeft = (b.scrollWidth - b.clientWidth) / 2; b.scrollTop = (b.scrollHeight - b.clientHeight) / 2; }   // 전체 배치에 들어오면 도면 가운데를 보여 준다
 }
@@ -1239,6 +1247,32 @@ function scHtml(i, rk) {
   ${up.map(row).join('') || (scForm === rk ? '' : '<p class="hint sc-none">잡힌 일정이 없습니다.</p>')}
   ${past.length ? `<button type="button" class="sc-pastbtn" data-scpast>${scPast === rk ? '지난 일정 접기' : `지난 일정 ${past.length}건 보기`}</button>${scPast === rk ? past.map(row).join('') : ''}` : ''}`;
 }
+// 사용일정 목록(모든 실, 날짜별 — 사용자 요청 2026-11-28): 오늘 / 이번 주(오늘~일요일) / 앞으로 / 지난 일정 / 고른 날짜
+let scView = 'today';
+function scAllList() { const out = []; state.floors.forEach((f, fi) => { for (const r of roomsOf(f)) (r.info.sched || []).forEach((q, n) => out.push({ f, fi, r, q, n })); }); return out; }
+function renderScList() {
+  const t = today(), all = scAllList(), wd = new Date(t + 'T00:00').getDay(), sun = new Date(new Date(t + 'T00:00').getTime() + (wd ? 7 - wd : 0) * 864e5), p = n => String(n).padStart(2, '0'),
+    weekEnd = `${sun.getFullYear()}-${p(sun.getMonth() + 1)}-${p(sun.getDate())}`, day = $('scDay').value;
+  const keep = x => scView === 'day' ? x.q.d === day : scView === 'today' ? x.q.d === t : scView === 'week' ? x.q.d >= t && x.q.d <= weekEnd : scView === 'next' ? x.q.d >= t : x.q.d < t;
+  const list = all.filter(keep).sort((a, b) => scView === 'past' ? scSort(b.q, a.q) : scSort(a.q, b.q));
+  for (const b of $('scView').children) b.className = b.dataset.sv === scView ? 'on' : '';
+  $('scCnt').textContent = `${scView === 'day' ? scDay(day) : { today: '오늘', week: '이번 주', next: '앞으로', past: '지난 일정' }[scView]} ${list.length}건 · 오늘 ${all.filter(x => x.q.d === t).length}건`;
+  let last = '', h = '';
+  for (const { f, fi, r, q, n } of list) {
+    if (q.d !== last) { last = q.d; h += `<div class="sc-date">${scDay(q.d)}${q.d === t ? '<em>오늘</em>' : ''}</div>`; }
+    h += `<div class="sc-row${q.d < t ? ' past' : ''}" data-f="${fi}" data-k="${r.key}" title="눌러서 이 실로 가기"><span class="tm">${esc(q.s)}–${esc(q.e)}</span><span class="wh">${esc(f.bld)} ${esc(f.name)} <b style="color:var(--ink)">${esc(r.info.name)}</b></span><span class="wt">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</span></div>`;
+  }
+  $('scList').innerHTML = h || `<p class="hint">${all.length ? '이 기간에 잡힌 사용일정이 없습니다.' : '아직 사용일정이 없습니다. 실을 눌러 이름 옆 "📅 사용일정"으로 적습니다.'}</p>`;
+  const nToday = all.filter(x => x.q.d === t).length;
+  $('scJump').innerHTML = `📅<span class="jl"> 사용일정</span>${nToday ? ` <b>(${nToday})</b>` : ''}`;   // 오늘 일정 수를 (n)으로
+}
+$('scJump').onclick = () => { scView = 'today'; $('scDay').value = ''; renderScList(); $('scDlg').showModal(); $('scDlg').scrollTop = 0; };
+$('scClose').onclick = () => $('scDlg').close();
+$('scDlg').onclick = e => { if (e.target === $('scDlg')) return $('scDlg').close();
+  const v = e.target.dataset.sv; if (v) { scView = v; $('scDay').value = ''; return renderScList(); }
+  const row = e.target.closest('.sc-row'); if (!row) return;
+  $('scDlg').close(); cur = +row.dataset.f; sel = row.dataset.k; site = false; allView = false; open = school(state.floors[cur].bld); render(); autoZoom(); $('planbox').scrollIntoView({ block: 'nearest' }); };   // 그 실이 있는 층으로 가서 정보 창을 연다
+$('scDay').onchange = () => { scView = $('scDay').value ? 'day' : 'today'; renderScList(); };
 function scSave() {
   const d = $('sc-d').value, s0 = $('sc-s').value, e0 = $('sc-e').value, who = $('sc-who').value.trim(), t = $('sc-t').value.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return $('sc-d').focus(); if (!s0) return $('sc-s').focus(); if (!e0 || e0 <= s0) { alert('끝나는 시간이 시작 시간보다 늦어야 합니다.'); return $('sc-e').focus(); }

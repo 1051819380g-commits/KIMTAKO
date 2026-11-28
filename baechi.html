@@ -1243,6 +1243,7 @@ const WD = '일월화수목금토', scDay = d => { const x = new Date(d + 'T00:0
 // 반복(사용자 요청 2026-11-28): rep 'w' 매주(같은 요일) / 'm' 매월(같은 날짜, 그 날짜가 없는 달은 건너뜀), until 반복 끝 날, ex 뺀 날짜들
 const ymd = x => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`, addD = (d, n) => { const x = new Date(d + 'T00:00'); x.setDate(x.getDate() + n); return ymd(x); };
 function scDates(q, a, b) {   // q가 a~b(포함) 사이에 잡힌 날짜들
+  if (q.del) return [];   // 지운 일정(함께 쓰기 자리에는 지움 표시로 남는다)
   const out = [], end = q.rep && q.until && q.until < b ? q.until : b, ok = d => d >= a && d <= end && !(q.ex || []).includes(d);
   if (!q.rep) { if (ok(q.d)) out.push(q.d); return out; }
   if (q.rep === 'w') { let d = q.d; if (d < a) d = addD(d, Math.ceil((new Date(a + 'T00:00') - new Date(d + 'T00:00')) / 864e5 / 7) * 7); for (let k = 0; d <= end && k < 400; k++, d = addD(d, 7)) if (ok(d)) out.push(d); return out; }
@@ -1255,7 +1256,7 @@ const repLbl = q => q.rep === 'w' ? `매주 ${WD[new Date(q.d + 'T00:00').getDay
 const scUp = i => (i.sched || []).filter(q => scNext(q, today())).length;   // 앞으로 잡힌 일정 수(오늘 포함, 반복은 한 건)
 const scSort = (a, b) => (a.d + a.s).localeCompare(b.d + b.s);
 function scHtml(i, rk) {
-  const t = today(), all = (i.sched || []).map((q, n) => ({ q, n, nx: scNext(q, t) })), up = all.filter(x => x.nx).sort((a, b) => (a.nx + a.q.s).localeCompare(b.nx + b.q.s)), past = all.filter(x => !x.nx).sort((a, b) => scSort(b.q, a.q));
+  const t = today(), all = (i.sched || []).map((q, n) => ({ q, n, nx: scNext(q, t) })).filter(x => !x.q.del), up = all.filter(x => x.nx).sort((a, b) => (a.nx + a.q.s).localeCompare(b.nx + b.q.s)), past = all.filter(x => !x.nx).sort((a, b) => scSort(b.q, a.q));
   const row = ({ q, n, nx }) => { const d = nx || q.d; return `<div class="sc-item${d === t ? ' today' : ''}${!nx ? ' past' : ''}"><div class="sc-when"><b>${scDay(d)}</b> ${esc(q.s)}–${esc(q.e)}${d === t ? ' <em>오늘</em>' : ''}${q.rep ? ` <span class="sc-rep">🔁 ${repLbl(q)}${q.until ? ' · ' + scDay(q.until) + '까지' : ''}</span>` : ''}</div><div class="sc-what">${q.who ? `<b>${esc(q.who)}</b>` : ''}${q.who && q.t ? ' · ' : ''}${esc(q.t || '')}</div>${noReq() ? '' : `<span class="sc-btns">${q.rep && nx ? `<button type="button" data-scskip="${n}" title="${scDay(nx)} 한 번만 빼기">이번만 빼기</button>` : ''}<button type="button" data-scdel="${n}" title="${q.rep ? '반복 일정 전체 지우기' : '이 일정 지우기'}">${q.rep ? '전체 지움' : '지움'}</button></span>`}</div>`; };
   const now = new Date(), hh = String(Math.min(22, now.getHours() + 1)).padStart(2, '0');
   if (scForm !== rk && !all.length) return '';   // 일정이 없으면 칸을 숨긴다(이름 옆 📅 단추로 적는다)
@@ -1315,9 +1316,11 @@ function scSkip(n) {   // 반복 일정에서 다음 한 번만 뺀다(그날 �
 function scDel(n) {
   applyRemote(); const r = findSel(); const q = r && (r.info.sched || [])[n]; if (!q) return;
   if (!confirm(`「${r.info.name}」 ${q.rep ? repLbl(q) + ' 반복' : scDay(q.d)} ${q.s}–${q.e} ${q.who || ''} 일정을${q.rep ? ' 모두' : ''} 지웁니다. 계속할까요?`)) return;
-  r.info.sched.splice(n, 1); if (!r.info.sched.length) delete r.info.sched; log(`사용일정 지움: ${r.info.name} — ${q.d} ${q.s}–${q.e} ${q.who || ''}`);
-  const tk = tkey(); if (tk && q.id) { delete reqStore[q.id]; delete reqSent[q.id];   // 함께 쓰기 자리에서도 지운다(다시 붙지 않게)
-    fetch(DB + '/.json', { method: 'PATCH', body: JSON.stringify({ ['req/' + tk + '/' + q.id]: null, ['gate/' + pw]: Date.now() }) }).catch(() => {}); }
+  // 지우기(2026-11-28 고침): 함께 쓰기 자리(req/<교원 암호>)는 규칙상 교원이 지울 수 없어(행정실도 실패하면 조용히 남아) 새로고침하면 되살아났다.
+  // 그래서 이미 올라간 일정은 지우지 않고 del 표시(지운 날 dd)를 달아 고친 것으로 올린다 — 고치기는 교원도 된다. 화면에서는 del 표시가 있는 일정을 모두 뺀다.
+  if (tkey() && q.id && ((q.id in reqStore) || (q.id in reqSent))) { q.del = 1; q.dd = today(); }
+  else { r.info.sched.splice(n, 1); if (!r.info.sched.length) delete r.info.sched; }
+  log(`사용일정 지움: ${r.info.name} — ${q.rep ? repLbl(q) + ' 반복 ' : ''}${q.d} ${q.s}–${q.e} ${q.who || ''}`);
   save(); render();
 }
 // 보수요청: 실 정보(info.reqs)에 [{t 내용, who 요청자, d 요청일, done 완료, dd 완료일, ms 진행 메모 [{d, t}]}]로 담는다. 함께 쓰기로 다른 사람 화면에도 그대로 간다.
